@@ -20,7 +20,7 @@ obj.h.FileControl.panel.params = uipanel(obj.h.mainGrid, ...
 
 % Make Hardware View Panel
 obj.h.HardwareView.panel.params = uipanel(obj.h.mainGrid, ...
-    'CreateFcn', @obj.createPanelHardwareView);
+    'CreateFcn', @obj.createPanelHardwareList);
 
 % Make Experiment Controls Panel
 obj.h.Experiment.panel.params = uipanel(obj.h.mainGrid, ...
@@ -30,6 +30,11 @@ obj.h.Experiment.panel.params = uipanel(obj.h.mainGrid, ...
 obj.h.Status.panel.params = uipanel(obj.h.mainGrid, ...
     'CreateFcn', @obj.createPanelStatusDisplay);
 
+%DEBUG
+obj.h.Debug.panel.params = uipanel(obj.h.mainGrid, ...
+    'CreateFcn', {@obj.createPanelComponentConfig, DAQComponent('Abstract', true)});
+obj.h.Debug.panel.params.Layout.Row = 1;
+obj.h.Debug.panel.params.Layout.Column = 1;
 
 
 % % create LED panel

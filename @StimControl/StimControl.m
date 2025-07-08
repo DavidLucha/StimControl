@@ -54,9 +54,13 @@ methods
         if ~exist(obj.path.dirData,'dir')
             mkdir(obj.path.dirData)
         end
-
-        %% Create figure and get things going
-        createFigure(obj)
+        try
+            %% Create figure and get things going
+            createFigure(obj)
+        catch error
+            obj.callbackFileExit
+            error(error)
+        end
         
         %% battery timer
         obj.t = timer(...
@@ -77,10 +81,11 @@ methods (Access = private)
     createFigure(obj)
     createPanelFileControl(obj,hPanel,~)
     createPanelExperimentControl(obj,hPanel,~)
-    createPanelHardware(obj,hPanel,~)
+    createPanelHardwareList(obj,hPanel,~)
     createPanelStatusDisplay(obj, hPanel, ~)
-    createPanelComponentConfig(obj, hPanel, ~)
-    createPanelComponentView(obj, hPanel, ~)
+    createPanelComponentConfig(obj, hPanel, ~, component)
+    % createPanelComponentOutput(obj, hPanel, ~, component)
+    % createPanelProtocol(obj, hPanel, ~)
     
     % file control callbacks
     callbackLoadParams(obj)

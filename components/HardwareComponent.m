@@ -7,9 +7,9 @@ properties (Access = public)
     SavePath
     Required
     ComponentProperties
+    Abstract
 end
 properties(Access=protected)
-    Abstract
     ConfigStruct
 end
 properties (Abstract, Access = protected)

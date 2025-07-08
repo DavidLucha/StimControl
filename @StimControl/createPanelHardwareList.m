@@ -1,4 +1,4 @@
-function createPanelHardwareView(obj,hPanel,~)
+function createPanelHardwareList(obj,hPanel,~)
 
 % set panel position
 hPanel.Title = 'Hardware';
@@ -21,7 +21,7 @@ editHardwareConfigBtn = uibutton(grid);
 editHardwareConfigBtn.Layout.Row = 2;
 editHardwareConfigBtn.Layout.Column = 2;
 editHardwareConfigBtn.ButtonPushedFcn = @obj.callbackEditHardwareConfig;
-editHardwareConfigBtn.Text = 'Load Params';
+editHardwareConfigBtn.Text = 'Change Params';
 
 % create table
 uit = uitable('Parent', grid, 'ColumnName', {'Type', 'ID', 'StatusLight', 'Status'});
@@ -29,5 +29,5 @@ uit.Layout.Row = [1 3];
 uit.Layout.Column = 1;
 uit.ColumnSortable = true;
 uit.SelectionType = 'row';
-uit.Data = obj.callbackPopulateHardwareTable;
+uit.Data = {};%@obj.callbackPopulateHardwareTable;
 obj.h.hardwareTable = uit;
