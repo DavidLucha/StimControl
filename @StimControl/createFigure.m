@@ -31,10 +31,16 @@ obj.h.Status.panel.params = uipanel(obj.h.mainGrid, ...
     'CreateFcn', @obj.createPanelStatusDisplay);
 
 %DEBUG
+% obj.h.Debug.panel.params = uipanel(obj.h.mainGrid, ...
+%     'CreateFcn', {@obj.createPanelComponentConfig, DAQComponent('Abstract', true)});
+% obj.h.Debug.panel.params.Layout.Row = 1;
+% obj.h.Debug.panel.params.Layout.Column = 1;
+
 obj.h.Debug.panel.params = uipanel(obj.h.mainGrid, ...
-    'CreateFcn', {@obj.createPanelComponentConfig, DAQComponent('Abstract', true)});
+    'CreateFcn', @obj.createPanelProtocolConfig);
 obj.h.Debug.panel.params.Layout.Row = 1;
 obj.h.Debug.panel.params.Layout.Column = 1;
+
 
 
 % % create LED panel
