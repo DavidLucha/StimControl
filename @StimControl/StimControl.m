@@ -1,9 +1,14 @@
 classdef StimControl < handle
 
 properties (SetAccess = private)
-    DAQ                         % DAQ Session
-    serialPorts                 % serial port objects
-    cameras                     % camera objects
+    active = struct( ...
+        'DAQ',      [], ...
+        'camera',   [], ...
+        'serial',   []);
+    available = struct( ...
+        'DAQ',      [], ...
+        'camera',   [], ...
+        'serial',   []);
 end
 
 properties (Access = protected)
@@ -54,13 +59,23 @@ methods
         if ~exist(obj.path.dirData,'dir')
             mkdir(obj.path.dirData)
         end
-        try
-            %% Create figure and get things going
-            createFigure(obj)
-        catch error
-            obj.callbackFileExit
-            error(error)
-        end
+        
+        %% Find available hardware
+        % DAQs
+        % obj.available.DAQ = daqlist();
+        
+        % Cameras
+        % for i = 1:length(imaqhwinfo.InstalledAdaptors)
+        %     switch imaqhwinfo.InstalledAdaptors{i}
+        %         case 'gentl'
+        %             obj
+        %         case 'gige'
+        %             obj.cameras += gigecamlist;
+        %     end
+        % end
+
+        %% Create figure and get things going
+        createFigure(obj)
         
         %% battery timer
         obj.t = timer(...
@@ -79,13 +94,9 @@ end
 methods (Access = private)
     % figure creation
     createFigure(obj)
-    createPanelFileControl(obj,hPanel,~)
-    createPanelExperimentControl(obj,hPanel,~)
-    createPanelHardwareList(obj,hPanel,~)
-    createPanelStatusDisplay(obj, hPanel, ~)
+    createPanelSessionSetup(obj, hPanel, ~)
     createPanelComponentConfig(obj, hPanel, ~, component)
-    % createPanelComponentOutput(obj, hPanel, ~, component)
-    % createPanelProtocol(obj, hPanel, ~)
+    createPanelSessionControl(obj, hPanel, ~)
     
     % file control callbacks
     callbackLoadParams(obj)

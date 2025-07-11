@@ -14,33 +14,16 @@ obj.h.mainGrid = uigridlayout(obj.h.fig);
 obj.h.mainGrid.RowHeight = {'1x', 200, 100};
 obj.h.mainGrid.ColumnWidth = {'1x', 200, 100};
 
-% Make FileControl Panel
-obj.h.FileControl.panel.params = uipanel(obj.h.mainGrid, ...
-    'CreateFcn', @obj.createPanelFileControl);
+obj.h.SessionSetup.panel.params = uipanel(obj.h.mainGrid, ...
+    'CreateFcn', @obj.createPanelSessionSetup);
 
-% Make Hardware View Panel
-obj.h.HardwareView.panel.params = uipanel(obj.h.mainGrid, ...
-    'CreateFcn', @obj.createPanelHardwareList);
+obj.h.SessionControl.panel.params = uipanel(obj.h.mainGrid, ...
+    'CreateFcn', @obj.createPanelSessionControl);
 
-% Make Experiment Controls Panel
-obj.h.Experiment.panel.params = uipanel(obj.h.mainGrid, ...
-    'CreateFcn', @obj.createPanelExperimentControl);
-
-% Make Logo Panel 
-obj.h.Status.panel.params = uipanel(obj.h.mainGrid, ...
-    'CreateFcn', @obj.createPanelStatusDisplay);
-
-%DEBUG
-% obj.h.Debug.panel.params = uipanel(obj.h.mainGrid, ...
-%     'CreateFcn', {@obj.createPanelComponentConfig, DAQComponent('Abstract', true)});
-% obj.h.Debug.panel.params.Layout.Row = 1;
-% obj.h.Debug.panel.params.Layout.Column = 1;
-
-obj.h.Debug.panel.params = uipanel(obj.h.mainGrid, ...
-    'CreateFcn', @obj.createPanelProtocolConfig);
-obj.h.Debug.panel.params.Layout.Row = 1;
-obj.h.Debug.panel.params.Layout.Column = 1;
-
+obj.h.toggleBtn = uibutton(obj.h.mainGrid, 'ButtonPushedFcn', @obj.callbackToggleMode, ...
+    'Text', 'TOGGLE MODE', 'WordWrap', 'on');
+obj.h.toggleBtn.Layout.Row = 3;
+obj.h.toggleBtn.Layout.Column = 2;
 
 
 % % create LED panel
