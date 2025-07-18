@@ -54,6 +54,7 @@ Component properties are defined per hardware component. A ComponentProperties s
 - [x] NB with repInf it doesn't quite work - maybe support for rep-1 instead??
 - [ ] add a "dynamic" tag to attributes - true if they can be changed without a reboot, else false?
 - [ ] add widefield stuff to StimControl?
+- [ ] get David's stim paradigms in that bad boy
 
 
 ### Widefield GUI
@@ -62,6 +63,7 @@ Component properties are defined per hardware component. A ComponentProperties s
 - [ ] Session param saving! (nb this should be done in matlab)
 - [ ] ROI masking
 - [ ] be able to also see deltaF/F (set pre-stim time and set average for pre-stim as zero) (for fluorescence trace: (F - F0) / F0)
+- [ ] pause button
 
 ### Camera
 - [ ] Visualisation: Inticator when saturation / brightness is reaching full intensity so we know to adjust gain / light
