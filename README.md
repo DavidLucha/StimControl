@@ -56,6 +56,10 @@ Component properties are defined per hardware component. A ComponentProperties s
 - [ ] add widefield stuff to StimControl?
 - [ ] get David's stim paradigms in that bad boy
 
+### StimControl GUI
+- [ ] add a pause button (lock off unless in inter-trial interval)
+- [ ] move single stim button down next to trial button
+- [ ] turn the session setup and dev1 thing into one tab, experiment control into a separate tab
 
 ### Widefield GUI
 - [x] jank when changing bin size / folders / etc.
