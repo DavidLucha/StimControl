@@ -46,25 +46,29 @@ Component properties are defined per hardware component. A ComponentProperties s
 
 ## To Do List
 ### General
-- GUI that spits out hardware parameters and protocol
-- Implement additional hardware: Aurora serial
-- See about making a generic inspect() style interface for all components [(see here)](https://au.mathworks.com/help/instrument/generic-instrument-drivers.html?s_tid=CRUX_lftnav)
-- add ability to repeat stimulus independently within a trial
-- I don't looove that the component defaults are hardcoded but they're also not really hardcoded? maybe if we just add the option to ignore defaults we should be fine?
-- NB with repInf it doesn't quite work - maybe support for rep-1 instead??
+- [ ] GUI that spits out hardware parameters and protocol
+- [ ] Implement additional hardware: Aurora serial
+- [x] See about making a generic inspect() style interface for all components [(see here)](https://au.mathworks.com/help/instrument/generic-instrument-drivers.html?s_tid=CRUX_lftnav)
+- [ ] add ability to repeat stimulus independently within a trial
+- [x] I don't looove that the component defaults are hardcoded but they're also not really hardcoded? maybe if we just add the option to ignore defaults we should be fine?
+- [x] NB with repInf it doesn't quite work - maybe support for rep-1 instead??
+- [ ] add a "dynamic" tag to attributes - true if they can be changed without a reboot, else false?
+- [ ] add widefield stuff to StimControl?
+- [ ] get David's stim paradigms in that bad boy
 
 
 ### Widefield GUI
-- jank when changing bin size / folders / etc.
-- creating new animal may also create erroneous experiment folders if you're ALSO changing experiment
-- Session param saving! (nb this should be done in matlab)
-- ROI masking
-- be able to also see deltaF/F (set pre-stim time and set average for pre-stim as zero) (for fluorescence trace: (F - F0) / F0)
+- [x] jank when changing bin size / folders / etc.
+- [ ] creating new animal may also create erroneous experiment folders if you're ALSO changing experiment
+- [ ] Session param saving! (nb this should be done in matlab)
+- [ ] ROI masking
+- [ ] be able to also see deltaF/F (set pre-stim time and set average for pre-stim as zero) (for fluorescence trace: (F - F0) / F0)
+- [ ] pause button
 
 ### Camera
-- Visualisation: Inticator when saturation / brightness is reaching full intensity so we know to adjust gain / light
-- Figure out the buffering issues for multi-image-per-trigger acquisition, maybe thread it (check [imaq documentation](https://au.mathworks.com/help/imaq/videoinput.html) and [parallel computing documentation](https://au.mathworks.com/help/parallel-computing/quick-start-parallel-computing-in-matlab.html))
+- [ ] Visualisation: Inticator when saturation / brightness is reaching full intensity so we know to adjust gain / light
+- [ ] Figure out the buffering issues for multi-image-per-trigger acquisition, maybe thread it (check [imaq documentation](https://au.mathworks.com/help/imaq/videoinput.html) and [parallel computing documentation](https://au.mathworks.com/help/parallel-computing/quick-start-parallel-computing-in-matlab.html))
 
 ### DAQ
-- get session loading working
-- add parametrised analog outputs - ramp, noise, sine
+- [ ] get session loading working
+- [ ] add parametrised analog outputs - ramp, noise, sine
