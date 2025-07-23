@@ -27,6 +27,7 @@ properties %(Access = private)
     name        = 'StimControl'
     pFile       = []
     isRunning   = false;
+    hardwareParams
 end
 
 properties (Dependent)
@@ -115,7 +116,7 @@ methods (Access = private)
     callbackNewAnimal(obj);
 
     % hardware control callbacks
-    callbackPopulateHardwareTable(obj)
+    tData = callbackPopulateHardwareTable(obj)
     callbackEditHardwareConfig(obj)
     callbackViewHardwareOutput(obj)
 

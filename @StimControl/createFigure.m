@@ -12,7 +12,7 @@ obj.h.fig = uifigure(...
 
 obj.h.mainGrid = uigridlayout(obj.h.fig);
 obj.h.mainGrid.RowHeight = {'1x', 200, 100};
-obj.h.mainGrid.ColumnWidth = {'1x', 200, 100};
+obj.h.mainGrid.ColumnWidth = {700, 200, 100};
 
 obj.h.SessionSetup.panel.params = uipanel(obj.h.mainGrid, ...
     'CreateFcn', @obj.createPanelSessionSetup);
@@ -24,6 +24,9 @@ obj.h.toggleBtn = uibutton(obj.h.mainGrid, 'ButtonPushedFcn', @obj.callbackToggl
     'Text', 'TOGGLE MODE', 'WordWrap', 'on');
 obj.h.toggleBtn.Layout.Row = 3;
 obj.h.toggleBtn.Layout.Column = 2;
+
+obj.h.componentDisplay.panel.params = uipanel(obj.h.mainGrid, ...
+    'CreateFcn', {@obj.createPanelComponentConfig, DAQComponent('Abstract', true)});
 
 
 % % create LED panel

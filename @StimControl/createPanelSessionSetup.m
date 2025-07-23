@@ -16,11 +16,11 @@ uit.Layout.Row = 1;
 uit.Layout.Column = [1 length(grid.ColumnWidth)];
 uit.ColumnSortable = true;
 uit.SelectionType = 'row';
-obj.callbackPopulateHardwareTable();
-uit.Data = {};
+uit.Data = obj.callbackPopulateHardwareTable();
+uit.ColumnEditable = [false false true false true];
 obj.h.hardwareTable = uit;
 
-%% create component config select
+%% create hardware config select
 ccCol = 1;
 componentConfigSelect = uidropdown(grid, ...
     'Editable', 'on', 'Items', getFilesList(obj.path.paramBase, '.json'), ...
@@ -35,7 +35,7 @@ createConfigBtn = uibutton(grid, ...
 createConfigBtn.Layout.Row = length(grid.RowHeight);
 createConfigBtn.Layout.Column = ccCol + 1;
 
-configLabel = uilabel(grid, 'Text', 'Component Config');
+configLabel = uilabel(grid, 'Text', 'Hardware Config');
 configLabel.Layout.Row = length(grid.RowHeight) - 1;
 configLabel.Layout.Column = [ccCol ccCol+1];
 
@@ -54,7 +54,7 @@ saveSessionBtn = uibutton(grid, ...
 saveSessionBtn.Layout.Row = length(grid.RowHeight);
 saveSessionBtn.Layout.Column = scCol + 1;
 
-sessionLabel = uilabel(grid, 'Text', 'Component Config');
+sessionLabel = uilabel(grid, 'Text', 'Session Config');
 sessionLabel.Layout.Row = length(grid.RowHeight) - 1;
 sessionLabel.Layout.Column = [scCol scCol+1];
 

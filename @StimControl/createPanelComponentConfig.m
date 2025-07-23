@@ -2,7 +2,10 @@ function createPanelComponentConfig(obj, hPanel, ~, component)
 % function createPanelThermode(obj,hPanel,~,idxThermode,nThermodes)
 %     obj.h.(thermodeID).panel.params = uipanel(obj.h.fig,...
 %         'CreateFcn',    {@obj.createPanelThermode,ii,length(obj.s)});
-    
+    hPanel.Title = 'Config';
+    hPanel.Layout.Row = 1;
+    hPanel.Layout.Column = [2 3];
+
     %set up panel visuals
     cp = component.GetComponentProperties();
     if ~component.Abstract
