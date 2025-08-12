@@ -1,5 +1,9 @@
 function callbackEditComponentConfig(obj)
 %% first, retrieve selected component from obj.
+disp("test")
+rowIndex = obj.h.AvailableHardwareTable.Selection;
+selectedRow = obj.h.AvailableHardwareTable.Data(rowIndex,:);
+selectedComponent = obj.h.Available(rowIndex);
 
 %% set obj.h.ComponentConfig.Component.Handle to component
 

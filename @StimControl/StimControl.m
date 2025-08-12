@@ -60,20 +60,33 @@ methods
         if ~exist(obj.path.dirData,'dir')
             mkdir(obj.path.dirData)
         end
-        
+
         %% Find available hardware
+        obj.h.Available = dictionary();
+        keyIndex = 1;
+
         % DAQs
-        % obj.available.DAQ = daqlist();
-        
+        daqs = daqlist();
+        for i = 1:height(daqs)
+            s = table2struct(daqs(i, :));
+            s.type = 'DAQ';
+            obj.h.Available(keyIndex) = s;
+            keyIndex = keyIndex + 1;
+        end
+
         % Cameras
-        % for i = 1:length(imaqhwinfo.InstalledAdaptors)
-        %     switch imaqhwinfo.InstalledAdaptors{i}
-        %         case 'gentl'
-        %             obj
-        %         case 'gige'
-        %             obj.cameras += gigecamlist;
-        %     end
-        % end
+        adaptors = imaqhwinfo().InstalledAdaptors;
+        for i = 1:length(adaptors)
+            adaptorDevices = imaqhwinfo(adaptors{i});
+            devices = adaptorDevices.DeviceInfo;
+            for j = 1:length(devices)
+                s = devices(j);
+                s.type = 'CAMERA';
+                s.AdaptorName = adaptorDevices.AdaptorName;
+                obj.h.Available(keyIndex) = s;
+                keyIndex = keyIndex + 1;
+            end
+        end
 
         %% Create figure and get things going
         createFigure(obj)

@@ -68,9 +68,9 @@ basePathLabel = uilabel(grid, 'Text', 'SavePath', ...
         'Column', [bpCol bpCol+1]));
 
 %% create component edit button
-editHardwareConfigBtn = uibutton(grid, ...
+editComponentConfigBtn = uibutton(grid, ...
     'WordWrap', 'on', 'Text', 'Edit Component', ...
-    'ButtonPushedFcn',@obj.callbackEditHardwareConfig, ...
+    'ButtonPushedFcn',@(src, event) obj.callbackEditComponentConfig, ...
     'Layout', matlab.ui.layout.GridLayoutOptions( ...
         'Row', [length(grid.RowHeight) - 1, length(grid.RowHeight)], ...
         'Column', length(grid.ColumnWidth)));
@@ -91,15 +91,18 @@ if ~isempty(obj.hardwareParams)
     takeFromParams = true;
 end
 
-% Populate DAQs
-daqs = daqlist();
-for i = 1:height(daqs)
-    deviceID = strcat(daqs.VendorID(i), '.', daqs.DeviceID(i), '.', daqs.Model(i));
-    enabled = false;
-    tData(end+1, :) = {'DAQ', deviceID, enabled, 'Not Initialised', false};
+available = obj.h.Available;
+for i = 1:length(obj.h.Available.keys)
+    device = obj.h.Available(i);
+    switch device.type
+        case 'DAQ'
+            deviceID = strcat(device.VendorID, '.', device.DeviceID, '.', device.Model);
+        case 'CAMERA'
+            deviceID = strcat(device.AdaptorName, '.', device.DeviceName);
+    end
+    tData(end+1, :) = {device.type, deviceID, false, 'Not Initialised', false};
 end
 
-% populate cameras TODO
 tData.Properties.VariableNames = columnNames;
 obj.h.AvailableHardwareTable.Data = tData;
 
