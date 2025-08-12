@@ -60,6 +60,7 @@ Component properties are defined per hardware component. A ComponentProperties s
 - [ ] add a pause button (lock off unless in inter-trial interval)
 - [ ] move single stim button down next to trial button
 - [ ] turn the session setup and dev1 thing into one tab, experiment control into a separate tab
+- [ ] put a confirm button in the setup tab, don't just save everything if you switch tabs. Or maybe a "save?" popup?
 
 ### Widefield GUI
 - [x] jank when changing bin size / folders / etc.
