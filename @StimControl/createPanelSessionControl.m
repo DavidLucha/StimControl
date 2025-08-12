@@ -1,8 +1,4 @@
 function createPanelSessionControl(obj, hPanel, ~)
-% set panel position
-hPanel.Title = 'Experiment Control';
-hPanel.Layout.Row = 2;
-hPanel.Layout.Column = [2 3];
 
 grid = uigridlayout(hPanel);
 grid.RowHeight = {22, 22, '1x', 22, 22, '1x', 22, 22};

@@ -383,8 +383,14 @@ function obj = CreateChannels(obj, filename)
             end
             ioType = line.("ioType"){1};
             signalType = line.("signalType"){1};
-            terminalConfig = line.("TerminalConfig"){1};
-            range = line.("Range"){1};
+            terminalConfig = line.("TerminalConfig");
+            if contains(class(terminalConfig), 'cell')
+                terminalConfig = terminalConfig{1};
+            end
+            range = line.("Range");
+            if contains(class(range), 'cell')
+                range = range{1};
+            end
             channelID = line.("ProtocolID"){1};
             if ~isMATLABReleaseOlderThan("R2024b")
                 channelList = add(channelList, ioType, deviceID, portNum, signalType, TerminalConfig=terminalConfig, Range=range);

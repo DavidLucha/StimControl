@@ -1,0 +1,2 @@
+Note,deviceID,portNum,channelName,ioType,signalType,TerminalConfig,Range,ProtocolID
+servo pwm,Dev1,port0/line4,servo pwm,output,Digital,,,TTLSCA

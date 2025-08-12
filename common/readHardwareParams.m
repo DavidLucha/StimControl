@@ -7,7 +7,11 @@ function objs = readHardwareParams(filepath)
     objs = struct();
     camCount = 1; daqCount = 1;
     for i = 1:length(jsonData)
-        hStruct = jsonData{i};
+        if length(jsonData) > 1
+            hStruct = jsonData{i};
+        else
+            hStruct = jsonData;
+        end        
         switch lower(hStruct.DEVICE)
             case 'camera'
                 hObj = CameraComponent('Struct', hStruct);

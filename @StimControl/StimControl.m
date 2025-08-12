@@ -95,9 +95,15 @@ end
 methods (Access = private)
     % figure creation
     createFigure(obj)
-    createPanelSessionSetup(obj, hPanel, ~)
+    createPanelSetupControl(obj, hPanel, ~)
+    createPanelPreview(obj, hPanel, ~)
     createPanelComponentConfig(obj, hPanel, ~, component)
     createPanelSessionControl(obj, hPanel, ~)
+    createPanelSessionInfo(obj, hPanel, ~)
+    createPanelSessionHardware(obj, hPanel, ~)
+
+    % app control callbacks
+    callbackChangeTab(obj)
     
     % file control callbacks
     callbackLoadParams(obj)
@@ -116,8 +122,9 @@ methods (Access = private)
     callbackNewAnimal(obj);
 
     % hardware control callbacks
-    tData = callbackPopulateHardwareTable(obj)
-    callbackEditHardwareConfig(obj)
+    callbackEditComponentConfig(obj)
+    callbackConfirmComponentConfig(obj)
+    callbackCancelComponentConfig(obj)
     callbackViewHardwareOutput(obj)
 
     % misc
