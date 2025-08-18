@@ -2,13 +2,16 @@ classdef (HandleCompatible) Component < HardwareComponent
 %UNTITLED2 Summary of this class goes here
 %   Detailed explanation goes here
 
+properties(Constant, Access=public)
+ComponentProperties = ComponentComponentProperties.Data;
+end
+
 properties (Access = public)
 Name
 SessionHandle
 SavePath
 Required
 Status
-ComponentProperties = obj.GetComponentProperties()
 end
 
 properties (Access = protected)

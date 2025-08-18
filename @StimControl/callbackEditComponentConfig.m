@@ -1,55 +1,74 @@
 function callbackEditComponentConfig(obj)
+
 %% first, retrieve selected component from obj.
-disp("test")
 rowIndex = obj.h.AvailableHardwareTable.Selection;
 selectedRow = obj.h.AvailableHardwareTable.Data(rowIndex,:);
-selectedComponent = obj.h.Available(rowIndex);
+componentData = obj.h.Available(rowIndex);
 
-%% set obj.h.ComponentConfig.Component.Handle to component
+%% extract component from struct if necessary
+if strcmp(class(componentData), 'struct')
+    switch lower(componentData.type)
+        case 'daq'
+            component = DAQComponent('Initialise', false, 'Struct', componentData);
+        case 'camera'
+            component = CameraComponent('Initialise', false, 'Struct', componentData);
+        otherwise
+            return
+    end
+    componentData = rmfield(componentData, 'type');
+    component.ConfigStruct = component.GetConfigStruct(componentData);
+end
 
-%% set obj.h.ComponentConfig.Component.Properties to componentProperties
+%% Pass handles for later use
+obj.h.ComponentConfig.Component.Handle = component;
+% obj.h.ComponentConfig.Component.Properties = component.ComponentProperties;
 
 %% Enable confirmation and cancel buttons
-obj.h.confirmComponentConfigBtn.Enabled = true;
-obj.h.cancelComponentConfigBtn.Enabled = true;
+obj.h.ConfirmConfigBtn.Enable = true;
+obj.h.CancelConfigBtn.Enable = true;
     
-%% then populate table
-%     %set up panel visuals
-%     cp = component.GetComponentProperties();
-%     if ~component.Abstract
-%         obj.h.ComponentConfig.Label.Text = component.ID;
-%     else
-%         obj.h.ComponentConfig.Label.Text = cp.ID.default;
-%     end
-% 
-%     attributeRows = [];
-%     valueRows = [];
-%     r = 1;
-% 
-%     fs = fields(cp);
-%     if ~component.Abstract
-%         vals = component.GetConfigStruct; %TODO DOES THIS ALWAYS WORK
-%     else
-%         vals = component.GetDefaultComponentStruct;
-%     end
-% 
-%     for f = 1:length(fs)
-%         prop = cp.(fs{f});
-%         if ~prop.dependencies(vals)
-%             continue
-%         end
-%         attributeRows{r} = fs{f};
-%         if ~isempty(prop.allowable)
-%             valueRows{r} = categorical(cellstr(prop.allowable));
-%         else
-%             valueRows{r} = vals.(fs{f});
-%         end
-%         r = r + 1;
-%     end
-%     tData =  table(transpose(valueRows), ...
-%             'VariableNames', {class(component)}, ...
-%             'RowNames', attributeRows);
-%     obj.h.ComponentConfig.Table.Data = tData;
-% 
-%     
-% end
+%% Populate Config Table
+if isfield(component.ConfigStruct, 'ID')
+    obj.h.ComponentConfig.Label.Text = component.ConfigStruct.ID;
+else
+    obj.h.ComponentConfig.Label.Text = class(component);
+end
+
+attributeRows = [];
+valueRows = [];
+
+componentFields = fields(component.ComponentProperties);
+rowcount = length(fields(component.ComponentProperties));
+if ~component.Abstract
+    vals = component.GetConfigStruct;
+else
+    vals = component.GetDefaultConfigStruct;
+end
+
+for f = 1:length(componentFields)
+    prop = component.ComponentProperties.(componentFields{f});
+    if size(prop, 2) > 1
+        prop = prop(1);
+    end
+    disp(prop)
+    if ~prop.dependencies(vals)
+        continue
+    end
+    attributeRows{end+1} = componentFields{f};
+    if ~isempty(prop(1).allowable)
+        if ischar(prop(1).allowable) || isstring(prop(1).allowable)
+            allowable = {prop(:).allowable};
+        elseif isnumeric(prop(1).allowable)
+            allowable = [prop(:).allowable];
+        end
+        valueRows{end+1} = categorical(allowable);
+    else
+        valueRows{end+1} = vals.(componentFields{f});
+    end
+end
+tData =  table(transpose(valueRows), ...
+        'VariableNames', {class(component)}, ...
+        'RowNames', attributeRows);
+obj.h.ComponentConfig.Table.Data = tData;
+
+end

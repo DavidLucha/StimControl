@@ -32,9 +32,12 @@ I'm not a native MATLAB developer, so I've found it helpful to put comments in f
 
 ## Adding New Hardware
 New hardware components should implement the HardwareComponent abstract class (which outlines required functions and properties), and have their defaults written in a struct of named Component Properties. 
+To fully integrate a new HardwareComponent into StimControl, you will need to implement the following functionality:
+- in StimControl.m under 'findAvailableHardware', find all hardware of the component type and add it to obj.h.Available as a struct compatible with the 'Struct' argument of the HardwareComponent class
+- in callbackEditComponentConfig, under 'extract component', extract the component from the struct.
 
 ### Component Properties
-Component properties are defined per hardware component. A ComponentProperties struct is a struct of named Component Properties.Each Component Property is a struct with 5 fields: 
+Component properties are defined per hardware component. A ComponentProperties obj has a single attribute - Data - which is a struct of named Component Properties.Each Component Property is a struct with 5 fields: 
 |Field          |Required   |Description|
 |-----          |-----      |-----|
 |default        |required   |Default value for the field|
@@ -42,7 +45,10 @@ Component properties are defined per hardware component. A ComponentProperties s
 |validatefcn    |optional   |Validation function handle for inserted value. Takes value as arg. If allowable is set, will also check value's membership|
 |dependencies   |optional   |Validation function handle for requirements for field to be set. Takes full struct as arg.|
 |required       |required   |Function handle that returns hether a field needs to be set. Takes full struct as arg. Will only be evaluated if dependencies evaluates to true.|
+|dynamic        |required   |whether device needs to be restarted to apply a change to this property.|
 |note           |optional   |Basically comments.|
+
+ALL ComponentProperties should define "ID" in their Data struct
 
 ## To Do List
 ### General

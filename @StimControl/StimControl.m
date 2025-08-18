@@ -62,31 +62,7 @@ methods
         end
 
         %% Find available hardware
-        obj.h.Available = dictionary();
-        keyIndex = 1;
-
-        % DAQs
-        daqs = daqlist();
-        for i = 1:height(daqs)
-            s = table2struct(daqs(i, :));
-            s.type = 'DAQ';
-            obj.h.Available(keyIndex) = s;
-            keyIndex = keyIndex + 1;
-        end
-
-        % Cameras
-        adaptors = imaqhwinfo().InstalledAdaptors;
-        for i = 1:length(adaptors)
-            adaptorDevices = imaqhwinfo(adaptors{i});
-            devices = adaptorDevices.DeviceInfo;
-            for j = 1:length(devices)
-                s = devices(j);
-                s.type = 'CAMERA';
-                s.AdaptorName = adaptorDevices.AdaptorName;
-                obj.h.Available(keyIndex) = s;
-                keyIndex = keyIndex + 1;
-            end
-        end
+        obj = obj.findAvailableHardware();
 
         %% Create figure and get things going
         createFigure(obj)
@@ -191,6 +167,38 @@ methods (Access = private)
 end
 
 methods
+    function obj = findAvailableHardware(obj)
+        %% Find available hardware
+        obj.h.Available = dictionary();
+        keyIndex = 1;
+
+        % DAQs
+        daqs = daqlist();
+        for i = 1:height(daqs)
+            s = table2struct(daqs(i, :));
+            s.type = 'DAQ';
+            obj.h.Available(keyIndex) = struct( ...
+                'type', 'DAQ', ...
+                'Vendor', s.VendorID, ...
+                'ID', s.DeviceID, ...
+                'Model', s.Model);
+            keyIndex = keyIndex + 1;
+        end
+    
+        % Cameras
+        adaptors = imaqhwinfo().InstalledAdaptors;
+        for i = 1:length(adaptors)
+            adaptorDevices = imaqhwinfo(adaptors{i});
+            devices = adaptorDevices.DeviceInfo;
+            for j = 1:length(devices)
+                temp = devices(j);
+                obj.h.Available(keyIndex) = struct('type', 'CAMERA', ...
+                    'Adaptor', adaptorDevices.AdaptorName, ...
+                    'ID', temp.DeviceName);
+                keyIndex = keyIndex + 1;
+            end
+        end
+    end
     % function out = get.dirAnimal(obj)
     %     out = fullfile(obj.dirData,obj.animalID);
     % end

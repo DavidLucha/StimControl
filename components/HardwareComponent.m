@@ -1,17 +1,18 @@
 classdef (Abstract, HandleCompatible) HardwareComponent
 %Abstract class representing all hardware components
-
 properties (Access = public)
     Name
     SessionHandle
     SavePath
     Required
-    ComponentProperties
     Abstract
-end
-properties(Access=protected)
     ConfigStruct
 end
+
+properties(Abstract, Constant, Access = public)
+    ComponentProperties
+end
+
 properties (Abstract, Access = protected)
     HandleClass
 end
@@ -19,12 +20,16 @@ end
 methods(Access=public)
 % All device constructors can take the following arguments, 
 % as well as device-specific arguments:
-% 'Required'    (logical)   whether to throw errors as errors or warnings
-% 'Handle'      (handle)    the handle to an existing session of that component type
-% 'Struct'      (struct)    struct containing initialisation params
-% 'SavePath'    (string)    the path to save outputs
-% 'Abstract'    (logical)   if false, does not attempt to initialise a
-%                           session with the hardware but retain access to class logic.
+% 'Required'    (logical, true)     whether to throw errors as errors or warnings
+% 'Handle'      (handle, [])        the handle to an existing session of that component type
+% 'Struct'      (struct, [])        struct containing initialisation params - see
+%                                   ComponentProperties
+% 'SavePath'    (string, '')        the path to save outputs
+% 'Abstract'    (logical, false)    if false, does not attempt to initialise a
+%                                   session with hardware but retains access to class logic.
+% Initialise    (logical, true)     if true, session with hardware will be
+%                                   immediately started upon object creation.
+%                                   If false, can be initialised later using obj.Configure
 function p = GetBaseParser(obj)
     p = inputParser;
     strValidate = @(x) ischar(x) || isstring(x);
@@ -34,6 +39,7 @@ function p = GetBaseParser(obj)
     addParameter(p, 'Struct', []);
     addParameter(p, 'SavePath', '', strValidate);
     addParameter(p, 'Abstract', false, @islogical);
+    addParameter(p, 'Initialise', true, @islogical);
 end
 
 function obj = CommonInitialisation(obj, params)
@@ -41,10 +47,9 @@ function obj = CommonInitialisation(obj, params)
     obj.Required = params.Required;
     obj.SessionHandle = params.Handle;
     obj.Abstract = params.Abstract;
-    obj.ComponentProperties = obj.GetComponentProperties();
 end
 
-function componentStruct = GetDefaultComponentStruct(obj)
+function componentStruct = GetDefaultConfigStruct(obj)
     componentStruct = struct();
     fs = fields(obj.ComponentProperties);
     for i = 1:length(fs)
@@ -54,10 +59,10 @@ function componentStruct = GetDefaultComponentStruct(obj)
     end
 end
 
-function configStruct = GetConfigStruct(obj, configStruct)
+function configStruct = GetConfigStruct(obj, varargin)
     %Fill out a config struct with existing or default values.
-    default = obj.GetDefaultComponentStruct();
-    if isempty(configStruct)
+    default = obj.GetDefaultConfigStruct();
+    if isempty(varargin)
         if isempty(obj.ConfigStruct)
             warning("No %s config provided. Using default setup", class(obj));
             configStruct = default;
@@ -65,8 +70,9 @@ function configStruct = GetConfigStruct(obj, configStruct)
             configStruct = obj.ConfigStruct;
         end
     else
+        configStruct = varargin{1};
         % fill in required fields with defaults.
-        props = obj.GetComponentProperties();
+        props = obj.ComponentProperties;
         propFields = fields(props);
         for i = 1:length(propFields)
             f = propFields{i};
@@ -81,6 +87,16 @@ function configStruct = GetConfigStruct(obj, configStruct)
                 configStruct = setfield(configStruct, f, val);
             end
         end
+    end
+end
+
+function status = GetStatus(obj)
+    if obj.Abstract
+        status = "Abstract";
+    elseif isempty(obj.SessionHandle)
+        status = "Not Initialised";
+    else
+        status = obj.GetSessionStatus();
     end
 end
 end
@@ -105,8 +121,8 @@ SetParams(obj, varargin)
 objStruct = GetParams(obj)
 
 % gets current device status
-% Options: ok / ready / running / error / empty / loading
-status = GetStatus(obj)
+% Options: ok / ready / running / error / loading
+status = GetSessionStatus(obj)
 
 % Dynamic visualisation ofthe object output. Can target a specific
 % plot using the "Plot" param.
@@ -117,7 +133,5 @@ PrintInfo(obj)
 
 % Preload an experimental protocol
 LoadProtocol(obj, varargin)
-
-GetComponentProperties(obj)
 end
 end
