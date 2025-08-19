@@ -111,23 +111,7 @@ end
 function updateComponentConfigTable(src, event, obj)
 rowIndex = obj.h.AvailableHardwareTable.Selection;
 selectedRow = obj.h.AvailableHardwareTable.Data(rowIndex,:);
-componentData = obj.h.Available(rowIndex);
-
-%% extract component from struct if necessary
-if strcmp(class(componentData), 'struct')
-    switch lower(componentData.type)
-        case 'daq'
-            component = DAQComponent('Initialise', false, 'Struct', componentData);
-        case 'camera'
-            component = CameraComponent('Initialise', false, 'Struct', componentData);
-        otherwise
-            return
-    end
-    componentData = rmfield(componentData, 'type');
-    component.ConfigStruct = component.GetConfigStruct(componentData);
-else
-    component = componentData;
-end
+component = obj.h.Available(rowIndex);
 
 %% initialise if needed
 

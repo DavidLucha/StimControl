@@ -40,7 +40,7 @@ end
 % TODO DYNAMIC UPDATE IF ALLOWABLE
 function updateComponentConfigTable(src,event,obj)
     rownum  = event.DisplaySelection(1);
-    component = obj.h.Available(obj.h.ComponentConfig.SelectedComponentIndex);
+    component = obj.h.Available{obj.h.ComponentConfig.SelectedComponentIndex};
     propertyName = event.DisplayRowName{rownum};
     c = 1;
     if iscategorical(event.Source.Data{rownum, 1}{1}) 
@@ -55,30 +55,20 @@ function updateComponentConfigTable(src,event,obj)
     removeStyle(src);
     % if component.ComponentProperties.()
     % newVal = 
-    table2struct(event.Source.Data)
-    vals = extractConfigVals(src, componentProperties);
-    % fs = fields(componentProperties);
-    
-
-    tData =  table(transpose(valueRows), ...
-            'VariableNames', {componentClass}, ...
-            'RowNames', attributeRows);
-    src.Data = tData;
+    newVal = src.Data.values{rownum};
+    if iscategorical(newVal)
+        cat = categories(newVal);
+        try %TODO fix. this is stupid. I hate categoricals.
+            cat = str2double(cat);
+            idx = find(categorical(cat) == newVal);
+            newVal = cat(idx);
+        catch
+            cat = categories(newVal);
+            idx = find(categorical(cat) == newVal);
+            newVal = cat{idx};
+        end
+    end
+    component.ConfigStruct.(propertyName) = newVal;
     obj.h.ComponentConfig.ConfigStruct = vals;
 end
-
-%% extract config struct from uitable
-% function s = extractConfigVals(src, componentConfigStruct)
-%     s = struct();
-%     for i = 1:length(src.RowName)
-%     v = src.Data{i, 1}{1};
-%     if iscell(v)
-%         v = v{1};
-%     elseif iscategorical(v)
-%         v = string(v);
-%     end
-%     s.(src.RowName{i}) = v;
-%     end
-% end
-
 
