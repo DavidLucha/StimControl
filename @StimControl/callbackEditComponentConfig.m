@@ -47,11 +47,8 @@ end
 
 for f = 1:length(componentFields)
     prop = component.ComponentProperties.(componentFields{f});
-    if size(prop, 2) > 1
-        prop = prop(1);
-    end
     disp(prop)
-    if ~prop.dependencies(vals)
+    if ~prop(1).dependencies(vals)
         continue
     end
     attributeRows{end+1} = componentFields{f};
@@ -61,7 +58,7 @@ for f = 1:length(componentFields)
         elseif isnumeric(prop(1).allowable)
             allowable = [prop(:).allowable];
         end
-        valueRows{end+1} = categorical(allowable);
+        valueRows{end+1} = categorical(allowable, 'Protected', true);
     else
         valueRows{end+1} = vals.(componentFields{f});
     end

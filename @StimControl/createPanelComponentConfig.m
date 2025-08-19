@@ -39,13 +39,17 @@ end
 %% update table function
 % TODO DYNAMIC UPDATE IF ALLOWABLE
 function updateComponentConfigTable(src,event,obj)
-    componentProperties = obj.h.ComponentConfig.Component.Properties;
+    componentProperties = obj.h.ComponentConfig.Component.Handle.ComponentProperties;
     componentClass = class(obj.h.ComponentConfig.Component.Handle);
 
     r  = event.DisplaySelection(1);
     c = 1;
     vals = struct();
-    if ~componentProperties.(event.DisplayRowName{r}).validatefcn(src.Data{r,c}{1})
+    if iscategorical(event.Source.Data{r, 1}{1}) 
+        % TODO possible to add categories? 
+        % if you want, change protected=true in callbackeditcomponentconfig
+        % then deal with validity here
+    elseif ~componentProperties.(event.DisplayRowName{r})(1).validatefcn(src.Data{r,c}{1}) %validate function
         % new value is invalid
         sInvalid = uistyle('BackgroundColor','red');
         addStyle(src,sInvalid,'row', r);
@@ -58,8 +62,8 @@ function updateComponentConfigTable(src,event,obj)
     valueRows = [];
     r = 1;
     for f = 1:length(fs)
-        prop = componentProperties.(fs{f});
-        if ~prop.dependencies(vals)
+        prop = componentProperties.(fs{f})(1);
+        if ~all(prop.dependencies(vals))
             continue
         end
         attributeRows{r} = fs{f};
