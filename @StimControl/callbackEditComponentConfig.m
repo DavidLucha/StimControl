@@ -17,6 +17,8 @@ if strcmp(class(componentData), 'struct')
     end
     componentData = rmfield(componentData, 'type');
     component.ConfigStruct = component.GetConfigStruct(componentData);
+else
+    component = componentData;
 end
 
 %% Pass handles for later use
@@ -47,18 +49,12 @@ end
 
 for f = 1:length(componentFields)
     prop = component.ComponentProperties.(componentFields{f});
-    disp(prop)
-    if ~prop(1).dependencies(vals)
+    if ~prop.dependencies(vals)
         continue
     end
     attributeRows{end+1} = componentFields{f};
-    if ~isempty(prop(1).allowable)
-        if ischar(prop(1).allowable) || isstring(prop(1).allowable)
-            allowable = {prop(:).allowable};
-        elseif isnumeric(prop(1).allowable)
-            allowable = [prop(:).allowable];
-        end
-        valueRows{end+1} = categorical(allowable, 'Protected', true);
+    if ~isempty(prop.allowable)
+        valueRows{end+1} = categorical(prop.allowable, 'Protected', true);
     else
         valueRows{end+1} = vals.(componentFields{f});
     end

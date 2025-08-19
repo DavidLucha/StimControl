@@ -61,7 +61,7 @@ function updateComponentConfigTable(src,event,obj)
     attributeRows = [];
     valueRows = [];
     r = 1;
-    for f = 1:length(fs)
+    for f = 1:length(fs) %TODO make this just dependents
         prop = componentProperties.(fs{f})(1);
         if ~all(prop.dependencies(vals))
             continue

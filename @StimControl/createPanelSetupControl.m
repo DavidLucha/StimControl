@@ -82,7 +82,8 @@ obj.h.AvailableHardwareTable = uitable('Parent', grid, ...
         'Column', [1 length(grid.ColumnWidth)]), ...
     'ColumnSortable', true, ...
     'SelectionType', 'row', ...
-    'ColumnEditable', [false false true false true]);
+    'ColumnEditable', [false false true false true], ...
+    'DisplayDataChangedFcn', @(src, event) updateComponentTable(src, event, obj));
 
 %% Populate Component Table
 columnNames = {'Type', 'ID', 'Enabled', 'Status', 'Display'};
@@ -105,5 +106,31 @@ end
 
 tData.Properties.VariableNames = columnNames;
 obj.h.AvailableHardwareTable.Data = tData;
+end
+
+function updateComponentConfigTable(src, event, obj)
+rowIndex = obj.h.AvailableHardwareTable.Selection;
+selectedRow = obj.h.AvailableHardwareTable.Data(rowIndex,:);
+componentData = obj.h.Available(rowIndex);
+
+%% extract component from struct if necessary
+if strcmp(class(componentData), 'struct')
+    switch lower(componentData.type)
+        case 'daq'
+            component = DAQComponent('Initialise', false, 'Struct', componentData);
+        case 'camera'
+            component = CameraComponent('Initialise', false, 'Struct', componentData);
+        otherwise
+            return
+    end
+    componentData = rmfield(componentData, 'type');
+    component.ConfigStruct = component.GetConfigStruct(componentData);
+else
+    component = componentData;
+end
+
+%% initialise if needed
+
+%% preview if needed
 
 end
