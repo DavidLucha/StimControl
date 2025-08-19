@@ -39,41 +39,27 @@ end
 %% update table function
 % TODO DYNAMIC UPDATE IF ALLOWABLE
 function updateComponentConfigTable(src,event,obj)
-    componentProperties = obj.h.ComponentConfig.Component.Handle.ComponentProperties;
-    componentClass = class(obj.h.ComponentConfig.Component.Handle);
-
-    r  = event.DisplaySelection(1);
+    rownum  = event.DisplaySelection(1);
+    component = obj.h.Available(obj.h.ComponentConfig.SelectedComponentIndex);
+    propertyName = event.DisplayRowName{rownum};
     c = 1;
-    vals = struct();
-    if iscategorical(event.Source.Data{r, 1}{1}) 
+    if iscategorical(event.Source.Data{rownum, 1}{1}) 
         % TODO possible to add categories? 
-        % if you want, change protected=true in callbackeditcomponentconfig
-        % then deal with validity here
-    elseif ~componentProperties.(event.DisplayRowName{r})(1).validatefcn(src.Data{r,c}{1}) %validate function
+        % if you want, change protected=true in ComponentProperty.getCategorical
+    elseif ~component.ComponentProperties.(propertyName)(1).validatefcn(src.Data{rownum,c}{1}) %validate function
         % new value is invalid
         sInvalid = uistyle('BackgroundColor','red');
-        addStyle(src,sInvalid,'row', r);
+        addStyle(src,sInvalid,'row', rownum);
         return
     end
     removeStyle(src);
-    vals = extractConfigStruct(src);
-    fs = fields(componentProperties);
-    attributeRows = [];
-    valueRows = [];
-    r = 1;
-    for f = 1:length(fs) %TODO make this just dependents
-        prop = componentProperties.(fs{f})(1);
-        if ~all(prop.dependencies(vals))
-            continue
-        end
-        attributeRows{r} = fs{f};
-        if ~isempty(prop.allowable)
-            valueRows{r} = categorical(cellstr(prop.allowable));
-        else
-            valueRows{r} = vals.(fs{f});
-        end
-        r = r + 1;
-    end
+    % if component.ComponentProperties.()
+    % newVal = 
+    table2struct(event.Source.Data)
+    vals = extractConfigVals(src, componentProperties);
+    % fs = fields(componentProperties);
+    
+
     tData =  table(transpose(valueRows), ...
             'VariableNames', {componentClass}, ...
             'RowNames', attributeRows);
@@ -82,17 +68,17 @@ function updateComponentConfigTable(src,event,obj)
 end
 
 %% extract config struct from uitable
-function s = extractConfigStruct(src)
-    s = struct();
-    for i = 1:length(src.RowName)
-    v = src.Data{i, 1}{1};
-    if iscell(v)
-        v = v{1};
-    elseif iscategorical(v)
-        v = string(v);
-    end
-    s.(src.RowName{i}) = v;
-    end
-end
+% function s = extractConfigVals(src, componentConfigStruct)
+%     s = struct();
+%     for i = 1:length(src.RowName)
+%     v = src.Data{i, 1}{1};
+%     if iscell(v)
+%         v = v{1};
+%     elseif iscategorical(v)
+%         v = string(v);
+%     end
+%     s.(src.RowName{i}) = v;
+%     end
+% end
 
 

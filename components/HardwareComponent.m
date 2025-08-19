@@ -1,4 +1,4 @@
-classdef (Abstract, HandleCompatible) HardwareComponent
+classdef (Abstract, HandleCompatible) HardwareComponent < handle
 %Abstract class representing all hardware components
 properties (Access = public)
     Name
@@ -47,25 +47,26 @@ function obj = CommonInitialisation(obj, params)
     obj.Required = params.Required;
     obj.SessionHandle = params.Handle;
     obj.Abstract = params.Abstract;
+    obj.ConfigStruct = obj.GetConfigStruct(params.Struct);
 end
 
-function componentStruct = GetDefaultConfigStruct(obj)
-    componentStruct = struct();
+function configStruct = GetDefaultConfigStruct(obj)
+    configStruct = struct();
     fs = fields(obj.ComponentProperties);
     for i = 1:length(fs)
         attr = getfield(obj.ComponentProperties, fs{i});
         d = {attr.default};
-        componentStruct = setfield(componentStruct, fs{i}, d{1});
+        configStruct = setfield(configStruct, fs{i}, d{1});
     end
 end
 
 function configStruct = GetConfigStruct(obj, varargin)
     %Fill out a config struct with existing or default values.
     default = obj.GetDefaultConfigStruct();
-    if isempty(varargin)
+    if isempty(varargin) || isempty(varargin{1})
         if isempty(obj.ConfigStruct)
             warning("No %s config provided. Using default setup", class(obj));
-            configStruct = default;
+            configStruct = default; 
         else
             configStruct = obj.ConfigStruct;
         end

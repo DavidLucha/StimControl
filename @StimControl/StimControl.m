@@ -169,20 +169,17 @@ end
 methods
     function obj = findAvailableHardware(obj)
         %% Find available hardware
-        obj.h.Available = dictionary();
-        keyIndex = 1;
-
+        obj.h.Available = {};
+        
         % DAQs
         daqs = daqlist();
         for i = 1:height(daqs)
             s = table2struct(daqs(i, :));
-            s.type = 'DAQ';
-            obj.h.Available(keyIndex) = struct( ...
-                'type', 'DAQ', ...
+            initStruct = struct( ...
                 'Vendor', s.VendorID, ...
                 'ID', s.DeviceID, ...
                 'Model', s.Model);
-            keyIndex = keyIndex + 1;
+            obj.h.Available{end+1} = DAQComponent('Initialise', false, 'Struct', initStruct);
         end
     
         % Cameras
@@ -192,10 +189,10 @@ methods
             devices = adaptorDevices.DeviceInfo;
             for j = 1:length(devices)
                 temp = devices(j);
-                obj.h.Available(keyIndex) = struct('type', 'CAMERA', ...
+                initStruct = struct( ...
                     'Adaptor', adaptorDevices.AdaptorName, ...
                     'ID', temp.DeviceName);
-                keyIndex = keyIndex + 1;
+                 obj.h.Available{end+1} = CameraComponent('Initialise', false, 'Struct', initStruct);
             end
         end
     end

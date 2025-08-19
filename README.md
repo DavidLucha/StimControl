@@ -37,8 +37,8 @@ To fully integrate a new HardwareComponent into StimControl, you will need to im
 - in callbackEditComponentConfig, under 'extract component', extract the component from the struct.
 
 ### Component Properties
-Component properties are defined per hardware component. A ComponentProperties obj has a single attribute - Data - which is a struct of named Component Properties. Each Component Property is a struct with 5 fields: 
-|Field          |Required   |Description|
+Component properties are defined per hardware component. A ComponentProperties obj has a single attribute - Data - which is a struct of named ComponentProperties. Each ComponentProperty has the following settable values 
+|Field          |Default    |Description|
 |-----          |-----      |-----|
 |default        |required   |Default value for the field|
 |allowable      |optional   |Allowable values for the field. Should be a cell array.|

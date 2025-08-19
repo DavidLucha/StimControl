@@ -1,29 +1,11 @@
 function callbackEditComponentConfig(obj)
-
 %% first, retrieve selected component from obj.
 rowIndex = obj.h.AvailableHardwareTable.Selection;
-selectedRow = obj.h.AvailableHardwareTable.Data(rowIndex,:);
-componentData = obj.h.Available(rowIndex);
+% selectedRow = obj.h.AvailableHardwareTable.Data(rowIndex,:);
+component = obj.h.Available{rowIndex};
 
-%% extract component from struct if necessary
-if strcmp(class(componentData), 'struct')
-    switch lower(componentData.type)
-        case 'daq'
-            component = DAQComponent('Initialise', false, 'Struct', componentData);
-        case 'camera'
-            component = CameraComponent('Initialise', false, 'Struct', componentData);
-        otherwise
-            return
-    end
-    componentData = rmfield(componentData, 'type');
-    component.ConfigStruct = component.GetConfigStruct(componentData);
-else
-    component = componentData;
-end
-
-%% Pass handles for later use
-obj.h.ComponentConfig.Component.Handle = component;
-% obj.h.ComponentConfig.Component.Properties = component.ComponentProperties;
+%% Pass handle for later use
+obj.h.ComponentConfig.SelectedComponentIndex = rowIndex;
 
 %% Enable confirmation and cancel buttons
 obj.h.ConfirmConfigBtn.Enable = true;
@@ -36,32 +18,27 @@ else
     obj.h.ComponentConfig.Label.Text = class(component);
 end
 
-attributeRows = [];
-valueRows = [];
+tData = rows2vars(struct2table(component.ConfigStruct, 'AsArray', true));
+rowNames = tData{:, 1};
+values = tData{:, 2};
 
-componentFields = fields(component.ComponentProperties);
-rowcount = length(fields(component.ComponentProperties));
-if ~component.Abstract
-    vals = component.GetConfigStruct;
-else
-    vals = component.GetDefaultConfigStruct;
-end
-
-for f = 1:length(componentFields)
-    prop = component.ComponentProperties.(componentFields{f});
-    if ~prop.dependencies(vals)
-        continue
-    end
-    attributeRows{end+1} = componentFields{f};
+for fnum = 1:length(rowNames)
+    prop = component.ComponentProperties.(rowNames{fnum});
     if ~isempty(prop.allowable)
-        valueRows{end+1} = categorical(prop.allowable, 'Protected', true);
-    else
-        valueRows{end+1} = vals.(componentFields{f});
+        cat = prop.getCategorical;
+        configVal = component.ConfigStruct.(rowNames{fnum});
+        if isstring(configVal) || ischar(configVal)
+            configCat = categorical(cellstr(configVal));
+        elseif isnumeric(configVal)
+            configCat = categorical(configVal);
+        end
+        idx = find(cat == configCat);
+        values{fnum} = cat(idx);
     end
 end
-tData =  table(transpose(valueRows), ...
-        'VariableNames', {class(component)}, ...
-        'RowNames', attributeRows);
-obj.h.ComponentConfig.Table.Data = tData;
 
+tData =  table(values, ...
+    'RowNames', rowNames);
+
+obj.h.ComponentConfig.Table.Data = tData;
 end

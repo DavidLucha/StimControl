@@ -93,15 +93,15 @@ if ~isempty(obj.hardwareParams)
 end
 
 available = obj.h.Available;
-for i = 1:length(obj.h.Available.keys)
-    device = obj.h.Available(i);
-    switch device.type
-        case 'DAQ'
-            deviceID = strcat(device.Vendor, '.', device.ID, '.', device.Model);
-        case 'CAMERA'
-            deviceID = strcat(device.Adaptor, '.', device.ID);
+for i = 1:length(obj.h.Available)
+    device = obj.h.Available{i};
+    switch class(device)
+        case 'DAQComponent'
+            deviceID = strcat(device.ConfigStruct.Vendor, '.', device.ConfigStruct.ID, '.', device.ConfigStruct.Model);
+        case 'CameraComponent'
+            deviceID = strcat(device.ConfigStruct.Adaptor, '.', device.ConfigStruct.ID);
     end
-    tData(end+1, :) = {device.type, deviceID, false, 'Not Initialised', false};
+    tData(end+1, :) = {class(device), deviceID, false, 'Not Initialised', false};
 end
 
 tData.Properties.VariableNames = columnNames;

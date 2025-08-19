@@ -9,16 +9,17 @@ properties (SetAccess=private, GetAccess=public)
     dynamic
     required
     note
+    cat
 end
 
 methods (Access=public)
     function obj = ComponentProperty(varargin)
         p = inputParser();
         addParameter(p, 'default', [], @(x) true);
-        addParameter(p,'allowable',  {}, @(x) iscell(x) || isnumeric(x));
+        addParameter(p,'allowable',  {}, @(x) obj.CategoricalCompatible(x));
         addParameter(p,'validatefcn', @(val)true, @(x) isa(x,'function_handle'));
         addParameter(p,'dependencies', @(propStruct) true, @(x) isa(x,'function_handle'));
-        addParameter(p,'dependents',  {}, @(x) obj.CategoricalCompatible(x));
+        addParameter(p,'dependents',  {}, @iscellstr);
         addParameter(p,'dynamic',  false, @islogical);
         addParameter(p,'required',  @(propStruct) true, @islogical);
         addParameter(p,'note',  "", @(x) isstring(x) || ischar(x));
@@ -38,11 +39,33 @@ methods (Access=public)
 end
 
 methods(Access=public)
-    function out = isvalid(obj, val)
+    function out = isValid(obj, val)
         if ~isempty(obj.allowable)
             out = ismember(val, obj.allowable);
         else
             out = obj.validatefcn(val);
+        end
+    end
+
+    function out = getCategorical(obj)
+        if isempty(obj.allowable)
+            return
+        elseif isempty(obj.cat)
+            if ~iscellstr(obj.allowable) && iscell(obj.allowable)
+                obj.cat = categorical(obj.allowable{1}, 'Protected', true);
+            else
+                obj.cat = categorical(obj.allowable, 'Protected', true);
+            end
+        end
+        out = obj.cat;
+    end
+
+    function out = dependenciesMet(obj, vals)
+        try
+            out = obj.dependencies(vals);
+        catch
+            disp(obj)
+            out = all(obj.dependencies(vals));
         end
     end
 end
