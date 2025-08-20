@@ -184,7 +184,7 @@ function obj = SetParams(obj, varargin)
     restarters = ["Binning", "TriggerMode", "ROIPosition"];
     vidObj = obj.SessionHandle;
     src = getselectedsource(vidObj);
-    for i = 1:length(restarters)
+    for i = 1:length(restarters) %todo switch to dynamic==false
         if contains(varargin, restarters(i))
             Stop(obj);
             break

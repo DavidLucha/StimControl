@@ -37,7 +37,6 @@ obj.h.CancelConfigBtn = uibutton(grid, 'Text', 'Cancel', ...
 end
 
 %% update table function
-% TODO DYNAMIC UPDATE IF ALLOWABLE
 function updateComponentConfigTable(src,event,obj)
     rownum  = event.DisplaySelection(1);
     component = obj.h.Available{obj.h.ComponentConfig.SelectedComponentIndex};
@@ -46,15 +45,13 @@ function updateComponentConfigTable(src,event,obj)
     if iscategorical(event.Source.Data{rownum, 1}{1}) 
         % TODO possible to add categories? 
         % if you want, change protected=true in ComponentProperty.getCategorical
-    elseif ~component.ComponentProperties.(propertyName)(1).validatefcn(src.Data{rownum,c}{1}) %validate function
+    elseif ~component.ComponentProperties.(propertyName).validatefcn(src.Data{rownum,c}{1}) %validate function
         % new value is invalid
         sInvalid = uistyle('BackgroundColor','red');
         addStyle(src,sInvalid,'row', rownum);
         return
     end
     removeStyle(src);
-    % if component.ComponentProperties.()
-    % newVal = 
     newVal = src.Data.values{rownum};
     if iscategorical(newVal)
         cat = categories(newVal);
@@ -69,6 +66,9 @@ function updateComponentConfigTable(src,event,obj)
         end
     end
     component.ConfigStruct.(propertyName) = newVal;
+    if component.ComponentProperties.(propertyName).dynamic
+        component.SetParams(propertyName, newVal);
+    end
     obj.h.ComponentConfig.ConfigStruct = vals;
 end
 

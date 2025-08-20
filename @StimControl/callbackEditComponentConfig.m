@@ -27,13 +27,19 @@ for fnum = 1:length(rowNames)
     if ~isempty(prop.allowable)
         cat = prop.getCategorical;
         configVal = component.ConfigStruct.(rowNames{fnum});
-        if isstring(configVal) || ischar(configVal)
+        if ischar(configVal)
             configCat = categorical(cellstr(configVal));
+            idx = find(cat == configCat);
+            values{fnum} = cat(idx);
+        elseif isstring(configVal)
+            configCat = categorical(cellstr(configVal));
+            idx = find(cat == configCat);
+            values(fnum) = {cat(idx)};
         elseif isnumeric(configVal)
             configCat = categorical(configVal);
+            idx = find(cat == configCat);
+            values(fnum) = {cat(idx)};
         end
-        idx = find(cat == configCat);
-        values{fnum} = cat(idx);
     end
 end
 

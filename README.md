@@ -37,18 +37,19 @@ To fully integrate a new HardwareComponent into StimControl, you will need to im
 - in callbackEditComponentConfig, under 'extract component', extract the component from the struct.
 
 ### Component Properties
-Component properties are defined per hardware component. A ComponentProperties obj has a single attribute - Data - which is a struct of named ComponentProperties. Each ComponentProperty has the following settable values 
-|Field          |Default    |Description|
-|-----          |-----      |-----|
-|default        |required   |Default value for the field|
-|allowable      |optional   |Allowable values for the field. Should be a cell array.|
-|validatefcn    |optional   |Validation function handle for inserted value. Takes value as arg. If allowable is set, will also check value's membership|
-|dependencies   |optional   |Validation function handle for requirements for field to be set. Takes full struct as arg.|
-|required       |required   |Function handle that returns hether a field needs to be set. Takes full struct as arg. Will only be evaluated if dependencies evaluates to true.|
-|dynamic        |required   |whether device needs to be restarted to apply a change to this property.|
-|note           |optional   |Basically comments.|
+Device component properties are statically defined per device type. A DeviceComponentProperties obj has a single attribute - Data - which is a struct of named ComponentProperties. Each ComponentProperty has the following settable values 
+|Field          |Default            |DataType               |Description|
+|-----          |-----              |-----                  |-----|
+|default        |[]                 |any                    |Default value for the property|
+|allowable      |{}                 |categorical-compatible |Allowable values for the property. Should be categorical-compatible ([see below](#categoricals))|
+|validatefcn    |@(val) true        |function handle        |Validation function handle for inserted value. Takes value as arg. Either this or allowable should be set.|
+|dependencies   |@(propStruct) true |function handle        |Validation function handle for requirements for property to be set. Takes full struct as arg.|
+|dependents     |{}                 |cellstr                |List of properties that are affected when the value for this property is changed
+|required       |@(propStruct) true |function handle        |Function handle that returns whether a property needs to be defined. Takes full struct as arg. Will only be evaluated if dependencies evaluates to true.|
+|dynamic        |false              |logical                |If true, property can be changed without restarting device.|
+|note           |""                 |string or char array   |Comments.|
 
-ALL ComponentProperties should define "ID" in their Data struct
+All DeviceComponentProperties should include a ComponentProperty named ID.
 
 ## To Do List
 ### General
@@ -83,3 +84,45 @@ ALL ComponentProperties should define "ID" in their Data struct
 ### DAQ
 - [ ] get session loading working
 - [ ] add parametrised analog outputs - ramp, noise, sine
+
+## Things I Had A Bad Time With
+Consider this like that one counter:
+![Dear programmer: When I wrote this code, only god and I knew how it worked. Now, only god knows it! Therefore, if you are trying to optimize this routine and it fails (most surely), please increase this counter as a warning for the next person: total_hours_wasted_here = 254](https://preview.redd.it/hwqj7yx9vm211.jpg?width=640&crop=smart&auto=webp&s=d8dbb52e8272c553603a8ca66f48ca85a8a40de9)
+
+### Categoricals
+I used categoricals because they're the easiest way I could find to dynamically code dropdowns for component config. If you ever end up wanting to use them elsewhere, first reconsider. Then, if you're ABSOLUTELY SUREhere are some things that helped me:
+
+if you want to extract the value from a categorical, you need to extract it from its categories() like this:
+```
+newVal = src.Data.values{rownum};
+    if iscategorical(newVal)
+        cat = categories(newVal);
+        try %TODO fix. this is stupid. I hate categoricals.
+            cat = str2double(cat);
+            idx = find(categorical(cat) == newVal);
+            newVal = cat(idx);
+        catch
+            cat = categories(newVal);
+            idx = find(categorical(cat) == newVal);
+            newVal = cat{idx};
+        end
+    end
+```
+
+if you want to set the displayed value of the categorical, do it like this:
+```
+cat = prop.getCategorical;
+configVal = component.ConfigStruct.(rowNames{fnum});
+if isstring(configVal) || ischar(configVal)
+    configCat = categorical(cellstr(configVal));
+    idx = find(cat == configCat);
+    values(fnum) = cat(idx);
+elseif isnumeric(configVal)
+    configCat = categorical(configVal);
+    idx = find(cat == configCat);
+    values{fnum} = cat(idx);
+end
+```
+
+Also remember with categoricals that they only accept certain kinds of input: a numeric array, logical array, string array, or cell array of character vectors.
+[Helpful link](https://au.mathworks.com/help/matlab/ref/categorical.html), I hope.

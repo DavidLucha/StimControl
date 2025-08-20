@@ -89,7 +89,7 @@ end
 % Change device parameters
 function SetParams(obj, varargin)
     for i = 1:length(varargin):2
-        set(obj.SessionHandle, varargin(i), varargin(i+1));
+        set(obj.SessionHandle, varargin{i}, varargin{i+1});
     end
 end
 
