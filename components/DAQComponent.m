@@ -23,26 +23,26 @@ function obj = DAQComponent(varargin)
     % extract device-specific parameters here
     obj = obj.CommonInitialisation(params);
     if params.Initialise
-        obj = obj.Configure('ChannelConfig', params.ChannelConfig, ...
-            'Struct', params.Struct);
+        obj = obj.Initialise('ChannelConfig', params.ChannelConfig, ...
+            'ConfigStruct', params.Struct);
     end
 end
 
-function obj = Configure(obj, varargin)
+function obj = Initialise(obj, varargin)
     % Initialise device. 
     %TODO STOP/START
     strValidate = @(x) ischar(x) || isstring(x);
     p = inputParser;
     addParameter(p, 'ChannelConfig', '', strValidate);
-    addParameter(p, 'Struct', []);
+    addParameter(p, 'ConfigStruct', []);
     parse(p, varargin{:});
     params = p.Results;
 
     %---device---
-    if isempty(obj.SessionHandle) || ~isvalid(obj.SessionHandle) || ~isempty(params.Struct)
+    if isempty(obj.SessionHandle) || ~isvalid(obj.SessionHandle) || ~isempty(params.ConfigStruct)
         % if the DAQ is uninitialised or the params have changed
-        daqStruct = obj.GetConfigStruct(params.Struct);
-        if isempty(params.Struct) && isempty(obj.ConfigStruct)
+        daqStruct = obj.GetConfigStruct(params.ConfigStruct);
+        if isempty(params.ConfigStruct) && isempty(obj.ConfigStruct)
             name = obj.FindDaqName(daqStruct.ID, '', '');
         else
             deviceID = daqStruct.ID;
@@ -83,6 +83,16 @@ end
 
 %Stop device
 function Stop(obj)
+    stop(obj.SessionHandle);
+end
+
+% Pause device
+function Pause(obj)
+    stop(obj.SessionHandle);
+end
+
+% Unpause device
+function Continue(obj)
     stop(obj.SessionHandle);
 end
 
@@ -142,16 +152,16 @@ function channelData = GetChanParams(obj)
 end
 
 function obj = LoadParams(obj, folderpath)
-    % Load in a saved set of parameters from a file. Largely deprecated
-    if contains(folderpath, "ChanParams")
-        obj = obj.CreateChannels(folderpath);
-    elseif contains(folderpath, "DaqParams")
-        obj = obj.Configure(folderpath);
-    else
-        % assume a folder with both params in it.
-        obj = obj.Configure([folderpath filesep "DaqParams.csv"]);
-        obj = obj.CreateChannels([folderpath filesep "DaqChanParams.csv"]);
-    end
+    error("LoadParams is deprecated. Use other methods.")
+    % if contains(folderpath, "ChanParams")
+    %     obj = obj.CreateChannels(folderpath);
+    % elseif contains(folderpath, "DaqParams")
+    %     obj = obj.Initialise(folderpath);
+    % else
+    %     % assume a folder with both params in it.
+    %     obj = obj.Initialise([folderpath filesep "DaqParams.csv"]);
+    %     obj = obj.CreateChannels([folderpath filesep "DaqChanParams.csv"]);
+    % end
 end
 
 function PrintInfo(obj)
@@ -170,15 +180,21 @@ function Clear(obj)
 end
 
 %% TODO STARTS HERE
-function VisualiseOutput(obj, varargin)
+function StartPreview(obj)
     % Dynamically visualise object output
-    p = inputParser;
-    p.addParameter("Plot", []);
-    p.parse(varargin{:});
-    target = p.Results.Plot;
+    if ~isempty(obj.PreviewPlot)
+        disp("oops");
+        return
+    else
+        return
+    end
     if isempty(obj.SessionHandle)
         return;
     end
+end
+
+function StopPreview(obj)
+    return
 end
 
 % Load a full experimental protocol
@@ -330,7 +346,7 @@ function obj = CreateChannels(obj, filename)
     if isempty(obj.SessionHandle) || ~isvalid(obj.SessionHandle)
         %create a default DAQ session to attach channels to
         obj.Clear();
-        obj = obj.Configure();
+        obj = obj.Initialise();
     end
     tab = readtable(filename);
     s = size(tab);

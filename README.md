@@ -113,14 +113,18 @@ if you want to set the displayed value of the categorical, do it like this:
 ```
 cat = prop.getCategorical;
 configVal = component.ConfigStruct.(rowNames{fnum});
-if isstring(configVal) || ischar(configVal)
+if ischar(configVal)
     configCat = categorical(cellstr(configVal));
     idx = find(cat == configCat);
-    values(fnum) = cat(idx);
+    values{fnum} = cat(idx);
+elseif isstring(configVal)
+    configCat = categorical(cellstr(configVal));
+    idx = find(cat == configCat);
+    values(fnum) = {cat(idx)};
 elseif isnumeric(configVal)
     configCat = categorical(configVal);
     idx = find(cat == configCat);
-    values{fnum} = cat(idx);
+    values(fnum) = {cat(idx)};
 end
 ```
 

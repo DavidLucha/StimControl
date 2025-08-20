@@ -7,6 +7,7 @@ properties (Access = public)
     Required
     Abstract
     ConfigStruct
+    PreviewPlot = []
 end
 
 properties(Abstract, Constant, Access = public)
@@ -22,7 +23,7 @@ methods(Access=public)
 % as well as device-specific arguments:
 % 'Required'    (logical, true)     whether to throw errors as errors or warnings
 % 'Handle'      (handle, [])        the handle to an existing session of that component type
-% 'Struct'      (struct, [])        struct containing initialisation params - see
+% 'ConfigStruct'(struct, [])        struct containing initialisation params - see
 %                                   ComponentProperties
 % 'SavePath'    (string, '')        the path to save outputs
 % 'Abstract'    (logical, false)    if false, does not attempt to initialise a
@@ -36,7 +37,7 @@ function p = GetBaseParser(obj)
     handleValidate = @(x) (contains(class(x), obj.HandleClass)) || isempty(x);
     addParameter(p, 'Required', true, @islogical);
     addParameter(p, 'Handle', [], handleValidate);
-    addParameter(p, 'Struct', []);
+    addParameter(p, 'ConfigStruct', []);
     addParameter(p, 'SavePath', '', strValidate);
     addParameter(p, 'Abstract', false, @islogical);
     addParameter(p, 'Initialise', true, @islogical);
@@ -47,7 +48,7 @@ function obj = CommonInitialisation(obj, params)
     obj.Required = params.Required;
     obj.SessionHandle = params.Handle;
     obj.Abstract = params.Abstract;
-    obj.ConfigStruct = obj.GetConfigStruct(params.Struct);
+    obj.ConfigStruct = obj.GetConfigStruct(params.ConfigStruct);
 end
 
 function configStruct = GetDefaultConfigStruct(obj)
@@ -72,21 +73,21 @@ function configStruct = GetConfigStruct(obj, varargin)
         end
     else
         configStruct = varargin{1};
-        % fill in required fields with defaults.
-        props = obj.ComponentProperties;
-        propFields = fields(props);
-        for i = 1:length(propFields)
-            f = propFields{i};
-            if ~isfield(configStruct, f) %TODO & field is needed?
-                if isfield(obj.ConfigStruct, f)
-                    % if the property is already defined by the object, use that value
-                    val = obj.ConfigStruct.(f);
-                else
-                    % else, use default value
-                    val = props.(f).default;
-                end
-                configStruct = setfield(configStruct, f, val);
+    end
+    % fill in required fields with defaults.
+    props = obj.ComponentProperties;
+    propFields = fields(props);
+    for i = 1:length(propFields)
+        f = propFields{i};
+        if ~isfield(configStruct, f) %TODO & field is needed?
+            if isfield(obj.ConfigStruct, f)
+                % if the property is already defined by the object, use that value
+                val = obj.ConfigStruct.(f);
+            else
+                % else, use default value
+                val = props.(f).default;
             end
+            configStruct = setfield(configStruct, f, val);
         end
     end
 end
@@ -100,17 +101,30 @@ function status = GetStatus(obj)
         status = obj.GetSessionStatus();
     end
 end
+
+function obj = UpdatePreviewPlot(obj, plot)
+    obj.StopPreview;
+    obj.PreviewPlot = plot;
+    obj.StartPreview;
+end
+
 end
 
 methods (Abstract, Access=public)
-% Initialise hardware session
-Configure(obj, varargin)
+% Initialise hardware session. Accepts one arg to varargin - 'ConfigStruct'
+Initialise(obj, varargin)
 
 % Start device
 Start(obj)
 
 % Stop device
 Stop(obj)
+
+% Pause device
+Pause(obj)
+
+% Unpause device
+Continue(obj)
 
 % Complete reset. Clear device
 Clear(obj)
@@ -125,9 +139,11 @@ objStruct = GetParams(obj)
 % Options: ok / ready / running / error / loading
 status = GetSessionStatus(obj)
 
-% Dynamic visualisation ofthe object output. Can target a specific
-% plot using the "Plot" param.
-VisualiseOutput(obj, varargin)
+% Dynamic visualisation of the object output
+StartPreview(obj)
+
+% Dynamic visualisation of the object output
+StopPreview(obj)
 
 % Print device information
 PrintInfo(obj)

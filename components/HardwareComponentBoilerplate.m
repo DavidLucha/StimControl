@@ -28,23 +28,22 @@ function obj = Component(varargin)
     % extract device-specific parameters here
     obj = obj.CommonInitialisation(params);
     if ~params.Abstract
-        obj = obj.Configure('Struct', params.Struct);
+        obj = obj.Initialise('Struct', params.Struct);
     end
 end
 
 % Configure device
-function Configure(obj, varargin)
+function Initialise(obj, varargin)
     %TODO STOP/START
-    strValidate = @(x) ischar(x) || isstring(x);
     p = inputParser;
-    addParameter(p, 'Struct', []);
+    addParameter(p, 'ConfigStruct', []);
     parse(p, varargin{:});
     params = p.Results;
 
     %---device---
-    if isempty(obj.SessionHandle) || ~isempty(params.Struct)
+    if isempty(obj.SessionHandle) || ~isempty(params.ConfigStruct)
         % if the component is uninitialised or the params have changed
-        configStruct = obj.GetConfigStruct(params.Struct);
+        configStruct = obj.GetConfigStruct(params.ConfigStruct);
 
         obj.SessionHandle = daq(name);
         obj.SessionHandle.Rate = rate;
@@ -69,6 +68,16 @@ end
 
 % Complete reset. Clear device
 function Clear(obj)
+
+end
+
+% Pause device
+function Pause(obj)
+
+end
+
+% Unpause device
+function Continue(obj)
 
 end
 
@@ -99,15 +108,28 @@ function status = GetStatus(obj)
 
 end
 
-% Dynamic visualisation ofthe object output. Can target a specific
-% plot using the "Plot" param.
-function VisualiseOutput(obj, varargin)
-    p = inputParser;
-    p.addParameter("Plot", []);
-    p.parse(varargin{:});
-    target = p.Results.Plot;
+
+function StartPreview(obj, varargin)
     if isempty(obj.SessionHandle)
         return;
+    end
+    if ~isempty(obj.PreviewPlot)
+        %target plot
+    else
+        %target generic and save as PreviewPlot
+        return
+    end
+end
+
+function StopPreview(obj, varargin)
+    if isempty(obj.SessionHandle)
+        return;
+    end
+    if isempty(obj.PreviewPlot)
+        % SOMETHING IS WRONG YOU SHOULDN'T BE HERE
+    else
+        % end preview
+        return
     end
 end
 

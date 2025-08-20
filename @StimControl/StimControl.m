@@ -179,7 +179,7 @@ methods
                 'Vendor', s.VendorID, ...
                 'ID', s.DeviceID, ...
                 'Model', s.Model);
-            obj.h.Available{end+1} = DAQComponent('Initialise', false, 'Struct', initStruct);
+            obj.h.Available{end+1} = DAQComponent('Initialise', false, 'ConfigStruct', initStruct);
         end
     
         % Cameras
@@ -192,7 +192,7 @@ methods
                 initStruct = struct( ...
                     'Adaptor', adaptorDevices.AdaptorName, ...
                     'ID', temp.DeviceName);
-                 obj.h.Available{end+1} = CameraComponent('Initialise', false, 'Struct', initStruct);
+                 obj.h.Available{end+1} = CameraComponent('Initialise', false, 'ConfigStruct', initStruct);
             end
         end
     end

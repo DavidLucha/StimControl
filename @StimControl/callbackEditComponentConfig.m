@@ -47,4 +47,7 @@ tData =  table(values, ...
     'RowNames', rowNames);
 
 obj.h.ComponentConfig.Table.Data = tData;
+
+%% Show preview if necessary
+
 end

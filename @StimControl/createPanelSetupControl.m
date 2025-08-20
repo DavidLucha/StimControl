@@ -82,11 +82,11 @@ obj.h.AvailableHardwareTable = uitable('Parent', grid, ...
         'Column', [1 length(grid.ColumnWidth)]), ...
     'ColumnSortable', true, ...
     'SelectionType', 'row', ...
-    'ColumnEditable', [false false true false true], ...
-    'DisplayDataChangedFcn', @(src, event) updateComponentTable(src, event, obj));
+    'ColumnEditable', [false false false true ], ...
+    'CellEditCallback', @(src, event) updateComponentTableCell(src, event, obj));
 
 %% Populate Component Table
-columnNames = {'Type', 'ID', 'Enabled', 'Status', 'Display'};
+columnNames = {'Type', 'ID', 'Status', 'Enable'};
 tData = table();
 if ~isempty(obj.hardwareParams)
     takeFromParams = true;
@@ -101,20 +101,21 @@ for i = 1:length(obj.h.Available)
         case 'CameraComponent'
             deviceID = strcat(device.ConfigStruct.Adaptor, '.', device.ConfigStruct.ID);
     end
-    tData(end+1, :) = {class(device), deviceID, false, 'Not Initialised', false};
+    tData(end+1, :) = {class(device), deviceID, 'Not Initialised', false};
 end
 
 tData.Properties.VariableNames = columnNames;
 obj.h.AvailableHardwareTable.Data = tData;
 end
 
-function updateComponentConfigTable(src, event, obj)
-rowIndex = obj.h.AvailableHardwareTable.Selection;
-selectedRow = obj.h.AvailableHardwareTable.Data(rowIndex,:);
-component = obj.h.Available(rowIndex);
-
-%% initialise if needed
-
-%% preview if needed
-
+function updateComponentTableCell(src, event, obj)
+    rowIndex = event.Indices(1);
+    component = obj.h.Available{rowIndex};
+    if event.NewData
+        component.Initialise();
+        component.StartPreview();
+    else
+        component.StopPreview();
+        % TODO de-initialise if needed?
+    end
 end

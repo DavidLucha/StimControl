@@ -19,25 +19,22 @@ function obj = CameraComponent(varargin)
     % extract device-specific parameters here
     obj = obj.CommonInitialisation(params);
     if params.Initialise
-        obj = obj.Configure('Struct', params.Struct);
+        obj = obj.Initialise('ConfigStruct', params.Struct);
     end
 end
 
 % Initialise device
-function obj = Configure(obj, varargin)
-    strValidate = @(x) ischar(x) || isstring(x);
+function obj = Initialise(obj, varargin)
     p = inputParser;
-    addParameter(p, 'Config', '', strValidate);
-    addParameter(p, 'Struct', []);
+    addParameter(p, 'ConfigStruct', []);
     parse(p, varargin{:});
     params = p.Results;
-
     obj.Status = "loading";
 
     %---device---
-    if isempty(obj.SessionHandle) || ~isempty(params.Struct)
+    if isempty(obj.SessionHandle) || ~isempty(params.ConfigStruct)
         % if the camera is uninitialised or the params have changed
-        camstr = obj.GetConfigStruct(params.Struct);
+        camstr = obj.GetConfigStruct(params.ConfigStruct);
 
         obj.ConfigStruct = camstr;
         imaqreset
@@ -53,10 +50,14 @@ function obj = Configure(obj, varargin)
             src.PCPixelclock_Hz = clockSpeed{idx}; %fast scanning mode
             src.E2ExposureTime = 1000/str2double(app.FrameRate.Value) * 1000; %set framerate
             if isfield(camstr, 'Binning')
-                bin = str2double(camstr.Binning);
+                if ~isnumeric(camstr.Binning)
+                    binVal = str2double(camstr.Binning);
+                else
+                    binVal = camstr.Binning;
+                end
                 try 
-                    src.B1BinningHorizontal = num2str(bin);
-                    src.B2BinningVertical = num2str(bin);
+                    src.B1BinningHorizontal = num2str(binVal);
+                    src.B2BinningVertical = num2str(binVal);
                 catch
                     src.B1BinningHorizontal = num2str(bin,'%02i');
                     src.B2BinningVertical = num2str(bin,'%02i');
@@ -66,8 +67,13 @@ function obj = Configure(obj, varargin)
             src.Gain = str2double(camstr.Gain);
             src.AutoTargetBrightness = 5.019608e-01;
             if isfield(camstr, 'Binning')
-                src.BinningHorizontal = str2double(camstr.Binning);
-                src.BinningVertical = str2double(camstr.Binning);
+                if ~isnumeric(camstr.Binning)
+                    binVal = str2double(camstr.Binning);
+                else
+                    binVal = camstr.Binning;
+                end
+                src.BinningHorizontal = binVal;
+                src.BinningVertical = binVal;
             end
         else
             %TODO fill out GENERIC CAMERAS
@@ -134,6 +140,16 @@ function Stop(obj)
     end
 end
 
+% Pause device
+function Pause(obj)
+    return
+end
+
+% Unpause device
+function Continue(obj)
+    return
+end
+
 % Complete reset. Clear device.
 function Clear(obj)
     obj.Stop();
@@ -155,27 +171,31 @@ function status = GetSessionStatus(obj)
     end
 end
 
-function VisualiseOutput(obj, varargin)
-    p = inputParser;
-    p.addParameter("Plot", []);
-    p.parse(varargin{:});
-    target = p.Results.Plot;
+function StartPreview(obj)
+    target = obj.PreviewPlot;
+
     if isempty(obj.SessionHandle)
         return;
     end
 
-    vidRes = get(app.vidObj,'VideoResolution');
-    nbands = get(app.vidObj,'NumberOfBands');
+    vidRes = get(obj.SessionHandle,'VideoResolution');
+    nbands = get(obj.SessionHandle,'NumberOfBands');
 
     if ~isempty(target)
         imshow(zeros(vidRes(2),vidRes(1),nbands),[],'parent',target);
-        preview(obj.SessionHandle, target);
+        preview(obj.SessionHandle, target.Children);
         axis(target, "tight");
     else
-        imshow(zeros(vidRes(2),vidRes(1),nbands),[]);
         preview(obj.SessionHandle);
         axis("tight");
     end
+    maxRange = floor(256*0.7); %limit intensity to 70% of dynamic range to avoid ceiling effects
+    cMap = gray(maxRange); cMap(end+1:256,:) = repmat([1 0 0 ],256-maxRange,1);
+    colormap(target,cMap);
+end
+
+function StopPreview(obj)
+
 end
 
 % Change device parameters
@@ -184,8 +204,10 @@ function obj = SetParams(obj, varargin)
     restarters = ["Binning", "TriggerMode", "ROIPosition"];
     vidObj = obj.SessionHandle;
     src = getselectedsource(vidObj);
-    for i = 1:length(restarters) %todo switch to dynamic==false
-        if contains(varargin, restarters(i))
+    for i = 1:length(varargin):2
+        param = varargin{i};
+        if ~obj.ComponentProperties.(param).dynamic
+            % if any given params require obj restart, restart obj.
             Stop(obj);
             break
         end
@@ -245,7 +267,7 @@ function obj = SetParams(obj, varargin)
 
         if contains(varargin, "Binning")
             imaqreset;
-            obj = obj.Configure("Struct", obj.ConfigStruct);
+            obj = obj.Initialise();
         end
     end
     obj.Status = "ok";
