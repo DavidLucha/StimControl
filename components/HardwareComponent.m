@@ -1,5 +1,9 @@
 classdef (Abstract, HandleCompatible) HardwareComponent < handle
 %Abstract class representing all hardware components
+properties(Abstract, Constant, Access = public)
+    ComponentProperties
+end
+
 properties (Access = public)
     Name
     SessionHandle
@@ -8,10 +12,7 @@ properties (Access = public)
     Abstract
     ConfigStruct
     PreviewPlot = []
-end
-
-properties(Abstract, Constant, Access = public)
-    ComponentProperties
+    Previewing = false
 end
 
 properties (Abstract, Access = protected)
@@ -43,7 +44,7 @@ function p = GetBaseParser(obj)
     addParameter(p, 'Initialise', true, @islogical);
 end
 
-function obj = CommonInitialisation(obj, params)
+function obj = Initialise(obj, params)
     obj.SavePath = params.SavePath;
     obj.Required = params.Required;
     obj.SessionHandle = params.Handle;
@@ -93,26 +94,64 @@ function configStruct = GetConfigStruct(obj, varargin)
 end
 
 function status = GetStatus(obj)
+% Gets current device status
+% Options: abstract / empty / ready / running / error /  / loading
+    sessionStatus = obj.GetSessionStatus();
     if obj.Abstract
-        status = "Abstract";
+        status = 'abstract';
     elseif isempty(obj.SessionHandle)
-        status = "Not Initialised";
+        status = 'empty';
+    elseif strcmpi(obj.Status, 'loading')
+        status = 'loading';
+    elseif(strcmpi(obj.Status, 'error'))
+        status = 'error';
+    elseif ~isempty(sessionStatus)
+        status = sessionStatus;
     else
-        status = obj.GetSessionStatus();
+        status = 'unknown';
     end
 end
 
-function obj = UpdatePreviewPlot(obj, plot)
-    obj.StopPreview;
-    obj.PreviewPlot = plot;
-    obj.StartPreview;
+% Updates the preview to move its target plot.
+function UpdatePreview(obj, varargin)
+    p = inputParser;
+    addOptional(p, 'newPlot', []);
+    parse(p, varargin{:});
+    newPlot = p.Results.newPlot;
+    restart = obj.Previewing;
+
+    obj.StopPreview();
+    if ~isempty(newPlot)
+        obj.PreviewPlot = newPlot;
+    end
+    if restart
+        obj.StartPreview();
+    end
+end
+
+function obj = SetParam(obj, param, val)
+    if ~isfield(obj.ComponentProperties.Data, param)
+        error("Invalid field: %s", param);
+    elseif ~obj.ComponentProperties.Data.(param).isValid(val)
+        error("Invalid value for parameter %s", param);
+    elseif ~obj.ComponentProperties.Data.(param).dynamic
+        warning("Changing param %s requires device restart. Restarting device...", param);
+    else
+        paramStruct = struct(param, val);
+        obj.SetParams(paramStruct);
+    end
+end
+
+% Save any additional device parameters to given savepath
+function SaveAuxiliaries(obj, filepath)
+    return;
 end
 
 end
 
 methods (Abstract, Access=public)
 % Initialise hardware session. Accepts one arg to varargin - 'ConfigStruct'
-Initialise(obj, varargin)
+InitialiseSession(obj, varargin)
 
 % Start device
 Start(obj)
@@ -135,10 +174,6 @@ SetParams(obj, varargin)
 % get current device parameters for saving
 objStruct = GetParams(obj)
 
-% gets current device status
-% Options: ok / ready / running / error / loading
-status = GetSessionStatus(obj)
-
 % Dynamic visualisation of the object output
 StartPreview(obj)
 
@@ -150,5 +185,13 @@ PrintInfo(obj)
 
 % Preload an experimental protocol
 LoadProtocol(obj, varargin)
+end
+
+methods(Abstract, Access=protected)
+
+% gets current device status
+% Options: ready / running / error
+status = GetSessionStatus(obj)
+
 end
 end

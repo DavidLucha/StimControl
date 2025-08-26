@@ -1,14 +1,14 @@
 classdef StimControl < handle
 
 properties (SetAccess = private)
-    active = struct( ...
-        'DAQ',      [], ...
-        'camera',   [], ...
-        'serial',   []);
-    available = struct( ...
-        'DAQ',      [], ...
-        'camera',   [], ...
-        'serial',   []);
+    % active = struct( ...
+    %     'DAQ',      [], ...
+    %     'camera',   [], ...
+    %     'serial',   []);
+    % available = struct( ...
+    %     'DAQ',      [], ...
+    %     'camera',   [], ...
+    %     'serial',   []);
 end
 
 properties (Access = protected)
@@ -41,6 +41,7 @@ methods
     function obj = StimControl(varargin)
         % close all
         daqreset
+        imaqreset
         addpath(pwd)
         addpath(genpath(fullfile(pwd,'components')))
         clc
@@ -85,35 +86,37 @@ methods (Access = private)
     % figure creation
     createFigure(obj)
     createPanelSetupControl(obj, hPanel, ~)
-    createPanelPreview(obj, hPanel, ~)
+    createPanelSetupPreview(obj, hPanel, ~)
     createPanelComponentConfig(obj, hPanel, ~, component)
     createPanelSessionControl(obj, hPanel, ~)
+    createPanelSessionPreview(obj, hPanel, ~)
     createPanelSessionInfo(obj, hPanel, ~)
     createPanelSessionHardware(obj, hPanel, ~)
 
     % app control callbacks
-    callbackChangeTab(obj)
+    callbackChangeTab(obj, src, event)
     
-    % file control callbacks
-    callbackLoadParams(obj)
-    callbackCreateParams(obj)
-    callbackLoadProtocol(obj)
-    callbackCreateProtocol(obj)
-    callbackSelectSavePath(obj)
-    callbackLoadSession(obj)
-    callbackSaveSession(obj)
-
     % experiment control callbacks
-    callbackStartExperiment(obj)
-    callbackStartSingleStim(obj)
-    callbackNewTrial(obj);
-    callbackNewExperiment(obj);
-    callbackNewAnimal(obj);
+    callbackSessionStart(obj)
+    callbackSessionStartSingleStim(obj)
+    callbackSessionPause(obj)
+    callbackSessionResume(obj)
+    callbackSessionStop(obj)
+    callbackNewTrial(obj)
+    callbackNewExperiment(obj)
+    callbackNewAnimal(obj)
+
+    % file control callbacks
+    callbackLoadComponentParams(obj)
+    callbackSaveComponentParams(obj)
+    callbackLoadSessionProtocol(obj)
+    callbackSaveSessionProtocol(obj)
+    callbackSelectSavePath(obj)
+    callbackLoadAppSession(obj)
+    callbackSaveAppSession(obj)
 
     % hardware control callbacks
     callbackEditComponentConfig(obj)
-    callbackConfirmComponentConfig(obj)
-    callbackCancelComponentConfig(obj)
     callbackViewHardwareOutput(obj)
 
     % misc
@@ -170,6 +173,7 @@ methods
     function obj = findAvailableHardware(obj)
         %% Find available hardware
         obj.h.Available = {};
+        obj.h.Active = {};
         
         % DAQs
         daqs = daqlist();
@@ -180,6 +184,7 @@ methods
                 'ID', s.DeviceID, ...
                 'Model', s.Model);
             obj.h.Available{end+1} = DAQComponent('Initialise', false, 'ConfigStruct', initStruct);
+            obj.h.Active{end+1} = false;
         end
     
         % Cameras
@@ -193,6 +198,7 @@ methods
                     'Adaptor', adaptorDevices.AdaptorName, ...
                     'ID', temp.DeviceName);
                  obj.h.Available{end+1} = CameraComponent('Initialise', false, 'ConfigStruct', initStruct);
+                 obj.h.Active{end+1} = false;
             end
         end
     end

@@ -1,5 +1,7 @@
 classdef (HandleCompatible) DAQComponent < HardwareComponent
 % Generic wrapper class for DAQ objects
+% https://au.mathworks.com/help/daq/daq.interfaces.dataacquisition.html
+% https://au.mathworks.com/help/daq/daq.interfaces.dataacquisition.write.html
 
 properties (Constant, Access = public)
     ComponentProperties = DAQComponentProperties.Data;
@@ -21,14 +23,14 @@ function obj = DAQComponent(varargin)
     parse(p, varargin{:});
     params = p.Results;
     % extract device-specific parameters here
-    obj = obj.CommonInitialisation(params);
-    if params.Initialise
-        obj = obj.Initialise('ChannelConfig', params.ChannelConfig, ...
+    obj = obj.Initialise(params);
+    if params.Initialise && ~params.Abstract
+        obj = obj.InitialiseSession('ChannelConfig', params.ChannelConfig, ...
             'ConfigStruct', params.Struct);
     end
 end
 
-function obj = Initialise(obj, varargin)
+function obj = InitialiseSession(obj, varargin)
     % Initialise device. 
     %TODO STOP/START
     strValidate = @(x) ischar(x) || isstring(x);
@@ -67,12 +69,6 @@ function obj = Initialise(obj, varargin)
     if ~isempty(obj.SessionHandle.Channels)
         obj.PrintInfo();
     end
-end
-
-function status = GetSessionStatus(obj)
-    % Query device status. TODO
-    % options: ready / acquiring / writing / error / stopped / empty / loading
-    status = obj.SessionHandle.Status;
 end
 
 % Start device
@@ -122,6 +118,11 @@ function daqStruct = GetParams(obj)
     daqStruct.Model = d.Model;
     daqStruct.ID = d.ID;
     daqStruct.Rate = obj.SessionHandle.Rate;
+end
+
+function SaveAuxiliaries(obj, filepath)
+    channelData = obj.GetChanParams;
+    writetable(channelData, filepath);
 end
 
 function channelData = GetChanParams(obj)
@@ -307,7 +308,16 @@ end
 end
 
 %% Private Methods
-methods (Access = public)
+methods (Access = protected)
+
+% gets current device status. TODO
+% Options: ready / running / error
+function status = GetSessionStatus(obj)
+    % Query device status. TODO
+    % options: ready / acquiring / writing / error / stopped / empty / loading
+    status = obj.SessionHandle.Status;
+end
+
 function name = FindDaqName(obj, deviceID, vendorID, model)
     % Find available daq names
     % https://au.mathworks.com/help/daq/daq.interfaces.dataacquisition.html
@@ -346,7 +356,7 @@ function obj = CreateChannels(obj, filename)
     if isempty(obj.SessionHandle) || ~isvalid(obj.SessionHandle)
         %create a default DAQ session to attach channels to
         obj.Clear();
-        obj = obj.Initialise();
+        obj = obj.InitialiseSession();
     end
     tab = readtable(filename);
     s = size(tab);

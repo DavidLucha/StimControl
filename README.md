@@ -6,8 +6,8 @@ Initially a fork from [WidefieldImager](https://github.com/churchlandlab/Widefie
 ## PROTOCOL FILES
 In development. See ProtocolFiles for current setup.
 
-## PARAMETER FILES
-Parameters are read from .csv files. These parameters can be either broad (simply select which types of input/output you would like) or granular (configure channels individually). Currently only granular  config files are supported.
+## PARAMETER FILES 
+Parameters are read from .json files. See ComponentProperties for a full list of the properties currently supported.
 
 ### DAQs
 #### General Params
@@ -30,6 +30,56 @@ DAQ Channel Param files take the following fields and possible values. Informati
 ## General Notes
 I'm not a native MATLAB developer, so I've found it helpful to put comments in functions of the documentation that I found useful when building that function. 
 
+## The StimControl h struct
+% GUI objects
+    baseGrid
+    tabs
+    Setup
+        Control.panel
+        Preview.panel
+        ComponentConfig.panel
+        Logo
+    Session
+        Tab
+        Grid
+        Control.panel
+        Info.panel
+        Hardware.panel
+        Preview.panel
+        Logo
+    Menu
+        File
+            Save
+                ComponentConfig
+                Protocol
+                StimControlSession
+            Load
+                ComponentConfig
+                StimControlSession
+    ConfirmComponentConfigBtn
+    CancelComponengConfigBtn
+    ComponentConfig
+        Label
+        Table
+
+% Component handles
+    Available 
+    Active 
+    ComponentConfig
+        SelectedComponentIndex
+        ConfigStruct
+        Component
+            Handle
+            Properties
+        ValsToUpdate
+
+% File handling
+    path
+        setup.base
+        session.base
+        nameExtension
+
+
 ## Adding New Hardware
 New hardware components should implement the HardwareComponent abstract class (which outlines required functions and properties), and have their defaults written in a struct of named Component Properties. 
 To fully integrate a new HardwareComponent into StimControl, you will need to implement the following functionality:
@@ -50,6 +100,9 @@ Device component properties are statically defined per device type. A DeviceComp
 |note           |""                 |string or char array   |Comments.|
 
 All DeviceComponentProperties should include a ComponentProperty named ID.
+
+#### Hints for Non-Matlab Devs
+When working with a ComponentProperty that takes a vector as its value (e.g. camera ROI - see CameraComponent and CameraComponentProperties for examples of this), you should format it as a string, then just use str2num and num2str to convert when necessary to interface with the hardware itself. The StimControl software uses some of Matlab's built-in table/struct/transposition tools that don't play well with non-scalar numeric values.
 
 ## To Do List
 ### General
@@ -92,7 +145,7 @@ Consider this like that one counter:
 ### Categoricals
 I used categoricals because they're the easiest way I could find to dynamically code dropdowns for component config. If you ever end up wanting to use them elsewhere, first reconsider. Then, if you're ABSOLUTELY SUREhere are some things that helped me:
 
-if you want to extract the value from a categorical, you need to extract it from its categories() like this:
+if you want to extract the value from a categorical, I extracted it from its categories() like this:
 ```
 newVal = src.Data.values{rownum};
     if iscategorical(newVal)
@@ -109,7 +162,7 @@ newVal = src.Data.values{rownum};
     end
 ```
 
-if you want to set the displayed value of the categorical, do it like this:
+if you want to set the displayed value of the categorical, I did it like this:
 ```
 cat = prop.getCategorical;
 configVal = component.ConfigStruct.(rowNames{fnum});
@@ -128,5 +181,14 @@ elseif isnumeric(configVal)
 end
 ```
 
-Also remember with categoricals that they only accept certain kinds of input: a numeric array, logical array, string array, or cell array of character vectors.
-[Helpful link](https://au.mathworks.com/help/matlab/ref/categorical.html), I hope.
+Also remember with categoricals that they only accept certain kinds of input: a numeric array, logical array, string array, or cell array of character vectors. [Helpful link](https://au.mathworks.com/help/matlab/ref/categorical.html), I hope.
+
+
+### Calling anonymous functions with additional arguments
+```
+function createPanelThermode(obj,hPanel,~,idxThermode,nThermodes)
+```
+```
+obj.h.(thermodeID).panel.params = uipanel(obj.h.fig,...
+    'CreateFcn',    {@obj.createPanelThermode,ii,length(obj.s)});
+```

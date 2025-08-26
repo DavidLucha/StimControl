@@ -1,5 +1,7 @@
 classdef (HandleCompatible) CameraComponent < HardwareComponent
 % Generic wrapper class for camera objects
+% https://au.mathworks.com/help/imaq/videoinput.html
+% https://au.mathworks.com/help/parallel-computing/quick-start-parallel-computing-in-matlab.html
 properties (Constant, Access = public)
     ComponentProperties = CameraComponentProperties.Data
 end
@@ -13,18 +15,16 @@ end
 methods (Access = public)
 function obj = CameraComponent(varargin)  
     p = obj.GetBaseParser();
-    % add device-specific parameters here
     parse(p, varargin{:});
     params = p.Results;
-    % extract device-specific parameters here
-    obj = obj.CommonInitialisation(params);
-    if params.Initialise
-        obj = obj.Initialise('ConfigStruct', params.Struct);
+    obj = obj.Initialise(params);
+    if params.Initialise && ~params.Abstract
+        obj = obj.InitialiseSession('ConfigStruct', params.Struct);
     end
 end
 
 % Initialise device
-function obj = Initialise(obj, varargin)
+function obj = InitialiseSession(obj, varargin)
     p = inputParser;
     addParameter(p, 'ConfigStruct', []);
     parse(p, varargin{:});
@@ -35,25 +35,25 @@ function obj = Initialise(obj, varargin)
     if isempty(obj.SessionHandle) || ~isempty(params.ConfigStruct)
         % if the camera is uninitialised or the params have changed
         camstr = obj.GetConfigStruct(params.ConfigStruct);
-
         obj.ConfigStruct = camstr;
+
         imaqreset
-        if ~contains(imaqhwinfo().InstalledAdaptors, camstr.Adaptor)
+        if ~contains(imaqhwinfo().InstalledAdaptors, obj.ConfigStruct.Adaptor)
             error("Camera adaptor %s not installed. Installed adaptors: %s", ...
-                camstr.Adaptor, imaqhwinfo.InstalledAdaptors{:});
+                obj.ConfigStruct.Adaptor, imaqhwinfo.InstalledAdaptors{:});
         end
-        vidObj = videoinput(camstr.Adaptor);
+        vidObj = videoinput(obj.ConfigStruct.Adaptor);
         src = getselectedsource(vidObj);
-        if contains(camstr.Adaptor, 'pcocameraadaptor')
+        if contains(obj.ConfigStruct.Adaptor, 'pcocameraadaptor')
             clockSpeed = set(src,'PCPixelclock_Hz');
             [~,idx] = max(str2num(cell2mat(clockSpeed))); %get fastest clockspeed
             src.PCPixelclock_Hz = clockSpeed{idx}; %fast scanning mode
             src.E2ExposureTime = 1000/str2double(app.FrameRate.Value) * 1000; %set framerate
-            if isfield(camstr, 'Binning')
-                if ~isnumeric(camstr.Binning)
-                    binVal = str2double(camstr.Binning);
+            if isfield(obj.ConfigStruct, 'Binning')
+                if ~isnumeric(obj.ConfigStruct.Binning)
+                    binVal = str2double(obj.ConfigStruct.Binning);
                 else
-                    binVal = camstr.Binning;
+                    binVal = obj.ConfigStruct.Binning;
                 end
                 try 
                     src.B1BinningHorizontal = num2str(binVal);
@@ -63,14 +63,14 @@ function obj = Initialise(obj, varargin)
                     src.B2BinningVertical = num2str(bin,'%02i');
                 end
             end
-        elseif contains(camstr.Adaptor, 'gentl')
-            src.Gain = str2double(camstr.Gain);
+        elseif contains(obj.ConfigStruct.Adaptor, 'gentl')
+            src.Gain = str2double(obj.ConfigStruct.Gain);
             src.AutoTargetBrightness = 5.019608e-01;
-            if isfield(camstr, 'Binning')
-                if ~isnumeric(camstr.Binning)
-                    binVal = str2double(camstr.Binning);
+            if isfield(obj.ConfigStruct, 'Binning')
+                if ~isnumeric(obj.ConfigStruct.Binning)
+                    binVal = str2double(obj.ConfigStruct.Binning);
                 else
-                    binVal = camstr.Binning;
+                    binVal = obj.ConfigStruct.Binning;
                 end
                 src.BinningHorizontal = binVal;
                 src.BinningVertical = binVal;
@@ -78,63 +78,42 @@ function obj = Initialise(obj, varargin)
         else
             %TODO fill out GENERIC CAMERAS
         end
-        if isempty(camstr.ROIPosition)
+        if isempty(obj.ConfigStruct.ROIPosition)
             vidRes = get(vidObj,'VideoResolution');
-            camstr.ROIPosition = [0 0 vidRes];
+            obj.ConfigStruct.ROIPosition = num2str([0 0 vidRes]);
         end
-        set(vidObj,'TriggerFrameDelay',camstr.TriggerFrameDelay);
-        set(vidObj,'FrameGrabInterval',camstr.FrameGrabInterval);
-        set(vidObj,'TriggerRepeat',camstr.TriggerRepeat);
-        set(vidObj,'ROIposition',camstr.ROIPosition);
-        set(vidObj,'FramesPerTrigger',str2double(camstr.FramesPerTrigger));
-        vidObj.FramesAcquiredFcnCount = camstr.FrameGrabInterval;
+        set(vidObj,'TriggerFrameDelay',obj.ConfigStruct.TriggerFrameDelay);
+        set(vidObj,'FrameGrabInterval',obj.ConfigStruct.FrameGrabInterval);
+        set(vidObj,'TriggerRepeat',obj.ConfigStruct.TriggerRepeat);
+        set(vidObj,'ROIposition',str2num(obj.ConfigStruct.ROIPosition));
+        set(vidObj,'FramesPerTrigger',str2double(obj.ConfigStruct.FramesPerTrigger));
+        vidObj.FramesAcquiredFcnCount = obj.ConfigStruct.FrameGrabInterval;
         vidObj.FramesAcquiredFcn = @obj.ReceiveFrame;
-        switch camstr.TriggerMode
-            %TODO FURTHER INTO THIS AND FIND THE DOCUMENTATION
-            case "hardware"
-                src.LineSelector = camstr.TriggerLine;
-                src.LineMode = "Input";
-                src.TriggerSelector = camstr.TriggerSelector;
-                src.TriggerMode = "On";
-                src.TriggerSource = camstr.TriggerLine;
-                src.TriggerActivation = camstr.TriggerActivation;
-            case "manual" %TODO TEST THESE
-                src.TriggerSource = "Software";
-                src.TriggerSelector = camstr.TriggerSelector;
-                src.TriggerActivation = "none";
-            case "immediate" %TODO TEST THESE
-                src.LineSelector = camstr.OutputLine;
-                src.LineMode = "Output";
-                src.TriggerActivation = "none";
-        end
-        triggerconfig(vidObj,camstr.TriggerMode);
         obj.SessionHandle = vidObj;
+        obj.UpdateTriggerMode();
         obj.Status = "ok";
-    end
-    
-    % ---display---
-    if ~isempty(obj.SessionHandle)
-        obj.PrintInfo();
     end
 end
 
 % Start device
 function Start(obj)
-    %TODO if in protocol vs out.
+    if isempty(obj.SessionHandle)
+        return
+    end
     if ~isrunning(obj.SessionHandle)
         start(obj.SessionHandle);
     end
     obj.FrameCount = 1;
+    if ~isrunning(obj.SessionHandle)
+        obj.Status = 'error';
+    else
+        obj.Status = 'ok';
+    end
 end
 
 % Stop device
 function Stop(obj)
-    try %TODO CHECK WHICH OF THESE WORKS?
-        stoppreview(obj.SessionHandle);
-    end
-    try
-        closepreview(obj.SessionHandle);
-    end
+    obj.StopPreview();
     if ~isempty(obj.SessionHandle)
         stop(obj.SessionHandle);
     end
@@ -142,12 +121,14 @@ end
 
 % Pause device
 function Pause(obj)
-    return
+    if ~isempty(obj.SessionHandle)
+        stop(obj.SessionHandle);
+    end
 end
 
 % Unpause device
 function Continue(obj)
-    return
+    obj.Start();
 end
 
 % Complete reset. Clear device.
@@ -156,69 +137,76 @@ function Clear(obj)
     imaqreset;
 end
 
-% Gets current device status
-% Options: ok / ready / running / error / empty / loading
-function status = GetSessionStatus(obj)
-    if obj.Status == "error" || obj.Status == "loading"
-        status = obj.Status;
-    elseif isrunning(obj.SessionHandle)
-        status = "ready";
-        if toc(obj.LastAcquisition) > seconds(1)
-            status = "running";
-        end
-    else
-        status = "ok";
-    end
-end
-
+% Start device preview
 function StartPreview(obj)
-    target = obj.PreviewPlot;
-
     if isempty(obj.SessionHandle)
-        return;
+        error("Preview cannot be started if device is uninitialised.");
     end
-
     vidRes = get(obj.SessionHandle,'VideoResolution');
     nbands = get(obj.SessionHandle,'NumberOfBands');
-
-    if ~isempty(target)
-        imshow(zeros(vidRes(2),vidRes(1),nbands),[],'parent',target);
-        preview(obj.SessionHandle, target.Children);
-        axis(target, "tight");
+    if ~isempty(obj.PreviewPlot)
+        imshow(zeros(vidRes(2),vidRes(1),nbands),[],'parent',obj.PreviewPlot);
     else
-        preview(obj.SessionHandle);
-        axis("tight");
+        obj.PreviewPlot = imshow(zeros(vidRes(2),vidRes(1),nbands),[],'parent',obj.PreviewPlot);
     end
+    preview(obj.SessionHandle, obj.PreviewPlot.Children);
+    axis(obj.PreviewPlot, "tight");
     maxRange = floor(256*0.7); %limit intensity to 70% of dynamic range to avoid ceiling effects
     cMap = gray(maxRange); cMap(end+1:256,:) = repmat([1 0 0 ],256-maxRange,1);
-    colormap(target,cMap);
+    colormap(obj.PreviewPlot,cMap);
+
+    if strcmpi(obj.ConfigStruct.TriggerMode, 'hardware')
+        x = mean([0, vidRes(2)]);
+        y = mean([0, vidRes(1)]);
+        text(x,y, 'LIVE PREVIEW NOT AVAILABLE IN HARDWARE TRIGGER MODE', ...
+            'Parent', obj.PreviewPlot, 'FontSize', 16, 'FontWeight','bold', ...
+            'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle', ...
+            'Color', 'red');
+    end
+
+    obj.Previewing = true;
 end
 
+% Stop device preview
 function StopPreview(obj)
-
+    if isempty(obj.PreviewPlot) || isempty(obj.SessionHandle)
+        return
+    end
+    if length(obj.PreviewPlot.Children) > 1
+        % delete text object, if any
+        delete(obj.PreviewPlot.Children(1));
+    end
+    stoppreview(obj.SessionHandle);
+    obj.Previewing = false;
 end
 
-% Change device parameters
-function obj = SetParams(obj, varargin)
+% Change multiple device parameters at once.
+function obj = SetParams(obj, paramsStruct)
     obj.Status = "loading";
-    restarters = ["Binning", "TriggerMode", "ROIPosition"];
     vidObj = obj.SessionHandle;
     src = getselectedsource(vidObj);
-    for i = 1:length(varargin):2
-        param = varargin{i};
+    paramFields = fields(paramsStruct);
+    updateTrigger = false;
+    updateBinning = false;
+    % check if device needs to be restarted
+    for i = 1:length(paramFields)
+        param = paramFields{i};
         if ~obj.ComponentProperties.(param).dynamic
-            % if any given params require obj restart, restart obj.
-            Stop(obj);
-            break
+            previewPaused = true;
+            obj.Stop();
         end
     end
-    for i = 1:length(varargin):2
-        param = varargin{i};
-        val = varargin{i+1};
-        if ~contains(getfields(obj.ConfigStruct), param)
-            error("Could not set field %s. Valid fields are: %s", param, getfields(obj.ConfigStruct));
-        else
-            obj.ConfigStruct = setfield(obj.ConfigStruct, param, val);
+    for i = 1:length(paramFields)
+        param = paramFields{i};
+        val = paramsStruct.(param);
+        if any(contains(fields(obj.ConfigStruct), param)) 
+            if obj.ComponentProperties.(param).isValid(val) 
+                obj.ConfigStruct = setfield(obj.ConfigStruct, param, val);
+            else
+                error("Invalid value provided for field %s: %s", param, val)
+            end
+        elseif ~strcmpi(param, 'SavePath')
+            error("Could not set field %s. Valid fields are: %s, SavePath", param, getfields(obj.ConfigStruct));
         end
         switch param
             case "SavePath"
@@ -231,44 +219,48 @@ function obj = SetParams(obj, varargin)
                 src.Gain = val;
             case "ExposureTime"
                 src.ExposureTime = val;
-            case "OutputLine"
-                src.LineSelector = val;
-                src.LineMode = "Output";
-            case "TriggerActivation"
-                src.TriggerActivation = val;
-            case "TriggerLine"
-                src.LineSelector = val;
-                src.LineMode = "Input";
-                src.TriggerSource = val;
-            case "TriggerMode"
-                switch val
-                    case "hardware"
-                        src.TriggerSource = obj.ConfigStruct.TriggerLine;
-                        src.TriggerMode = "On";
-                    case "manual" %TODO TEST THESE
-                        src.TriggerSource = "Software";
-                    case "immediate" %TODO TEST THESE
-                end
-                triggerconfig(vidObj,val);
-            case "TriggerSelector"
-                src.TriggerSelector = val;
             case "ROIPosition"
                 if isempty(val)
                     % reset ROI
                     vidRes = get(obj.SessionHandle,'VideoResolution');
                     val = [0 0 vidRes];
+                else
+                    val = str2num(val);
                 end
                     set(obj.SessionHandle, param, val);
-            otherwise
-                %FramesPerTrigger, TriggerFrameDelay,
-                %FrameGrabInterval, TriggerRepeat,
+            case "OutputLine"
+                src.LineSelector = val;
+                src.LineMode = "Output";
+            case "TriggerLine"
+                src.LineSelector = val;
+                src.LineMode = "Input";
+                src.TriggerSource = val;
+            case "FramesPerTrigger"
                 set(obj.SessionHandle, param, val);
+            case "TriggerFrameDelay"
+                set(obj.SessionHandle, param, val);
+            case "FrameGrabInterval"
+                set(obj.SessionHandle, param, val);
+            case "TriggerRepeat"
+                set(obj.SessionHandle, param, val);
+            otherwise
+                if contains(param, "Trigger") 
+                    % TriggerActivation, TriggerMode, TriggerSelector
+                    updateTrigger = true;
+                elseif contains(param, "Binning")
+                    updateBinning = true;
+                end
         end
-
-        if contains(varargin, "Binning")
-            imaqreset;
-            obj = obj.Initialise();
-        end
+    end
+    if updateTrigger
+        obj.UpdateTriggerMode();
+    end
+    if updateBinning
+        imaqreset;
+        obj = obj.InitialiseSession();
+    end
+    if previewPaused
+        obj.StartPreview();
     end
     obj.Status = "ok";
 end
@@ -293,9 +285,32 @@ function LoadProtocol(obj, varargin)
     % depending on trigger type this could be dicey? hardware is
     % taken care of with daq but software is gonna be rough
 end
+
+function TakeSnapShot(obj, savePath)
+    if isempty(obj.SessionHandle)
+        disp('Snapshot not available. Check if camera is connected and restart.')
+    else
+        h = figure('Toolbar','none','Menubar','none','NumberTitle','off','Name','Snapshot'); %create figure to show snapshot
+        snap = getsnapshot(obj.SessionHandle); %get snapshot from video object
+        temp = ls(savePath); %check if earlier snapshots exist
+        temp(1,8)=' '; % make sure temp has enough characters
+        temp = temp(sum(ismember(temp(:,1:8),'Snapshot'),2)==8,:); %only keep snapshot filenames
+        temp(~ismember(temp,'0123456789')) = ' '; %replace non-integer characters with blanks
+        cNr = max(str2num(temp)); %get highest snapshot nr
+        cNr(isempty(cNr)) = 0; %replace empty with 0 if no previous snapshot existed
+        save([savePath 'Snapshot_' num2str(cNr+1) '.mat'],'snap') % snapshot
+        imwrite(mat2gray(snap),[savePath 'Snapshot_' num2str(cNr+1) '.jpg']) %save snapshot as jpg
+    
+        %     imshow(snap,'XData',[0 1],'YData',[0 1]); colormap gray; axis image;
+        imshow(snap); axis image; title(['Saved as Snapshot ' num2str(cNr+1)]);
+        uicontrol('String','Close','Callback','close(gcf)','units','normalized','position',[0 0 0.15 0.07]); %close button
+    end
 end
 
-methods (Access = private)
+end
+
+%% Protected Methods
+methods (Access = protected)
 function name = GetCameraName(obj, adaptorName)
     info = imaqhwinfo;
     nameCheck = contains(info.InstalledAdaptors, adaptorName);
@@ -333,6 +348,49 @@ function ReceiveFrame(obj, src, vidObj)
         dbstack
         disp(exception.message)
     end
+end
+
+function UpdateTriggerMode(obj)
+    src = getselectedsource(obj.SessionHandle);
+    switch obj.ConfigStruct.TriggerMode
+        case "hardware"
+            obj.SessionHandle.FramesPerTrigger = str2double(obj.ConfigStruct.FramesPerTrigger);
+            src.LineSelector = obj.ConfigStruct.TriggerLine;
+            src.LineMode = "Input";
+            src.TriggerSelector = obj.ConfigStruct.TriggerSelector;
+            src.TriggerMode = "On";
+            src.TriggerSource = obj.ConfigStruct.TriggerLine;
+            src.TriggerActivation = obj.ConfigStruct.TriggerActivation;
+        case "manual"
+            src.TriggerSource = "Software";
+            src.TriggerMode = "Off";
+            obj.SessionHandle.FramesPerTrigger = str2double(obj.ConfigStruct.FramesPerTrigger);
+            src.TriggerSelector = obj.ConfigStruct.TriggerSelector;
+            % src.TriggerActivation = "none";
+        case "immediate"
+            src.LineSelector = obj.ConfigStruct.OutputLine;
+            src.LineMode = "Output";
+            src.TriggerMode = "Off";
+            % src.TriggerActivation = "none";
+    end
+    triggerconfig(obj.SessionHandle, obj.ConfigStruct.TriggerMode);
+end
+
+% Gets current device status
+% Options: ready / running / error
+function status = GetSessionStatus(obj)
+    if isrunning(obj.SessionHandle)
+        status = 'ready';
+        if toc(obj.LastAcquisition) < seconds(1)
+            status = 'running';
+        end
+    else
+        status = '';
+    end
+end
+
+function img = GetCurrentPreviewDisplay(obj)
+    img = getimage(obj.PreviewPlot);
 end
 end
 end

@@ -88,10 +88,6 @@ obj.h.AvailableHardwareTable = uitable('Parent', grid, ...
 %% Populate Component Table
 columnNames = {'Type', 'ID', 'Status', 'Enable'};
 tData = table();
-if ~isempty(obj.hardwareParams)
-    takeFromParams = true;
-end
-
 available = obj.h.Available;
 for i = 1:length(obj.h.Available)
     device = obj.h.Available{i};
@@ -108,13 +104,16 @@ tData.Properties.VariableNames = columnNames;
 obj.h.AvailableHardwareTable.Data = tData;
 end
 
+%% UPDATE FUNCTIONS
 function updateComponentTableCell(src, event, obj)
     rowIndex = event.Indices(1);
     component = obj.h.Available{rowIndex};
     if event.NewData
-        component.Initialise();
+        obj.h.Active{rowIndex} = true;
+        component.InitialiseSession();
         component.StartPreview();
     else
+        obj.h.Active{rowIndex} = false;
         component.StopPreview();
         % TODO de-initialise if needed?
     end

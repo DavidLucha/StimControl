@@ -20,23 +20,25 @@ obj.h.ComponentConfig.Table = uitable(grid, 'Data', table(), ...
         'Column', [1 2]), ...
     'DisplayDataChangedFcn', @(src, event) updateComponentConfigTable(src, event, obj));
 
-obj.h.ConfirmConfigBtn = uibutton(grid, 'Text', 'Confirm', ...
+obj.h.ConfirmComponentConfigBtn = uibutton(grid, 'Text', 'Confirm', ...
     'Layout', matlab.ui.layout.GridLayoutOptions( ...
         'Row', 3, ...
         'Column', 2), ...
-    'ButtonPushedFcn', @(src, event) obj.callbackConfirmComponentConfig, ...
+    'ButtonPushedFcn', @(src, event) confirmComponentConfig, ...
     'Enable', false);
 
-obj.h.CancelConfigBtn = uibutton(grid, 'Text', 'Cancel', ...
+obj.h.CancelComponentConfigBtn = uibutton(grid, 'Text', 'Cancel', ...
     'Layout', matlab.ui.layout.GridLayoutOptions( ...
         'Row', 3, ...
         'Column', 1), ...
-    'ButtonPushedFcn', @(src, event) obj.callbackCancelComponentConfig, ...
+    'ButtonPushedFcn', @(src, event) cancelComponentConfig, ...
     'Enable', false);
 
 end
 
-%% update table function
+%% UPDATE FUNCTIONS
+
+%% update table
 function updateComponentConfigTable(src,event,obj)
     rownum  = event.DisplaySelection(1);
     component = obj.h.Available{obj.h.ComponentConfig.SelectedComponentIndex};
@@ -55,7 +57,7 @@ function updateComponentConfigTable(src,event,obj)
     newVal = src.Data.values{rownum};
     if iscategorical(newVal)
         cat = categories(newVal);
-        try %TODO fix. this is stupid. I hate categoricals.
+        try %there must be a better way to do this, categoricals my behated.
             cat = str2double(cat);
             idx = find(categorical(cat) == newVal);
             newVal = cat(idx);
@@ -67,8 +69,31 @@ function updateComponentConfigTable(src,event,obj)
     end
     component.ConfigStruct.(propertyName) = newVal;
     if component.ComponentProperties.(propertyName).dynamic
-        component.SetParams(propertyName, newVal);
+        component.SetParam(propertyName, newVal);
+    else
+        if isempty(obj.h.ComponentConfig.ValsToUpdate)
+            obj.h.ComponentConfig.ValsToUpdate = struct(propertyName, newVal);
+        else
+            obj.h.ComponentConfig.ValsToUpdate.(propertyName) = newVal;
+        end
     end
-    obj.h.ComponentConfig.ConfigStruct = vals;
 end
 
+%% Confirm / Cancel Component Configs
+function confirmComponentConfig(obj)
+% Configure component
+component = obj.h.Available{obj.h.ComponentConfig.SelectedComponentIndex};
+component.SetParams(obj.h.ComponentConfig.ConfigStruct);
+% Then clear everything
+obj.callbackCancelComponentConfig();
+end
+
+function cancelComponentConfig(obj)
+obj.h.ComponentConfig.Label.Text = "No Component Selected";
+obj.h.ComponentConfig.Component.Handle = [];
+obj.h.ComponentConfig.Component.Properties = [];
+obj.h.ComponentConfig.Table.Data = table();
+
+obj.h.ConfirmComponentConfigBtn.Enable = false;
+obj.h.CancelComponentConfigBtn.Enable = false;
+end
