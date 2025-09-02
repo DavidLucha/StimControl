@@ -1,8 +1,8 @@
 function [p,g] = readProtocol(filename,varargin)
 %% DEBUG
-if isempty(filename)
-    filename = [pwd filesep 'StimControl' filesep 'protocolfiles' filesep 'TempandVibe.stim'];
-end
+% if isempty(filename)
+%     filename = [pwd filesep 'StimControl' filesep 'protocolfiles' filesep 'TempandVibe.stim'];
+% end
 
 %% parse inputs
 ip = inputParser;

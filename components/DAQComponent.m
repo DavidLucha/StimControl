@@ -82,15 +82,6 @@ function Stop(obj)
     stop(obj.SessionHandle);
 end
 
-% Pause device
-function Pause(obj)
-    stop(obj.SessionHandle);
-end
-
-% Unpause device
-function Continue(obj)
-    stop(obj.SessionHandle);
-end
 
 % Change device parameters
 function SetParams(obj, varargin)

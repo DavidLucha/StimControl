@@ -119,18 +119,6 @@ function Stop(obj)
     end
 end
 
-% Pause device
-function Pause(obj)
-    if ~isempty(obj.SessionHandle)
-        stop(obj.SessionHandle);
-    end
-end
-
-% Unpause device
-function Continue(obj)
-    obj.Start();
-end
-
 % Complete reset. Clear device.
 function Clear(obj)
     obj.Stop();

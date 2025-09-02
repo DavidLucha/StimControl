@@ -95,10 +95,12 @@ methods (Access = private)
 
     % app control callbacks
     callbackChangeTab(obj, src, event)
+    callbackDebug(obj, src, event)
     
     % experiment control callbacks
+    callbackLoadTrial(obj)
     callbackSessionStart(obj)
-    callbackSessionStartSingleStim(obj)
+    callbackTrialStart(obj)
     callbackSessionPause(obj)
     callbackSessionResume(obj)
     callbackSessionStop(obj)
@@ -109,7 +111,7 @@ methods (Access = private)
     % file control callbacks
     callbackLoadComponentParams(obj)
     callbackSaveComponentParams(obj)
-    callbackLoadSessionProtocol(obj)
+    callbackReadSessionProtocol(obj)
     callbackSaveSessionProtocol(obj)
     callbackSelectSavePath(obj)
     callbackLoadAppSession(obj)
@@ -167,9 +169,8 @@ methods (Access = private)
     % setTitle(obj,string)
     % stimulate(obj,filename)
     % out = estimateTime(obj)
-end
 
-methods
+    %% Inline functions
     function obj = findAvailableHardware(obj)
         %% Find available hardware
         obj.h.Available = {};
@@ -202,6 +203,42 @@ methods
             end
         end
     end
+
+end
+
+methods
+    function out = get.trialNum(obj)
+        if isempty(obj.p)
+            out = 0;
+        else
+            out = obj.trialNum;
+        end
+    end
+
+    function set.trialNum(obj, value)
+        nTrials = length(obj.p);
+        validateattributes(value,{'numeric'},...
+            {'scalar','integer','real','nonnegative','<=',nTrials})
+        obj.trialNum = value;
+        % TODO UPDATE GUI (as below)
+        % obj.h.protocol.edit.nStim.String   = sprintf('%d/%d',value,nTrials);
+        % obj.h.protocol.edit.Comment.String = obj.p(value).Comments;
+        % obj.h.ThermodeA.edit.vibDur.String = obj.p(value).ThermodeA.VibrationDuration;
+        % obj.h.ThermodeB.edit.vibDur.String = obj.p(value).ThermodeB.VibrationDuration;
+        % obj.h.ThermodeA.edit.vibDur.Value  = obj.p(value).ThermodeA.VibrationDuration;
+        % obj.h.ThermodeB.edit.vibDur.Value  = obj.p(value).ThermodeB.VibrationDuration;
+        % obj.h.LED.edit.ledDur.String       = obj.p(value).ledDuration;
+        % obj.h.LED.edit.ledFreq.String      = obj.p(value).ledFrequency;
+        % obj.h.LED.edit.ledDC.String        = obj.p(value).ledDutyCycle;
+        % obj.h.LED.edit.ledDelay.String     = obj.p(value).ledDelay;
+        % obj.h.LED.edit.ledDur.Value        = obj.p(value).ledDuration;
+        % obj.h.LED.edit.ledFreq.Value       = obj.p(value).ledFrequency;
+        % obj.h.LED.edit.ledDC.Value         = obj.p(value).ledDutyCycle;
+        % obj.h.LED.edit.ledDelay.Value      = obj.p(value).ledDelay;
+        % obj.p2serial(obj.p(value));
+        % obj.p2GUI
+    end
+
     % function out = get.dirAnimal(obj)
     %     out = fullfile(obj.dirData,obj.animalID);
     % end

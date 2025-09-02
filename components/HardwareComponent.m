@@ -159,12 +159,6 @@ Start(obj)
 % Stop device
 Stop(obj)
 
-% Pause device
-Pause(obj)
-
-% Unpause device
-Continue(obj)
-
 % Complete reset. Clear device
 Clear(obj)
 

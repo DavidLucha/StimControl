@@ -25,6 +25,7 @@ for i = 1:length(jsonData)
         otherwise
             disp("Unsupported hardware type. Come back later.")
     end
+    % TODO IF IT ALREADY EXISTS?? IMPLEMENT AN EQUALS
     obj.h.Available{end+1} = component;
 end
 
