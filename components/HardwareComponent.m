@@ -13,6 +13,7 @@ properties (Access = public)
     ConfigStruct
     PreviewPlot = []
     Previewing = false
+    ComponentID
 end
 
 properties (Abstract, Access = protected)
@@ -42,6 +43,7 @@ function p = GetBaseParser(obj)
     addParameter(p, 'SavePath', '', strValidate);
     addParameter(p, 'Abstract', false, @islogical);
     addParameter(p, 'Initialise', true, @islogical);
+    addParameter(p, 'ComponentID', false, @(x) ischar(x) || isstring(x) || islogical(x));
 end
 
 function obj = Initialise(obj, params)
@@ -50,6 +52,11 @@ function obj = Initialise(obj, params)
     obj.SessionHandle = params.Handle;
     obj.Abstract = params.Abstract;
     obj.ConfigStruct = obj.GetConfigStruct(params.ConfigStruct);
+    if all(~params.ComponentID)
+        obj.ComponentID = obj.GetComponentID;
+    else
+        obj.ComponentID = params.ComponentID;
+    end
 end
 
 function configStruct = GetDefaultConfigStruct(obj)
@@ -147,6 +154,10 @@ function SaveAuxiliaries(obj, filepath)
     return;
 end
 
+% get current device parameters for saving
+function objStruct = GetParams(obj)
+    objStruct = setfield(obj.ConfigStruct, 'ComponentID', obj.ComponentID);
+end
 end
 
 methods (Abstract, Access=public)
@@ -164,9 +175,6 @@ Clear(obj)
 
 % Change device parameters
 SetParams(obj, varargin)
-
-% get current device parameters for saving
-objStruct = GetParams(obj)
 
 % Dynamic visualisation of the object output
 StartPreview(obj)
@@ -186,6 +194,8 @@ methods(Abstract, Access=protected)
 % gets current device status
 % Options: ready / running / error
 status = GetSessionStatus(obj)
+
+componentID = GetComponentID(obj)
 
 end
 end

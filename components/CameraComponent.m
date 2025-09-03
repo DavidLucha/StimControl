@@ -253,11 +253,6 @@ function obj = SetParams(obj, paramsStruct)
     obj.Status = "ok";
 end
 
-% get current device parameters for saving
-function objStruct = GetParams(obj)
-    objStruct = obj.ConfigStruct;
-end
-
 % Print device information
 function PrintInfo(obj)
     obj.SessionHandle
@@ -316,6 +311,13 @@ function name = GetCameraName(obj, adaptorName)
                 name = info.InstalledAdaptors{out};
             end
         end
+    end
+end
+ 
+function componentID = GetComponentID(obj)
+    componentID = convertStringsToChars([obj.ConfigStruct.Adaptor '-' obj.ConfigStruct.ID]); %TODO IS THIS UNIQUE ENOUGH
+    if iscell(componentID)
+        componentID = [componentID{:}];
     end
 end
 

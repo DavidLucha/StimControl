@@ -28,13 +28,13 @@ properties %(Access = private)
     pFile       = []
     isRunning   = false;
     hardwareParams
+    trialNum
 end
 
 properties (Dependent)
     dirAnimal
     animalID
     experimentID
-    trialNum
 end
 
 methods
@@ -53,9 +53,11 @@ methods
         if ~contains(pwd, 'StimControl')
             obj.path.base = [pwd filesep 'StimControl'];
         end
-        obj.path.paramBase = [obj.path.base filesep 'paramfiles'];
-        obj.path.protocolBase  = [obj.path.base filesep 'protocolfiles'];
-        obj.path.sessionBase = [obj.path.base filesep 'sessionfiles'];
+        obj.path.configBase = [obj.path.base filesep 'config'];
+        obj.path.paramBase = [obj.path.configBase filesep 'component_params'];
+        obj.path.protocolBase  = [obj.path.configBase filesep 'experiment_protocols'];
+        obj.path.sessionBase = [obj.path.configBase filesep 'session_presets'];
+        obj.path.componentMaps = [obj.path.configBase filesep 'component_protocol_maps'];
 
         %% Create data directory
         if ~exist(obj.path.dirData,'dir')
@@ -207,14 +209,6 @@ methods (Access = private)
 end
 
 methods
-    function out = get.trialNum(obj)
-        if isempty(obj.p)
-            out = 0;
-        else
-            out = obj.trialNum;
-        end
-    end
-
     function set.trialNum(obj, value)
         nTrials = length(obj.p);
         validateattributes(value,{'numeric'},...

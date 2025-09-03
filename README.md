@@ -119,8 +119,9 @@ When working with a ComponentProperty that takes a vector as its value (e.g. cam
 ### StimControl GUI
 - [ ] add a pause button (lock off unless in inter-trial interval)
 - [ ] move single stim button down next to trial button
-- [ ] turn the session setup and dev1 thing into one tab, experiment control into a separate tab
+- [x] turn the session setup and dev1 thing into one tab, experiment control into a separate tab
 - [ ] put a confirm button in the setup tab, don't just save everything if you switch tabs. Or maybe a "save?" popup?
+- [ ] add ability to repeat arbitrary stims - maybe within the .astim?
 
 ### Widefield GUI
 - [x] jank when changing bin size / folders / etc.
@@ -164,7 +165,7 @@ newVal = src.Data.values{rownum};
 
 if you want to set the displayed value of the categorical, I did it like this:
 ```
-cat = prop.getCategorical;
+cat = prop.getCategorical; #nb look in ComponentProperty for this. It is not a built-in function.
 configVal = component.ConfigStruct.(rowNames{fnum});
 if ischar(configVal)
     configCat = categorical(cellstr(configVal));

@@ -97,4 +97,7 @@ Data = struct( ...
                         strcmpi(propStruct.TriggerMode, 'manual')) ...
     )
 end
+methods (Access=private)
+    
+end
 end

@@ -86,7 +86,7 @@ regexAna = ['((Ana)|(Vib)|(Piezo))', regexSuffix];
 regexDig = ['(Dig)', regexSuffix]; 
 regexPwm = ['((PWM)|(LED))', regexSuffix];
 regexCam = ['(Cam)', regexSuffix];
-regexArb = '[A-Z]*\:([A-Z]+\/*)+\.((txt)|(csv)|(astim))';
+regexArb = '[A-z]*\:(([A-z]*_*)+\/*)+\.((txt)|(csv)|(astim))';
 regexStrings = {regexTherm, regexAna, regexDig, regexPwm, regexCam, regexArb};
 for regexString = regexStrings
     occs = cellfun(@(x) regexpi(x, regexString, 'match'), lines);
@@ -96,7 +96,7 @@ for regexString = regexStrings
     if strcmp(regexString, regexTherm)
         % specific thermode parsing
         occs = cellfun(@(x) regexpi(x, '(?<=\d+)[A-Z]?', 'match'), ...
-            horzcat(occs{:}), 'UniformOutput', false);
+            horzcat(occs{:}));
         ids = unique(horzcat(occs{:}));
         if length(ids) <= 1 && any(cellfun(@(x) ~isempty(x), occs))
             % only one thermode

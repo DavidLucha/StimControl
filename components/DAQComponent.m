@@ -17,12 +17,12 @@ end
 methods (Access = public)
 function obj = DAQComponent(varargin)
     p = obj.GetBaseParser();
-    % add device-specific parameters here
+    % add device-specific parameters 
     strValidate = @(x) isstring(x) || ischar(x);
     addParameter(p, 'ChannelConfig', '', strValidate);
     parse(p, varargin{:});
     params = p.Results;
-    % extract device-specific parameters here
+
     obj = obj.Initialise(params);
     if params.Initialise && ~params.Abstract
         obj = obj.InitialiseSession('ChannelConfig', params.ChannelConfig, ...
@@ -82,7 +82,6 @@ function Stop(obj)
     stop(obj.SessionHandle);
 end
 
-
 % Change device parameters
 function SetParams(obj, varargin)
     for i = 1:length(varargin):2
@@ -90,7 +89,7 @@ function SetParams(obj, varargin)
     end
 end
 
-function daqStruct = GetParams(obj)
+function daqStruct = GetParams(obj) %TODO this should all be handled in configstruct but I gotta check that works.
     % Get current device parameters for saving. Generic.          
     daqs = daqlist().DeviceInfo;
     correctIndex = -1;
@@ -109,6 +108,7 @@ function daqStruct = GetParams(obj)
     daqStruct.Model = d.Model;
     daqStruct.ID = d.ID;
     daqStruct.Rate = obj.SessionHandle.Rate;
+    daqStruct.ComponentID = obj.ComponentID;
 end
 
 function SaveAuxiliaries(obj, filepath)
@@ -300,6 +300,11 @@ end
 
 %% Private Methods
 methods (Access = protected)
+
+function componentID = GetComponentID(obj)
+    componentID = convertStringsToChars([obj.ConfigStruct.ID '-' obj.ConfigStruct.Vendor '-' obj.ConfigStruct.Model]);
+    componentID = [componentID{:}];
+end
 
 % gets current device status. TODO
 % Options: ready / running / error
