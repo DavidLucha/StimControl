@@ -6,4 +6,29 @@ function callbackReadSessionProtocol(obj)
 obj.p = p;
 obj.g = g;
 obj.idxStim = 1;
+
+% TODO figure out if mapping stage is necessary and don't ask if not
+[file, location] = uigetfile([obj.path.componentMaps filesep '*.csv'], 'Select Stimulus Map');
+tab = readtable([location file]);
+
+for lineNum = 1:height(tab)
+    % fill out assigned ProtocolComponents
+    componentIDs = tab{lineNum,2:end};
+    components = {};
+    for i = 1:length(componentIDs)
+        componentID = componentIDs{i};
+        component = obj.h.IDMap(componentID);
+        component = component{:};
+        components{end+1} = component;
+        idx = obj.h.idxMap(componentID);
+        if ~obj.h.Active{idx}
+            % activate components that aren't active already
+            obj.h.AvailableHardwareTable.Data(idx,'Enable') = {true};
+            obj.h.Active{idx} = true;
+            component.InitialiseSession();
+            % component.StartPreview();
+        end
+    end
+    obj.h.ProtocolComponents(tab{lineNum,1}{:}) = {components};
+end
 end
