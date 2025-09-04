@@ -95,9 +95,9 @@ for regexString = regexStrings
     end
     if strcmp(regexString, regexTherm)
         % specific thermode parsing
-        occs = cellfun(@(x) regexpi(x, '(?<=\d+)[A-Z]?', 'match'), ...
-            horzcat(occs{:}));
-        ids = unique(horzcat(occs{:}));
+        occs = cellfun(@(x) regexpi(x, '\d[A-Z]', 'match'), horzcat(occs{:}), 'UniformOutput', false);
+        occs = cellfun(@(x) extract(x, lettersPattern), unique(horzcat(occs{:})));
+        ids = unique(horzcat(occs));
         if length(ids) <= 1 && any(cellfun(@(x) ~isempty(x), occs))
             % only one thermode
             p.('Thermode') = thrm;
@@ -215,7 +215,7 @@ for idxStim = 1:length(lines)
             % Thermode
             p = parseThermode(p,token,idxStim);
             continue
-        elseif regexpi(token, '^[A-Z]*\:([A-Z]+\/*)+\.((txt)|(csv)|(astim))$', 'once')
+        elseif regexpi(token, ['^' regexArb '$'], 'once')
             % Specific arbitrary control - gotta read a text file.
             p = parseArbitrary(p,token,idxStim);
             continue
