@@ -1,6 +1,12 @@
 function callbackEditComponentConfig(obj)
 %% first, retrieve selected component from obj.
 rowIndex = obj.h.AvailableHardwareTable.Selection;
+if isempty(rowIndex)
+    disp("no row selected");
+    return;
+    % TODO make this elegant - disable button when no row is selected.
+    % error("no row selected");
+end
 % selectedRow = obj.h.AvailableHardwareTable.Data(rowIndex,:);
 component = obj.h.Available{rowIndex};
 
@@ -8,8 +14,8 @@ component = obj.h.Available{rowIndex};
 obj.h.ComponentConfig.SelectedComponentIndex = rowIndex;
 
 %% Enable confirmation and cancel buttons
-obj.h.ConfirmConfigBtn.Enable = true;
-obj.h.CancelConfigBtn.Enable = true;
+obj.h.ConfirmComponentConfigBtn.Enable = true;
+obj.h.CancelComponentConfigBtn.Enable = true;
     
 %% Populate Config Table
 if isfield(component.ConfigStruct, 'ID')

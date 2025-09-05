@@ -137,11 +137,11 @@ function UpdatePreview(obj, varargin)
 end
 
 function obj = SetParam(obj, param, val)
-    if ~isfield(obj.ComponentProperties.Data, param)
+    if ~isfield(obj.ComponentProperties, param)
         error("Invalid field: %s", param);
-    elseif ~obj.ComponentProperties.Data.(param).isValid(val)
+    elseif ~obj.ComponentProperties.(param).isValid(val)
         error("Invalid value for parameter %s", param);
-    elseif ~obj.ComponentProperties.Data.(param).dynamic
+    elseif ~obj.ComponentProperties.(param).dynamic
         warning("Changing param %s requires device restart. Restarting device...", param);
     else
         paramStruct = struct(param, val);
