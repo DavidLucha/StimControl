@@ -122,6 +122,7 @@ When working with a ComponentProperty that takes a vector as its value (e.g. cam
 - [x] turn the session setup and dev1 thing into one tab, experiment control into a separate tab
 - [ ] put a confirm button in the setup tab, don't just save everything if you switch tabs. Or maybe a "save?" popup?
 - [ ] add ability to repeat arbitrary stims - maybe within the .astim?
+- [ ] python socketing - make it easy to add functionality with python
 
 ### Widefield GUI
 - [x] jank when changing bin size / folders / etc.
@@ -132,7 +133,7 @@ When working with a ComponentProperty that takes a vector as its value (e.g. cam
 - [ ] pause button
 
 ### Camera
-- [ ] Visualisation: Inticator when saturation / brightness is reaching full intensity so we know to adjust gain / light
+- [x] Visualisation: Inticator when saturation / brightness is reaching full intensity so we know to adjust gain / light
 - [ ] Figure out the buffering issues for multi-image-per-trigger acquisition, maybe thread it (check [imaq documentation](https://au.mathworks.com/help/imaq/videoinput.html) and [parallel computing documentation](https://au.mathworks.com/help/parallel-computing/quick-start-parallel-computing-in-matlab.html))
 
 ### DAQ

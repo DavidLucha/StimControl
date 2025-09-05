@@ -11,16 +11,24 @@ obj.idxStim = 1;
 [file, location] = uigetfile([obj.path.componentMaps filesep '*.csv'], 'Select Stimulus Map');
 tab = readtable([location file]);
 
+% reset previous
+obj.h.ComponentProtocols = dictionary;
+obj.h.ProtocolComponents = dictionary;
+
 for lineNum = 1:height(tab)
     % fill out assigned ProtocolComponents
     componentIDs = tab{lineNum,2:end};
     components = {};
     for i = 1:length(componentIDs)
         componentID = componentIDs{i};
-        component = obj.h.IDMap(componentID);
+        component = obj.h.IDComponentMap(componentID);
         component = component{:};
         components{end+1} = component;
-        idx = obj.h.idxMap(componentID);
+        if isempty(obj.h.ComponentProtocols) || ~isKey(obj.h.ComponentProtocols, componentID)
+            obj.h.ComponentProtocols(componentID) = {};
+        end
+        obj.h.ComponentProtocols(componentID) = [obj.h.ComponentProtocols(componentID), tab{lineNum,1}{:}];
+        idx = obj.h.IDidxMap(componentID);
         if ~obj.h.Active{idx}
             % activate components that aren't active already
             obj.h.AvailableHardwareTable.Data(idx,'Enable') = {true};

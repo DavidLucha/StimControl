@@ -4,20 +4,20 @@ if isempty(obj.h.Active)
 elseif isempty(obj.p) || isempty(obj.g)
     error("No protocol available to load")
 end
+
 trialData = obj.p(obj.trialNum);
-
-% for hardwareNum = 1:length(obj.h.Available)
-%     A = cellfun(@(x, idx) class(x), 'uniformoutput', );
-% 
-%     countInstances = @(x,value) sum(x(:) == value);
-%     A = cellfun(@(x, idx) isa(x, 'DAQComponent') && );
-% 
-% end
-
+ks = keys(obj.h.ComponentProtocols);
+for i = 1:length(ks)
+    componentID = ks{i};
+    component = obj.h.IDComponentMap{componentID};
+    protocolNames = obj.h.ComponentProtocols(componentID);
+    s = struct();
+    for f = 1:length(protocolNames)
+        name = protocolNames{f};
+        s.(name) = trialData.(name);
+    end
+    component.LoadProtocol(s);
 end
 
-function assignStimulus(obj)
-    for i = 1:height(fields(obj.p))
-        
-    end
+%TODO THINGS THAT HAPPEN WHEN LOADING FINISHES
 end

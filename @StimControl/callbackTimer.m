@@ -1,5 +1,5 @@
 function callbackTimer(obj,~,~)
-if obj.h.
+
 
 if ~obj.DAQ.IsRunning && ~obj.isRunning
     for ii = 1:obj.nThermodes

@@ -177,9 +177,10 @@ methods (Access = private)
         %% Find available hardware
         obj.h.Available = {};
         obj.h.Active = {};
-        obj.h.IDMap = dictionary();
-        obj.h.idxMap = dictionary();
-        obj.h.ProtocolComponents = dictionary();
+        obj.h.IDComponentMap = configureDictionary('string', 'cell');
+        obj.h.IDidxMap = configureDictionary('string', 'double');
+        obj.h.ProtocolComponents = configureDictionary('string', 'cell');
+        obj.h.ComponentProtocols = configureDictionary('string', 'cell');
         
         % DAQs
         daqs = daqlist();
@@ -190,8 +191,8 @@ methods (Access = private)
                 'ID', s.DeviceID, ...
                 'Model', s.Model);
             comp = DAQComponent('Initialise', false, 'ConfigStruct', initStruct);
-            obj.h.IDMap(comp.ComponentID) = {comp};
-            obj.h.idxMap(comp.ComponentID) = length(obj.h.Available) + 1;
+            obj.h.IDComponentMap(comp.ComponentID) = {comp};
+            obj.h.IDidxMap(comp.ComponentID) = length(obj.h.Available) + 1;
             obj.h.Available{end+1} = comp;
             obj.h.Active{end+1} = false;
         end
@@ -207,14 +208,13 @@ methods (Access = private)
                     'Adaptor', adaptorDevices.AdaptorName, ...
                     'ID', temp.DeviceName);
                  comp = CameraComponent('Initialise', false, 'ConfigStruct', initStruct);
-                 obj.h.IDMap(comp.ComponentID) = {comp};
-                 obj.h.idxMap(comp.ComponentID) = length(obj.h.Available) + 1;
+                 obj.h.IDComponentMap(comp.ComponentID) = {comp};
+                 obj.h.IDidxMap(comp.ComponentID) = length(obj.h.Available) + 1;
                  obj.h.Available{end+1} = comp;
                  obj.h.Active{end+1} = false;
             end
         end
     end
-
 end
 
 methods
