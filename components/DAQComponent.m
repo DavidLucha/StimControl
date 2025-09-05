@@ -216,61 +216,34 @@ function obj = LoadProtocol(obj, varargin)
     obj.LoadTrial('idxStim', parser.Results.idxStim);
 end
 
-function LoadTrial(obj, varargin)
-    % Preload a trial.
-    parser = inputParser;
-    stringValidate = @(x) ischar(x) || isstring(x);
-    intValidate = @(x) ~isinf(x) && floor(x) == x;
-    addParameter(parser, 'idxStim', 1, intValidate);
-    addParameter(parser, 'filepath', '', stringValidate);
-    addParameter(parser, 'p', '', @isstruct);
-    addParameter(parser, 'g','', @isstruct);
-    addParameter(parser, 'oneOff', false, @islogical);
-    parse(parser, varargin{:});
-    idxStim = parser.Results.idxStim;
-    if ~isempty(parser.Results.filepath)
-        [p, g] = readProtocol(parser.Results.filepath);
-    elseif ~isempty(parser.Results.p)
-        p = parser.Results.p;
-        g = parser.Results.g;
-    else
-        p = obj.SessionInfo.p;
-        g = obj.SessionInfo.g;
-    end
-
+function LoadTrial(obj, trial)
     % release session (in case the previous run was incomplete)
     if obj.SessionHandle.Running
         obj.SessionHandle.stop
     end
-    % release(obj.SessionHandle)
+    release(obj.SessionHandle)
     
     channels = obj.SessionHandle.Channels;
-    
-    if isempty(p) || parser.Results.oneOff %TODO
-        % single stimulation: use default values for tPre (time before onset of
-        % stimulus) and tPost (time after onset of stimulus). Obtain duration
-        % of vibration from respective GUI fields.
-    else
-        % protocol run: use values from protocol structure
-        tPre     = p(idxStim).tPre  / 1000;
-        tPost    = p(idxStim).tPost / 1000;
-        vibDur   = cellfun(@(x) p(idxStim).(x).VibrationDuration,IDtherm) / 1000;
-        ledDur   = p(idxStim).ledDuration / 1000;
-        ledFreq  = p(idxStim).ledFrequency;
-        ledDC    = p(idxStim).ledDutyCycle;
-        ledDelay = p(idxStim).ledDelay / 1000;
-        piezoAmp = p(idxStim).piezoAmp * Aurorasf; piezoAmp = min([piezoAmp 9.5]);  %added a safety block here 2024.11.15
-        piezoFreq= p(idxStim).piezoFreq;
-        piezoDur = p(idxStim).piezoDur;
-        piezoStimNum= p(idxStim).piezoStimNum;
-    end
+
+    % protocol run: use values from protocol structure
+    tPre     = trial.tPre  / 1000;
+    tPost    = trial.tPost / 1000;
+    vibDur   = cellfun(@(x) trial(idxStim).(x).VibrationDuration,IDtherm) / 1000;
+    ledDur   = trial.ledDuration / 1000;
+    ledFreq  = trial.ledFrequency;
+    ledDC    = trial.ledDutyCycle;
+    ledDelay = trial.ledDelay / 1000;
+    piezoAmp = trial.piezoAmp * Aurorasf; piezoAmp = min([piezoAmp 9.5]);  %added a safety block here 2024.11.15
+    piezoFreq= trial.piezoFreq;
+    piezoDur = trial.piezoDur;
+    piezoStimNum= trial.piezoStimNum;
 
     obj.SessionHandle.ScansAvailableFcn = @obj.plotData;
 
     fs = 1000;
     tTotal  = tPre + tPost;
 
-    fds = fields(p);
+    fds = fields(trial);
     unmatchedFields = 'No DAQ match found for protocol fields: ';
     unmatchedFound = false;
     for i = 1:length(fds)
@@ -293,7 +266,7 @@ function LoadTrial(obj, varargin)
     % Preallocate all zeros
     out = zeros(numel(timeAxis), length(d.SessionHandle.Channels));
     for fieldName = matchedFields
-        out = obj.FillChannelData(out, numel(timeAxis), p(fieldName), fieldName);
+        out = obj.FillChannelData(out, numel(timeAxis), trial(fieldName), fieldName);
     end
 end
 end

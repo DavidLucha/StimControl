@@ -124,6 +124,9 @@ When working with a ComponentProperty that takes a vector as its value (e.g. cam
 - [ ] add ability to repeat arbitrary stims - maybe within the .astim?
 - [ ] python socketing - make it easy to add functionality with python
 
+### StimControl QOL
+- [ ] for loadprotocol etc. - only do it if not already assigned or "select new" has been pressed
+
 ### Widefield GUI
 - [x] jank when changing bin size / folders / etc.
 - [ ] creating new animal may also create erroneous experiment folders if you're ALSO changing experiment

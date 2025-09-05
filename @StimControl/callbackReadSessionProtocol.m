@@ -12,8 +12,8 @@ obj.idxStim = 1;
 tab = readtable([location file]);
 
 % reset previous
-obj.h.ComponentProtocols = dictionary;
-obj.h.ProtocolComponents = dictionary;
+obj.h.ComponentProtocols = configureDictionary('string', 'cell');
+obj.h.ProtocolComponents = configureDictionary('string', 'cell');
 
 for lineNum = 1:height(tab)
     % fill out assigned ProtocolComponents
@@ -25,9 +25,13 @@ for lineNum = 1:height(tab)
         component = component{:};
         components{end+1} = component;
         if isempty(obj.h.ComponentProtocols) || ~isKey(obj.h.ComponentProtocols, componentID)
-            obj.h.ComponentProtocols(componentID) = {};
+            obj.h.ComponentProtocols(componentID) = {cellstr(tab{lineNum,1}{:})};
+        else
+            tmp = obj.h.ComponentProtocols(componentID);
+            tmp = tmp{:};
+            tmp{end+1} = tab{lineNum,1}{:};
+            obj.h.ComponentProtocols(componentID) = {tmp};
         end
-        obj.h.ComponentProtocols(componentID) = [obj.h.ComponentProtocols(componentID), tab{lineNum,1}{:}];
         idx = obj.h.IDidxMap(componentID);
         if ~obj.h.Active{idx}
             % activate components that aren't active already

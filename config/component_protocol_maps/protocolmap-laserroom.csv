@@ -1,0 +1,7 @@
+﻿ProtocolName,ComponentID
+ThermodeA,Dev1-ni-PCIe-6323
+ThermodeB,Dev1-ni-PCIe-6323
+AnaA ,Dev1-ni-PCIe-6323
+AnaB ,Dev1-ni-PCIe-6323
+Vib,Dev1-ni-PCIe-6323
+ArbitraryA,Dev1-ni-PCIe-6323
