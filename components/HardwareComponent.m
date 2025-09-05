@@ -187,6 +187,9 @@ PrintInfo(obj)
 
 % Preload an experimental protocol
 LoadProtocol(obj, varargin)
+
+% Preload a single trial
+LoadTrial(obj, componentTrialData, genericTrialData)
 end
 
 methods(Abstract, Access=protected)

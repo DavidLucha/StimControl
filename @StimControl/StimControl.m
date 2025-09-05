@@ -198,6 +198,7 @@ methods (Access = private)
         end
     
         % Cameras
+        %TODO FIX WARNING HERE FOR GIGE
         adaptors = imaqhwinfo().InstalledAdaptors;
         for i = 1:length(adaptors)
             adaptorDevices = imaqhwinfo(adaptors{i});

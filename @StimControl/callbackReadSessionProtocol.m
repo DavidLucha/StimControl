@@ -1,17 +1,20 @@
 function callbackReadSessionProtocol(obj)
-% todo if empty
-[file, location] = uigetfile([obj.path.protocolBase filesep '*.stim'], 'Select protocol');
-
-[p, g] = readProtocol([location file]);
+if ~isfield(obj.path, 'SessionProtocolFile') || isempty(obj.path.SessionProtocolFile) %TODO OR CHANGED
+    obj.path.SessionProtocolFile = uigetfile([obj.path.protocolBase filesep '*.stim'], 'Select protocol');
+end
+[p, g] = readProtocol(obj.path.SessionProtocolFile);
 obj.p = p;
 obj.g = g;
 obj.idxStim = 1;
 
 % TODO figure out if mapping stage is necessary and don't ask if not
-[file, location] = uigetfile([obj.path.componentMaps filesep '*.csv'], 'Select Stimulus Map');
-tab = readtable([location file]);
+if ~isfield(obj.path, 'ComponentMapFile') ||  isempty(obj.path.ComponentMapFile) %TODO OR CHANGED
+    obj.path.ComponentMapFile = uigetfile([obj.path.componentMaps filesep '*.csv'], 'Select Stimulus Map');
+end
 
-% reset previous
+tab = readtable(obj.path.ComponentMapFile);
+
+% reset previous if value changed
 obj.h.ComponentProtocols = configureDictionary('string', 'cell');
 obj.h.ProtocolComponents = configureDictionary('string', 'cell');
 

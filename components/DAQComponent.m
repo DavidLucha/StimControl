@@ -17,16 +17,12 @@ end
 methods (Access = public)
 function obj = DAQComponent(varargin)
     p = obj.GetBaseParser();
-    % add device-specific parameters 
-    strValidate = @(x) isstring(x) || ischar(x);
-    addParameter(p, 'ChannelConfig', '', strValidate);
     parse(p, varargin{:});
     params = p.Results;
 
     obj = obj.Initialise(params);
     if params.Initialise && ~params.Abstract
-        obj = obj.InitialiseSession('ChannelConfig', params.ChannelConfig, ...
-            'ConfigStruct', params.Struct);
+        obj = obj.InitialiseSession('ConfigStruct', params.Struct);
     end
 end
 
@@ -58,17 +54,7 @@ function obj = InitialiseSession(obj, varargin)
     end
     
     %---channels---
-    if isempty(params.ChannelConfig)
-        warning("No DAQ Channel information provided. " + ...
-            "Provide channel configuration via obj.Configure('ChannelConfig', filepath)");
-    else
-        obj = obj.CreateChannels(params.ChannelConfig);
-    end
-    
-    %---display---
-    if ~isempty(obj.SessionHandle.Channels)
-        obj.PrintInfo();
-    end
+    obj = obj.CreateChannels(daqStruct.ChannelConfig);
 end
 
 % Start device
@@ -82,7 +68,7 @@ function Stop(obj)
     stop(obj.SessionHandle);
 end
 
-% Change device parameters
+% Change device parameters TODO ALL OF THESE REQUIRE A RESTART I THINK
 function SetParams(obj, varargin)
     for i = 1:length(varargin):2
         set(obj.SessionHandle, varargin{i}, varargin{i+1});
@@ -143,19 +129,6 @@ function channelData = GetChanParams(obj)
     end
 end
 
-function obj = LoadParams(obj, folderpath)
-    error("LoadParams is deprecated. Use other methods.")
-    % if contains(folderpath, "ChanParams")
-    %     obj = obj.CreateChannels(folderpath);
-    % elseif contains(folderpath, "DaqParams")
-    %     obj = obj.Initialise(folderpath);
-    % else
-    %     % assume a folder with both params in it.
-    %     obj = obj.Initialise([folderpath filesep "DaqParams.csv"]);
-    %     obj = obj.CreateChannels([folderpath filesep "DaqChanParams.csv"]);
-    % end
-end
-
 function PrintInfo(obj)
     % Print device information.
     disp(' ');
@@ -213,60 +186,60 @@ function obj = LoadProtocol(obj, varargin)
     obj.SessionInfo.p = p;
     obj.SessionInfo.g = g;
 
-    obj.LoadTrial('idxStim', parser.Results.idxStim);
+    % obj.LoadTrial('idxStim', parser.Results.idxStim);
 end
 
-function LoadTrial(obj, trial)
+function LoadTrial(obj, componentTrialData, genericTrialData)
     % release session (in case the previous run was incomplete)
     if obj.SessionHandle.Running
         obj.SessionHandle.stop
     end
-    release(obj.SessionHandle)
+    % release(obj.SessionHandle)
     
     channels = obj.SessionHandle.Channels;
+    rate = obj.SessionHandle.Rate;
 
-    % protocol run: use values from protocol structure
-    tPre     = trial.tPre  / 1000;
-    tPost    = trial.tPost / 1000;
-    vibDur   = cellfun(@(x) trial(idxStim).(x).VibrationDuration,IDtherm) / 1000;
-    ledDur   = trial.ledDuration / 1000;
-    ledFreq  = trial.ledFrequency;
-    ledDC    = trial.ledDutyCycle;
-    ledDelay = trial.ledDelay / 1000;
-    piezoAmp = trial.piezoAmp * Aurorasf; piezoAmp = min([piezoAmp 9.5]);  %added a safety block here 2024.11.15
-    piezoFreq= trial.piezoFreq;
-    piezoDur = trial.piezoDur;
-    piezoStimNum= trial.piezoStimNum;
-
-    obj.SessionHandle.ScansAvailableFcn = @obj.plotData;
-
-    fs = 1000;
+    tPre     = genericTrialData.tPre  / 1000;
+    tPost    = genericTrialData.tPost / 1000;
     tTotal  = tPre + tPost;
 
-    fds = fields(trial);
-    unmatchedFields = 'No DAQ match found for protocol fields: ';
-    unmatchedFound = false;
-    for i = 1:length(fds)
-        fieldName = fds{i};
-        if contains(['tPre', 'tPost'], fieldName)
-            continue
-        elseif ~any(cellfun(@(x) contains(x, fieldName), fields(obj.ChannelMap)))
-            % if fieldname doesn't match with any channel identifiers
-            strcat(unmatchedFields, [fieldName ', '])
-            unmatchedFound = true;
-            continue
-        else
-            obj.TrackedChannels{length(matchedFields) + 1} = fieldName;
-        end
-    end
-    if unmatchedFound 
-        warning(unmatchedFields);
-    end
+    % vibDur   = cellfun(@(x) componentTrialData.(x).VibrationDuration,IDtherm) / 1000;
+    % ledDur   = componentTrialData.ledDuration / 1000;
+    % ledFreq  = componentTrialData.ledFrequency;
+    % ledDC    = componentTrialData.ledDutyCycle;
+    % ledDelay = componentTrialData.ledDelay / 1000;
+    % piezoAmp = componentTrialData.piezoAmp * Aurorasf; piezoAmp = min([piezoAmp 9.5]);  %added a safety block here 2024.11.15
+    % piezoFreq= componentTrialData.piezoFreq;
+    % piezoDur = componentTrialData.piezoDur;
+    % piezoStimNum= componentTrialData.piezoStimNum;
+    
+
+    % Add Listener (figure out which one of these)
+    obj.SessionHandle.ScansAvailableFcn = @obj.plotData;
+    lh = addlistener(obj.SessionHandle,'DataAvailable',@plotData);
+
+    fds = fields(componentTrialData);
     timeAxis = linspace(1/obj.SessionHandle.Rate,tTotal,tTotal*obj.SessionHandle.Rate)-tPre;
     % Preallocate all zeros
     out = zeros(numel(timeAxis), length(d.SessionHandle.Channels));
-    for fieldName = matchedFields
-        out = obj.FillChannelData(out, numel(timeAxis), trial(fieldName), fieldName);
+
+    for i = 1:length(fds)
+        fieldName = fds{i};
+        if regexpi(fieldName, '^Thermode[A-z]*')
+            % Thermode 
+        elseif regexpi(fieldName, '^((Ana)|(Vib)|(Piezo))[A-z]*')
+            % Analog 
+        elseif regexpi(fieldName, '^(Dig)[A-z]*')
+            % Arbitrary digital 
+        elseif regexpi(fieldName, '^((PWM)|(LED))[A-z]*')
+            % PWM 
+        elseif regexpi(fieldName, '^(Cam)[A-z]*')
+            % Camera trigger NB OUTPUT OR INPUT
+        elseif regexpi(fieldName, '^Arbitrary[A-z]*')
+            % Arbitrary output.
+        else
+            error('Unsupported data type for DAQComponent: %s', fieldName);
+        end
     end
 end
 end
@@ -375,7 +348,7 @@ function obj = CreateChannels(obj, filename)
                 end
                 [warnMsg, warnId] = lastwarn;
                 if ~isempty(warnMsg)
-                    message = ['Warning encountered on line ' char(string(ii))];
+                    message = ['Warning encountered loading DAQComponent channel information on line ' char(string(ii))];
                     warning(message);
                 end
             end

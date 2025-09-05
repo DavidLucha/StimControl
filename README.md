@@ -143,6 +143,9 @@ When working with a ComponentProperty that takes a vector as its value (e.g. cam
 - [ ] get session loading working
 - [ ] add parametrised analog outputs - ramp, noise, sine
 
+### Code Cleanup
+- [ ] move ComponentID to ComponentProperties with generator function
+
 ## Things I Had A Bad Time With
 Consider this like that one counter:
 ![Dear programmer: When I wrote this code, only god and I knew how it worked. Now, only god knows it! Therefore, if you are trying to optimize this routine and it fails (most surely), please increase this counter as a warning for the next person: total_hours_wasted_here = 254](https://preview.redd.it/hwqj7yx9vm211.jpg?width=640&crop=smart&auto=webp&s=d8dbb52e8272c553603a8ca66f48ca85a8a40de9)

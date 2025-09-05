@@ -2,6 +2,10 @@ classdef (Abstract, HandleCompatible) ComponentProperties < handle
     properties
     end
 
+    % methods(Abstract)
+    %     out = GetComponentID(obj);
+    % end
+
     methods
         function out = isfield(fieldName, obj)
             f = fields(obj);

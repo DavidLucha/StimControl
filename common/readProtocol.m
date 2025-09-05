@@ -80,7 +80,7 @@ p = struct();
 %% Count and initialise with names
 %TODO maybe only do this if nTherm nAna nDig nPwm nCam and nArb are
 %undefined?
-regexSuffix = '[A-Z]*(-?\d*)[A-Z]?'; %TODO VIBRATION IS DIGITAL!! Piezo IS analog
+regexSuffix = '[A-z]*(-?\d*)[A-Z]?'; %TODO VIBRATION IS DIGITAL!! Piezo IS analog
 regexTherm = 'V\d{5}[A-Z]?';
 regexTherm = '(I[01]|[NT]\d{3}|C\d{4}|S[01]{5}|[VR]\d{5}|D\d{6})[A-Z]?';
 regexAna = ['((Ana)|(Vib)|(Piezo))', regexSuffix];

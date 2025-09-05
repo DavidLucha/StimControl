@@ -270,6 +270,9 @@ function LoadProtocol(obj, varargin)
     % taken care of with daq but software is gonna be rough
 end
 
+function LoadTrial(obj, componentTrialData, genericTrialData)
+end
+
 function TakeSnapShot(obj, savePath)
     if isempty(obj.SessionHandle)
         disp('Snapshot not available. Check if camera is connected and restart.')

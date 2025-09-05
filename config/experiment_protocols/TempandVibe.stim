@@ -73,6 +73,7 @@
 % 
 % - CamLightXXX 	bit mask to enable specific camera lights (100=colour 1, 010=colour 2, 001=colour 3, 110=alternate 1 and 2, etc.)
 % - CamEnableXA		enable camera A/B (per suffix. 0=disable, 1=enable)
+% - CamFreqXXXX		trigger rate for camera in FPS. Defaults to 20 if not specified. Not used for cameras set to rolling (self-triggered) acquisition mode.
 % 
 % STIMULUS DEFINITIONS: ARBITRARY
 % ------------------------------

@@ -8,17 +8,22 @@ if isempty(obj.trialNum)
     obj.trialNum = 1;
 end
 trialData = obj.p(obj.trialNum);
+genericTrialData = struct( ...
+    'tPre', trialData.tPre, ...
+    'tPost', trialData.tPost, ...
+    'nRepetitions', trialData.nRepetitions);
+% genericTrialData;
 ks = keys(obj.h.ComponentProtocols);
 for i = 1:length(ks)
     componentID = ks{i};
     component = obj.h.IDComponentMap{componentID};
     protocolNames = obj.h.ComponentProtocols(componentID);
-    s = struct();
+    componentTrialData = struct();
     for f = 1:length(protocolNames{:})
         name = protocolNames{:}{f};
-        s.(name) = trialData.(name);
+        componentTrialData.(name) = trialData.(name);
     end
-    component.LoadTrial(s);
+    component.LoadTrial(componentTrialData, genericTrialData);
 end
 
 end
