@@ -19,5 +19,4 @@ for i = 1:length(ks)
     component.LoadProtocol(s);
 end
 
-%TODO THINGS THAT HAPPEN WHEN LOADING FINISHES
 end
