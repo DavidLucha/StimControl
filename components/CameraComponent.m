@@ -204,6 +204,10 @@ function obj = SetParams(obj, paramsStruct)
             case "BinningType"
                 continue
             case "Gain"
+                if ~isnumeric(val)
+                    % assume it's a number
+                    val = str2double(val);
+                end
                 src.Gain = val;
             case "ExposureTime"
                 src.ExposureTime = val;
@@ -246,9 +250,6 @@ function obj = SetParams(obj, paramsStruct)
     if updateBinning
         imaqreset;
         obj = obj.InitialiseSession();
-    end
-    if previewPaused
-        obj.StartPreview();
     end
     obj.Status = "ok";
 end
