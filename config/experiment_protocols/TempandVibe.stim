@@ -77,7 +77,7 @@
 % STIMULUS DEFINITIONS: ARBITRARY
 % ------------------------------
 % Arbitrary DAQ stimuli can be sent by including arbitrary stim files, or by defining the arbitrary stimulus at the bottom of the .stim file.
-% - ArbitraryStimIdentifier:filename.txt	filename of the stimulus file, or the full filepath. Can be CSV or TXT.
+% - ArbitraryStimIdentifier:filename.txt	filename of the stimulus file / location in the current directory, or the full filepath. Can be CSV or TXT.
 %
 % LEGACY CONSIDERATIONS
 % ------------------------------------------
@@ -96,7 +96,7 @@
 
 nProtRep10 randomize1 dPause30
 
-N320 S11000 C0220 C0220B V03000 R03000 D002000 T001 I1 tPre10000 tPost12000 VibDur0000 ArbitraryA:StimControl/config/experiment_protocols/arbitrary.astim AnaDur2A AnaDur3B
+N320 S11000 C0220 C0220B V03000 R03000 D002000 T001 I1 tPre10000 tPost12000 VibDur0000 ArbitraryA:arbitrary.astim AnaDur2A AnaDur3B
 N320 S11000 C0420 C0220A V03000 R03000 D002000 T001 I1 tPre10000 tPost12000 VibDur0000 AnaDur3
 N320 S11000 C0320 V03000 R03000 D002000 T001 I1 tPre10000 tPost12000 VibDur0000 AnaDur4A AnaDur4b
 

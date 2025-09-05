@@ -14,6 +14,7 @@ parse(ip,filename,varargin{:});
 if ~exist(ip.Results.filename,'file')
     error('File not found: %s',ip.Results.filename)
 end
+pathBase = ip.Results.filename(1:find(ip.Results.filename == filesep, 1,'last'));
 fid   = fopen(ip.Results.filename);
 lines = textscan(fid,'%s','Delimiter','\n','MultipleDelimsAsOne',1);
 fclose(fid);
@@ -217,7 +218,7 @@ for idxStim = 1:length(lines)
             continue
         elseif regexpi(token, ['^' regexArb '$'], 'once')
             % Specific arbitrary control - gotta read a text file.
-            p = parseArbitrary(p,token,idxStim);
+            p = parseArbitrary(p,token,idxStim, pathBase);
             continue
         elseif regexpi(token, ['^(((Ana)|(Vib)|(Piezo)|(Dig)|(PWM)|(LED)|(Cam))' ...
                 '((Amp)|(Dur)|(Delay)|(DC)|(Freq)|(Light)|(Enable)|(Rep)|(RepDel))(-?\d*))[A-Z]*$'], 'once')
@@ -264,10 +265,19 @@ p(idxStim+1:end) = [];
 
 end
 
-function p = parseArbitrary(p, token, idxStim)
+function p = parseArbitrary(p, token, idxStim, pathBase)
     tmp = regexpi(token, '^([A-Z]*)(\:)(.*)$', 'once', 'tokens');
     id = tmp{1};
     filename = tmp{3};
+    % extend filename if necessary
+    if ~contains(filename, ':')
+        % referenced in relation to location of protocol file
+        % standardise fileseps
+        filename = replace(filename,'/',filesep);
+        filename = replace(filename,'\',filesep);
+        % extend to full path
+        filename = [pathBase filename];
+    end
     % read file
     if ~exist(filename,'file')
         error('File not found: %s',filename)
