@@ -12,6 +12,7 @@ properties (Access = protected)
     ChannelMap = struct();
     HandleClass = 'daq.interfaces.DataAcquisition';
     TrackedChannels = {};
+    SaveFID
 end
 
 methods (Access = public)
@@ -59,8 +60,17 @@ end
 
 % Start device
 function Start(obj)
-    %TODO startbackground?
-    start(obj.SessionHandle);
+    if ~isempty(obj.SavePath) || length(obj.SavePath) == 0
+        obj.SaveFID = fopen(obj.SavePath, 'w');
+    end
+    % run stimulation
+    startBackground(obj.DAQ);               % start data acquisition
+    try
+        wait(obj.DAQ,tTotal+1)          	% wait for data acquisition
+    catch me
+        warning(me.identifier,'%s',...      % rethrow timeout error as warning
+            me.message); 
+    end
 end
 
 %Stop device
@@ -85,8 +95,8 @@ function daqStruct = GetParams(obj) %TODO this should all be handled in configst
         end
     end
     if correctIndex == -1
-        warning("Unable to find DAQ in daqlist. " + ...
-            "DAQ device settings not saved."); %note this should NEVER happen
+        warning('Unable to find DAQ in daqlist. ' + ...
+            'DAQ device settings not saved.'); %note this should NEVER happen
     end
     d = daqs(correctIndex);
     daqStruct = struct();
@@ -114,9 +124,9 @@ function channelData = GetChanParams(obj)
         deviceID = chan.Device.ID;
         portNum = chan.ID;
         name = chan.Name;
-        if contains(ch.Type, "Output")
+        if contains(ch.Type, 'Output')
             ioType = 'output';
-        elseif contains(ch.Type, "Input")
+        elseif contains(ch.Type, 'Input')
             ioType = 'input';
         else
             ioType = 'bidirectional';
@@ -147,15 +157,14 @@ end
 %% TODO STARTS HERE
 function StartPreview(obj)
     % Dynamically visualise object output
-    if ~isempty(obj.PreviewPlot)
-        disp("oops");
-        return
-    else
-        return
-    end
-    if isempty(obj.SessionHandle)
-        return;
-    end
+    % if ~isempty(obj.PreviewPlot)
+    %     return
+    % else
+    %     return
+    % end
+    % if isempty(obj.SessionHandle)
+    %     return;
+    % end
 end
 
 function StopPreview(obj)
@@ -189,7 +198,16 @@ function obj = LoadProtocol(obj, varargin)
     % obj.LoadTrial('idxStim', parser.Results.idxStim);
 end
 
-function LoadTrial(obj, componentTrialData, genericTrialData)
+function LoadTrial(obj, out)
+    % release session (in case the previous run was incomplete)
+    if obj.SessionHandle.Running
+        obj.SessionHandle.stop
+    end
+    obj.DAQ.queueOutputData(out)            % queue data
+    prepare(obj.DAQ)                        % prepare data acquisition
+end
+
+function LoadTrialFromParams(obj, componentTrialData, genericTrialData)
     % release session (in case the previous run was incomplete)
     if obj.SessionHandle.Running
         obj.SessionHandle.stop
@@ -201,30 +219,20 @@ function LoadTrial(obj, componentTrialData, genericTrialData)
 
     tPre     = genericTrialData.tPre  / 1000;
     tPost    = genericTrialData.tPost / 1000;
-    tTotal  = tPre + tPost;
+    tStim   = genericTrialData.tStim  / 1000;
+    tTotal  = tPre + tStim + tPost;
 
-    % vibDur   = cellfun(@(x) componentTrialData.(x).VibrationDuration,IDtherm) / 1000;
-    % ledDur   = componentTrialData.ledDuration / 1000;
-    % ledFreq  = componentTrialData.ledFrequency;
-    % ledDC    = componentTrialData.ledDutyCycle;
-    % ledDelay = componentTrialData.ledDelay / 1000;
-    % piezoAmp = componentTrialData.piezoAmp * Aurorasf; piezoAmp = min([piezoAmp 9.5]);  %added a safety block here 2024.11.15
-    % piezoFreq= componentTrialData.piezoFreq;
-    % piezoDur = componentTrialData.piezoDur;
-    % piezoStimNum= componentTrialData.piezoStimNum;
-    
-
-    % Add Listener (figure out which one of these)
+    % Add Listener 
     obj.SessionHandle.ScansAvailableFcn = @obj.plotData;
-    lh = addlistener(obj.SessionHandle,'DataAvailable',@plotData);
 
     fds = fields(componentTrialData);
     timeAxis = linspace(1/obj.SessionHandle.Rate,tTotal,tTotal*obj.SessionHandle.Rate)-tPre;
     % Preallocate all zeros
-    out = zeros(numel(timeAxis), length(d.SessionHandle.Channels));
+    out = zeros(numel(timeAxis), length(obj.SessionHandle.Channels));
 
     for i = 1:length(fds)
         fieldName = fds{i};
+        chIdx = obj.ChannelMap.fieldName.Index;
         if regexpi(fieldName, '^Thermode[A-z]*')
             % Thermode 
         elseif regexpi(fieldName, '^((Ana)|(Vib)|(Piezo))[A-z]*')
@@ -233,15 +241,129 @@ function LoadTrial(obj, componentTrialData, genericTrialData)
             % Arbitrary digital 
         elseif regexpi(fieldName, '^((PWM)|(LED))[A-z]*')
             % PWM 
+        elseif regexpi(fieldName, '^Piezo[A-z]*')
+            % Piezo
         elseif regexpi(fieldName, '^(Cam)[A-z]*')
-            % Camera trigger NB OUTPUT OR INPUT
+            % Camera trigger TODO what if it's just a start??
+            if contains(channels(chIdx).Type, 'Output')
+                framerate = componentTrialData.(fieldName).Rate;
+                framerate_unitstep = round(obj.SessionHandle.Rate/framerate);
+                for jjj = 1:round(framerate_unitstep/2)
+                    out(jjj:framerate_unitstep:end,chIdx) = 1;
+                end
+            else
+                % set for input - I think this means do nothing? TODO check
+            end
         elseif regexpi(fieldName, '^Arbitrary[A-z]*')
             % Arbitrary output.
         else
             error('Unsupported data type for DAQComponent: %s', fieldName);
         end
     end
+
+    obj.LoadTrial(out);
 end
+
+function out = GenerateAnalogStim(obj, stimType, stimLength, params)
+    % Accepts stimType / params combinations of:
+    % piezo: ramp (default 20), freq, amp, dur, delay, rep
+    rate = obj.ConfigStruct.Rate;
+    MsToTicks = @(x) round(x*rate/1000);
+    out = zeros(1, MsToTicks(stimLength));
+    Aurorasf = 1/52; % (1V per 50mN as per book,20241125 measured as 52mN per 1 V PB)
+
+    switch lower(stimType)
+        case 'piezo'
+            if ~isfield(params, 'ramp')
+                ramp = 20;
+            else
+                ramp = params.ramp;
+            end
+            piezostimunitx = -ramp:ramp;
+            piezostimunity = normpdf(piezostimunitx,0,3);
+            piezostimunity = piezostimunity./max(piezostimunity);
+            piezohold = ones(1,piezoDur);
+            piezostimunity = [piezostimunity(1:ramp) piezohold piezostimunity(ramp+1:end)];
+            
+            if params.rep>0 % TODO MAKE SURE THIS IS CONSISTENT - DOES REP1 MEAN 2 INSTANCES OR ONE
+                out(MsToTicks(params.delay))
+                for pp = 1:rep
+                    pos1 = (pp-1) .*(1/piezoFreq) ; % in seconds
+                    tloc = find(tax>=pos1); tloc = tloc(1);
+                    out(tloc:tloc+numel(piezostimunity)-1) = piezostim(tloc:tloc+numel(piezostimunity)-1)+piezostimunity;
+                end
+                out = piezostim.*piezoAmp;
+            end
+    end
+end
+
+function out = GenerateDigitalStim(obj, stimType, stimLength, params)
+    % Accepts stimType / params combinations of:
+    % PWM: dc (duty cycle, 0<=dc<=100), freq (Hz), dur, delay, rep, repdel, rampup, rampdown
+    % square: delay, dur, rep, repdel
+    % repeattrigger: freq, delay, dur(optional, defaults to full duration)
+    % singletrigger: delay
+    % startstoptrigger: delay, dur
+    %% TODO ADD TTL SCANIMAGE
+    rate = obj.ConfigStruct.Rate;
+    MsToTicks = @(x) round(x*rate/1000);
+    out = zeros(1, MsToTicks(stimLength));
+    switch lower(stimType)
+        case 'pwm'
+            if params.rampup + params.rampdown > params.dur
+                error('invalid parameters for stimulus %s: ramp duration must fit within overall duration', stimType);
+            end
+            periodTicks = round(rate/params.freq); % period in ticks
+            onTicks = round(periodTicks*(params.dc/100));
+            durationTicks = MsToTicks(params.dur);
+            % TODO MAKE THIS MORE ROUNDY - CALCULATE TOTAL DURATION IN PERIODS AND MINUS RAMPUP AND RAMPDOWN INSTEAD OF THIS
+            totalPeriods = floor(durationTicks / periodTicks);
+            rampUpPeriods = round(MsToTicks(params.rampup) / periodTicks); %TODO SIMPLIFY
+            rampUpTickIncrease = onTicks / rampUpPeriods;
+            rampDownPeriods = round(MsToTicks(params.rampdown) / periodTicks); %TODO SIMPLIFY
+            rampDownTickDecrease = onTicks / rampDownPeriods;
+            highPeriods = totalPeriods - (rampUpPeriods + rampDownPeriods);
+            offset = MsToTicks(params.delay) + 1;
+            % generate single stim
+            singleStim = zeros(1, durationTicks);
+            for i = 1:rampUpPeriods:periodTicks
+                singleStim(i:i+round(rampUpTickIncrease * i)) = 1;
+            end
+            st = rampUpPeriods*periodTicks + 1;
+            for i = st:st + highPeriods:periodTicks
+                singleStim(i:i+onTicks) = ones(1, onTicks);
+            end
+            st = st + (highPeriods * periodTicks);
+            for i = st:st + rampUpPeriods:periodTicks
+                singleStim(i:i+round(onTicks - (rampDownTickDecrease * i))) = ones(1, onTicks - (rampDownTickDecrease*i));
+            end
+            repdelTicks = MsToTicks(params.repdel);
+            totalDurTicks = (repdelTicks + durationTicks) * params.rep;
+            for i = offset+1:offset+1+totalDurTicks:durationTicks+numel(singleStim)
+                out(i:i+numel(singleStim)) = singleStim;
+            end
+
+        case 'square'
+            stimTicks = MsToTicks(params.dur + params.repdel);
+            for i = 1:params.rep:stimTicks
+                out(i:i+MsToTicks(params.dur)) = 1;
+            end
+
+        case 'repeattrigger'
+            framerateTicks = round(rate * params.freq);
+            if ~isfield(params, 'dur')
+                out(MsToTicks(params.delay):framerateTicks:end) = 1;
+            else
+                out(MsToTicks(params.delay):framerateTicks:MsToTicks(params.dur+params.delay)) = 1;
+            end
+
+        case 'singletrigger'
+            out(MsToTicks(params.delay)) = 1;
+
+        case 'startstoptrigger'
+            out(MsToTicks(params.delay)) = 1;
+            out(MsToTicks(params.delay)+MsToTicks(params.dur)) = 1;
+    end
 end
 
 %% Private Methods
@@ -269,8 +391,8 @@ function name = FindDaqName(obj, deviceID, vendorID, model)
         daqs = [];
     end
     if isempty(daqs)
-        errorStruct.message = "No data acquistion devices found or data acquisition toolbox missing.";
-        errorStruct.identifier = "DAQ:Initialise:NoDAQDevicesFound";
+        errorStruct.message = 'No data acquistion devices found or data acquisition toolbox missing.';
+        errorStruct.identifier = 'DAQ:Initialise:NoDAQDevicesFound';
         error(errorStruct);
     end
     checker = false;
@@ -302,47 +424,47 @@ function obj = CreateChannels(obj, filename)
     end
     tab = readtable(filename);
     s = size(tab);
-    if ~isMATLABReleaseOlderThan("R2024b")
+    if ~isMATLABReleaseOlderThan('R2024b')
         channelList = daqchannellist;
     end
     for ii = 1:s(1)
         try
             warning('');
             line = tab(ii, :); %TODO CHECK FOR BLANKS
-            % line.("deviceID") or line.(1);
-            deviceID = line.("deviceID"){1};
-            portNum = line.("portNum"){1}; 
-            channelName = line.("channelName"){1};
+            % line.('deviceID') or line.(1);
+            deviceID = line.('deviceID'){1};
+            portNum = line.('portNum'){1}; 
+            channelName = line.('channelName'){1};
             if isempty(channelName)
-                channelName = line.("Note"){1};
+                channelName = line.('Note'){1};
             end
-            ioType = line.("ioType"){1};
-            signalType = line.("signalType"){1};
-            terminalConfig = line.("TerminalConfig");
+            ioType = line.('ioType'){1};
+            signalType = line.('signalType'){1};
+            terminalConfig = line.('TerminalConfig');
             if contains(class(terminalConfig), 'cell')
                 terminalConfig = terminalConfig{1};
             end
-            range = line.("Range");
+            range = line.('Range');
             if contains(class(range), 'cell')
                 range = range{1};
             end
-            channelID = line.("ProtocolID"){1};
-            if ~isMATLABReleaseOlderThan("R2024b")
+            channelID = line.('ProtocolID'){1};
+            if ~isMATLABReleaseOlderThan('R2024b')
                 channelList = add(channelList, ioType, deviceID, portNum, signalType, TerminalConfig=terminalConfig, Range=range);
             else
                 switch ioType
-                    case "input"
+                    case 'input'
                         ch = addinput(obj.SessionHandle,deviceID,portNum,signalType);
-                    case "output"
+                    case 'output'
                         ch = addoutput(obj.SessionHandle,deviceID,portNum,signalType);
-                    case "bidirectional"
+                    case 'bidirectional'
                         ch = addbidirectional(obj.SessionHandle,deviceID,portNum,signalType);
                 end
                 ch.Name = channelName;
-                if ~isempty(terminalConfig) && ~contains(class(ch), "Digital")
+                if ~isempty(terminalConfig) && ~contains(class(ch), 'Digital')
                     ch.TerminalConfig = terminalConfig;
                 end
-                if ~isempty(range) && ~contains(class(ch), "Digital")
+                if ~isempty(range) && ~contains(class(ch), 'Digital')
                     range = obj.GetRangeFromString(range);
                     ch.Range = range;
                 end
@@ -361,7 +483,7 @@ function obj = CreateChannels(obj, filename)
             warning(message);
         end
     end
-    if ~isMATLABReleaseOlderThan("R2024b")
+    if ~isMATLABReleaseOlderThan('R2024b')
         obj.SessionHandle.Channels = channelList;
     end
 end
@@ -379,100 +501,10 @@ function r = GetRangeFromString(obj, rString)
     r = [r0 r1];
 end
 
-function out = FillChannelData(obj, out, chanLen, params, fieldName)
-    chIdx = obj.ChannelMap.fieldName.Index;
-    if regexpi(fieldName, '(Thermode)')
-        % Thermode
-
-    elseif regexpi(fieldName, '((Ana)|(Vib)|(Piezo))')
-        % Analog / vibration / piezo
-        
-    elseif regexpi(fieldName, '(Dig)')
-        % Digital
-        
-    elseif regexpi(fieldname, '((PWM)|(LED))')
-        % PWM
-        out(:,chIdx) =  pwmStim(chanLen, params, obj.SessionHandle.Rate);
-    elseif regexpi(fieldname, '(Cam)')
-        % Camera TODO LIGHTS
-        framerate = 20; %Hz
-        framerate_unitstep = round(obj.SessionHandle.Rate/framerate);
-        for jj = 1:round(framerate_unitstep/2)
-            out(jj:framerate_unitstep:end, chIdx) = 1;
-        end
-    else
-        % arbitrary stimulus
-
-    end
-end
 
 %%TODO!! STARTS HERE
 function preloadChannels(obj, p, idxStim)
-    % add listener for plotting/saving
-    lh = addlistener(obj.SessionHandle,'DataAvailable',@plotData);
-    fs = 1000;
-    % Aurorasf = 1/52; % (1V per 50mN as per book,20241125 measured as 52mN per 1 V PB)
-    tPre = p(idxStim).tPre / 1000;
-    tPost = p(idxStim).tPost / 1000;
-    fds = fields(p);
-    for i = 1:length(fds)
-        fieldName = fds{i};
-        if contains(['tPre', 'tPost'], fieldName)
-            continue
-        end
-        % if ~contains(obj.)
-    end
-    
 
-    % prepare DAQ output (TTL TRIGGERS)
-    npreQSTtrig = 12;    %matches the number of entries outlined before QST and thermode triggers
-    tax = linspace(1/obj.DAQ.Rate,tTotal,tTotal*obj.DAQ.Rate)-tPre;
-    % out = zeros(numel(tax),npreQSTtrig+obj.nThermodes+1);	% preallocate with zeros
-    out = zeros(numel(tax),npreQSTtrig+obj.nThermodes+2);	% preallocate with zeros
-    
-    %%%%% SCAN IMAGE TRIGGERS %%%%%
-    out(1,1)    = 1;                                    % TTL ScanImage: Acq start
-    % stimstart = find(tax>5); stimstart = stimstart(1);
-    % out(tPre*obj.DAQ.Rate + (0:2),2)  = 1;                                    % TTL ScanImage: Aux Trig
-    out(end-5:end-4,2)    = 1;                                    % TTL ScanImage: Acq end
-    out(1,3)    = 1;                                    % TTL ScanImage: Next File
-    
-    %%%%% BASLER CAMERA TRIGGER %%%%%
-    framerate = 20;%20; % Hz - Basler Camera
-    framerate_unitstep = round(obj.DAQ.Rate/framerate);
-    for jjj = 1:round(framerate_unitstep/2)
-        out(jjj:framerate_unitstep:end,4)    = 1;       % TTL Basler: Frame Trigger
-        out(jjj:framerate_unitstep:end,5)    = 1;  
-    end
-    
-    %%%%% Excitation Light Trigger %%%%% 
-    out(1:end-1,6) = 1;   % BLUE LED
-    out(1:end-1,7) = 1;   % GREEN LED (not used, green light is only used to take an image before functional recordings)
-    
-    %%%%% Auditory Stimulus %%%%% 
-    out(1:end-1,8) = 1; % Speaker (NEEDS PARAMETERIZATION)
-    
-    %%%%% Optical stimulus (for ChR2) %%%%%
-    out(1,9) = 1; % Drive blue LED. (NEEDS PARAMETERIZATION)
-    
-    %%%%% Hamamatsu Camera Trigger %%%%% 
-    out(1,10) = 1; %Trigger image acquisition with Hamamatsu. Need to see how to best achieve this.
-    
-    % LED Stimulus
-    out(:,11) = squareStim(tax,ledDur,ledFreq,ledDC,ledDelay)';
-    
-    % IRLED Illumination %% ADDED 2020.07.20
-    out(1:end-1,12) = 1;
-    
-    %%%%% Vibration Stimulus %%%%% 
-    for kk = 1:obj.nThermodes
-        if vibDur(kk)>0
-            tmp           = (tPre*obj.DAQ.Rate) + (1:vibDur(kk)*obj.DAQ.Rate);
-            out(tmp,npreQSTtrig+kk) = 1;
-        end
-    end
-    out(tPre*obj.DAQ.Rate + (0:100),npreQSTtrig+kk+1) = 1;
-    
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%%% ADD ANALOG OUTPUT GENERATION %%%%%%%%%%%%%%%%%%%%%%%%%%%
