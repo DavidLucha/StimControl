@@ -19,7 +19,7 @@ function obj = CameraComponent(varargin)
     params = p.Results;
     obj = obj.Initialise(params);
     if params.Initialise && ~params.Abstract
-        obj = obj.InitialiseSession('ConfigStruct', params.Struct);
+        obj = obj.InitialiseSession('ConfigStruct', params.ConfigStruct);
     end
 end
 
@@ -170,6 +170,7 @@ end
 
 % Change multiple device parameters at once.
 function obj = SetParams(obj, paramsStruct)
+    % todo account for abstract
     obj.Status = "loading";
     vidObj = obj.SessionHandle;
     src = getselectedsource(vidObj);
@@ -210,6 +211,10 @@ function obj = SetParams(obj, paramsStruct)
                 end
                 src.Gain = val;
             case "ExposureTime"
+                if ~isnumeric(val)
+                    % assume it's a number
+                    val = str2double(val);
+                end
                 src.ExposureTime = val;
             case "ROIPosition"
                 if isempty(val)
@@ -378,6 +383,8 @@ function status = GetSessionStatus(obj)
         if toc(obj.LastAcquisition) < seconds(1)
             status = 'running';
         end
+    elseif ~isempty(obj.Status)
+        status = obj.Status;
     else
         status = '';
     end

@@ -23,7 +23,7 @@ function obj = DAQComponent(varargin)
 
     obj = obj.Initialise(params);
     if params.Initialise && ~params.Abstract
-        obj = obj.InitialiseSession('ConfigStruct', params.Struct);
+        obj = obj.InitialiseSession('ConfigStruct', params.ConfigStruct);
     end
 end
 
@@ -55,7 +55,7 @@ function obj = InitialiseSession(obj, varargin)
     end
     
     %---channels---
-    obj = obj.CreateChannels(daqStruct.ChannelConfig);
+    obj = obj.CreateChannels(obj.ConfigStruct.ChannelConfig);
 end
 
 % Start device
@@ -365,6 +365,7 @@ function out = GenerateDigitalStim(obj, stimType, stimLength, params)
             out(MsToTicks(params.delay)+MsToTicks(params.dur)) = 1;
     end
 end
+end
 
 %% Private Methods
 methods (Access = protected)
@@ -379,7 +380,11 @@ end
 function status = GetSessionStatus(obj)
     % Query device status. TODO
     % options: ready / acquiring / writing / error / stopped / empty / loading
-    status = obj.SessionHandle.Status;
+    if isempty(obj.SessionHandle)
+        status = 'not initialised';
+    else
+        status = 'ok';
+    end
 end
 
 function name = FindDaqName(obj, deviceID, vendorID, model)

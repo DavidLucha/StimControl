@@ -105,7 +105,7 @@ for i = 1:length(obj.h.Available)
         case 'CameraComponent'
             deviceID = strcat(device.ConfigStruct.Adaptor, '.', device.ConfigStruct.ID);
     end
-    tData(end+1, :) = {class(device), deviceID, 'Not Initialised', false};
+    tData(end+1, :) = {class(device), deviceID, device.GetStatus, ~isempty(device.SessionHandle)};
 end
 
 tData.Properties.VariableNames = columnNames;
