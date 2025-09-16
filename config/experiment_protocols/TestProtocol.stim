@@ -79,6 +79,8 @@
 % STIMULUS DEFINITIONS: ARBITRARY
 % ------------------------------
 % Arbitrary DAQ stimuli can be sent by including arbitrary stim files, or by defining the arbitrary stimulus at the bottom of the .stim file.
+% To target a channel that's used in other trials for a different kind of output, identify the channel by its other identifier (e.g. AnaA).
+% 
 % - ArbitraryStimIdentifier:filename.txt	filename of the stimulus file / location in the current directory, or the full filepath. Can be CSV or TXT.
 %
 % LEGACY CONSIDERATIONS
@@ -98,8 +100,8 @@
 
 nProtRep10 randomize1 dPause30
 
-N320 S11000 C0220 C0220B V03000 R03000 D002000 T001 I1 tPre10000 tPost12000 VibDur0000 ArbitraryA:arbitrary.astim AnaDur2A AnaDur3B
+N320 S11000 C0220 C0220B V03000 R03000 D002000 T001 I1 tPre10000 tPost12000 VibDur0000 ArbitraryA:arbitrary.astim Ana:arbitrary.astim
 N320 S11000 C0420 C0220A V03000 R03000 D002000 T001 I1 tPre10000 tPost12000 VibDur0000 AnaDur3 CamFreq20 CamTrig1
-N320 S11000 C0320 V03000 R03000 D002000 T001 I1 tPre10000 tPost12000 VibDur0000 AnaDur4A AnaDur4b
+N320 S11000 C0320 V03000 R03000 D002000 T001 I1 tPre10000 tPost12000 VibDur0000 PWMDC50 PWMDur1000 PWMDelay20 PWMRepDel10 PWMRep0
 
 tPre10000 tPost12000 nRep10

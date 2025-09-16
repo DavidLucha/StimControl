@@ -59,6 +59,9 @@ methods
         obj.path.sessionBase = [obj.path.configBase filesep 'session_presets'];
         obj.path.componentMaps = [obj.path.configBase filesep 'component_protocol_maps'];
 
+        obj.path.animal = 'testAnimal';
+        obj.path.protocol='testProtocol';
+
         %% Create data directory
         if ~exist(obj.path.dirData,'dir')
             mkdir(obj.path.dirData)
@@ -195,11 +198,11 @@ methods (Access = private)
                 'Vendor', s.VendorID, ...
                 'ID', s.DeviceID, ...
                 'Model', s.Model);
-            comp = DAQComponent('Initialise', true, 'ConfigStruct', initStruct);
+            comp = DAQComponent('Initialise', true, 'ConfigStruct', initStruct, 'ChannelConfig', false);
             obj.h.IDComponentMap(comp.ComponentID) = {comp};
             obj.h.IDidxMap(comp.ComponentID) = length(obj.h.Available) + 1;
             obj.h.Available{end+1} = comp;
-            obj.h.Active{end+1} = false;
+            obj.h.Active{end+1} = true;
         end
     
         % Cameras
@@ -217,7 +220,7 @@ methods (Access = private)
                  obj.h.IDComponentMap(comp.ComponentID) = {comp};
                  obj.h.IDidxMap(comp.ComponentID) = length(obj.h.Available) + 1;
                  obj.h.Available{end+1} = comp;
-                 obj.h.Active{end+1} = false;
+                 obj.h.Active{end+1} = true;
             end
         end
     end

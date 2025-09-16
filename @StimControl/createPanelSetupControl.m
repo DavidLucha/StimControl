@@ -99,13 +99,7 @@ tData = table();
 available = obj.h.Available;
 for i = 1:length(obj.h.Available)
     device = obj.h.Available{i};
-    switch class(device)
-        case 'DAQComponent'
-            deviceID = strcat(device.ConfigStruct.Vendor, '.', device.ConfigStruct.ID, '.', device.ConfigStruct.Model);
-        case 'CameraComponent'
-            deviceID = strcat(device.ConfigStruct.Adaptor, '.', device.ConfigStruct.ID);
-    end
-    tData(end+1, :) = {class(device), deviceID, device.GetStatus, ~isempty(device.SessionHandle)};
+    tData(end+1, :) = {class(device), device.ComponentID, device.GetStatus, ~isempty(device.SessionHandle)};
 end
 
 tData.Properties.VariableNames = columnNames;

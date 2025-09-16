@@ -1,2 +1,7 @@
 Note,deviceID,portNum,channelName,ioType,signalType,TerminalConfig,Range,ProtocolID
-servo pwm,Dev1,port0/line4,servo pwm,output,Digital,,,TTLSCA
+servo pwm,Dev1,port0/line4,servo pwm,output,Digital,,,PWM
+Camera,Dev1,port0/line5,camera trigger,output,Digital,,,Cam
+Analog Out,Dev1,ao0,VoltageOut,output,Voltage,SingleEnded,[-10 10],ArbitraryA
+Analog in,Dev1,ai0,VoltageIn,input,Voltage,SingleEnded,[-10 10],AnaIn
+Digital In,Dev1,port0/line3,digital input,input,Digital,,,Dig
+Analog Out 2,Dev1,ao1,SecondVoltageOut,output,Voltage,SingleEnded,[-10 10],Ana

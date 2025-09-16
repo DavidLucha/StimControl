@@ -67,7 +67,9 @@ ana  = struct( ...          %basic analog output
     'repdel',               0); %TODO FREQ RELEVANT?
 cam  = struct(...           % cameras
     'light',                111,...
-    'enable',               1);
+    'enable',               1, ...
+    'freq',                 20, ...
+    'trig',                 1); % 1/2/3 for hardware/software/rolling
 general = struct(...        % timing / repetitions
     'Comments',             '',...
     'tPre',                 1000,...
@@ -83,13 +85,13 @@ p = struct();
 %% Count and initialise with names
 %TODO maybe only do this if nTherm nAna nDig nPwm nCam and nArb are
 %undefined?
-regexSuffix = '[A-z]*(-?\d*)[A-Z]?'; %TODO VIBRATION IS DIGITAL!! Piezo IS analog
+standardRegexSuffix = '[A-z]*(\d*)[A-Z]?'; %TODO VIBRATION IS DIGITAL!! Piezo IS analog
 regexTherm = 'V\d{5}[A-Z]?';
 regexTherm = '(I[01]|[NT]\d{3}|C\d{4}|S[01]{5}|[VR]\d{5}|D\d{6})[A-Z]?';
-regexAna = ['((Ana)|(Vib)|(Piezo))', regexSuffix];
-regexDig = ['(Dig)', regexSuffix]; 
-regexPwm = ['((PWM)|(LED))', regexSuffix];
-regexCam = ['(Cam)', regexSuffix];
+regexAna = ['((Ana)|(Vib)|(Piezo))', standardRegexSuffix];
+regexDig = ['(Dig)', standardRegexSuffix]; 
+regexPwm = ['((PWM)|(LED))', standardRegexSuffix];
+regexCam = ['(Cam)', standardRegexSuffix];
 regexArb = '[A-z]*\:(([A-z]*_*)+\/*)+\.((txt)|(csv)|(astim))';
 regexStrings = {regexTherm, regexAna, regexDig, regexPwm, regexCam, regexArb};
 for regexString = regexStrings
@@ -115,7 +117,7 @@ for regexString = regexStrings
         ids = unique(horzcat(occs{:}));
     else
         % parsing for everything else
-        minireg = regexString{1}(1:end-length(regexSuffix));
+        minireg = regexString{1}(1:end-length(standardRegexSuffix));
         occs = cellfun(@(x) strcat(regexpi(x, [minireg, '(?=[A-Z]+[a-z]+\d+)'], 'match'), x(end)), ...
                 unique(horzcat(occs{:})), 'UniformOutput', false);
         occs = cellfun(@(x) regexpi(x, '[A-Z]*', 'match'), unique(horzcat(occs{:})), 'UniformOutput', false);
@@ -223,8 +225,8 @@ for idxStim = 1:length(lines)
             % Specific arbitrary control - gotta read a text file.
             p = parseArbitrary(p,token,idxStim, pathBase);
             continue
-        elseif regexpi(token, ['^(((Ana)|(Vib)|(Piezo)|(Dig)|(PWM)|(LED)|(Cam))' ...
-                '((Amp)|(Dur)|(Delay)|(DC)|(Freq)|(Light)|(Enable)|(Rep)|(RepDel))(-?\d*))[A-Z]*$'], 'once')
+        elseif regexpi(token, ['^((Ana)|(Vib)|(Piezo)|(Dig)|(PWM)|(LED)|(Cam))' ...
+                standardRegexSuffix], 'once')
             % Standard format
             p = parseToken(p, token, idxStim);                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       
             continue
@@ -307,9 +309,8 @@ function p = parseArbitrary(p, token, idxStim, pathBase)
 end
 
 function p = parseToken(p, token, idxStim)
-    tmp = regexpi(token, ['^((Ana)|(Vib)|(Piezo)|(Dig)|(PWM)|(LED)|(Cam))' ...
-                            '((Amp)|(Dur)|(Delay)|(DC)|(Freq)|(Light)|(Enable)|(Rep)|(RepDel))' ...
-                            '(-?\d*)([A-Z])*$'], 'once', 'tokens');
+    tmp = regexpi(token, ['^((Ana)|(Vib)|(Piezo)|(Dig)|(PWM)|(LED)|(Cam))', ...
+                            '([A-z]*)', '(\d*)', '([A-Z]?)', '$'], 'once', 'tokens');
     stimType = tmp{1};
     attr = tmp{2};
     val = str2double(tmp{3});

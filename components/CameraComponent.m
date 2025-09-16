@@ -384,7 +384,7 @@ function status = GetSessionStatus(obj)
             status = 'running';
         end
     elseif ~isempty(obj.Status)
-        status = obj.Status;
+        status = char(obj.Status);
     else
         status = '';
     end
