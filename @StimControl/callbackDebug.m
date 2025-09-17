@@ -1,5 +1,5 @@
 function callbackDebug(obj, src, event)    
-% keyboard;
+keyboard;
 
 obj.callbackReadSessionProtocol
 

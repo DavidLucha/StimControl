@@ -13,16 +13,11 @@ if strcmpi(event.NewValue.Title, 'Experiment')
             component.UpdatePreview('newPlot', obj.h.Session.PreviewPanels{i});
         end
     end
-
-    % load in protocols TODO
-
 elseif strcmpi(event.NewValue.Title, 'Setup')
     % move component previews back
     for i = 1:length(obj.d.Available)
         component = obj.d.Available{i};
         component.UpdatePreview(obj.h.Setup.PreviewPanels{i});
     end
-else
-    disp("how did you get here?");
 end
 end
