@@ -37,6 +37,7 @@ methods
         imaqreset
         addpath(pwd)
         addpath(genpath(fullfile(pwd,'components')))
+        addpath(genpath(fullfile(pwd,'common')))
         clc
         disp('Welcome to StimControl')
         
