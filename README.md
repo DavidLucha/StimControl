@@ -122,10 +122,9 @@ When working with a ComponentProperty that takes a vector as its value (e.g. cam
 - [ ] GUI that spits out hardware parameters and protocol
 - [ ] Implement additional hardware: Aurora serial
 - [x] See about making a generic inspect() style interface for all components [(see here)](https://au.mathworks.com/help/instrument/generic-instrument-drivers.html?s_tid=CRUX_lftnav)
-- [ ] add ability to repeat stimulus independently within a trial
 - [x] I don't looove that the component defaults are hardcoded but they're also not really hardcoded? maybe if we just add the option to ignore defaults we should be fine?
 - [x] NB with repInf it doesn't quite work - maybe support for rep-1 instead??
-- [ ] add a "dynamic" tag to attributes - true if they can be changed without a reboot, else false?
+- [x] add a "dynamic" tag to attributes - true if they can be changed without a reboot, else false?
 - [ ] add widefield stuff to StimControl?
 - [ ] get David's stim paradigms in that bad boy
 - [ ] PROTOCOL FILES: allow a single identifier for multiple types of output (a syntax for function definitions) -currently surmountable using arbitrary files so no pressure
@@ -140,6 +139,7 @@ When working with a ComponentProperty that takes a vector as its value (e.g. cam
 
 ### StimControl QOL
 - [ ] for loadprotocol etc. - only do it if not already assigned or "select new" has been pressed
+- [ ] make more robust to mismatches between hardware and software
 
 ### Widefield GUI
 - [x] jank when changing bin size / folders / etc.

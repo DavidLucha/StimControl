@@ -1,13 +1,13 @@
 function callbackEditComponentConfig(obj)
 %% first, retrieve selected component from obj.
-rowIndex = obj.d.AvailableHardwareTable.Selection;
+rowIndex = obj.h.AvailableHardwareTable.Selection;
 if isempty(rowIndex)
     disp("no row selected");
     return;
     % TODO make this elegant - disable button when no row is selected.
     % error("no row selected");
 end
-% selectedRow = obj.d.AvailableHardwareTable.Data(rowIndex,:);
+% selectedRow = obj.h.AvailableHardwareTable.Data(rowIndex,:);
 component = obj.d.Available{rowIndex};
 
 %% Pass handle for later use

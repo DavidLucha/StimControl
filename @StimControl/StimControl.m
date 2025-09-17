@@ -108,13 +108,8 @@ methods (Access = private)
     callbackNewAnimal(obj)
 
     % file control callbacks
-    callbackLoadComponentParams(obj)
-    callbackSaveComponentParams(obj)
-    callbackReadSessionProtocol(obj)
-    callbackSaveSessionProtocol(obj)
-    callbackSelectSavePath(obj)
-    callbackLoadAppSession(obj)
-    callbackSaveAppSession(obj)
+    callbackLoadConfig(obj, src, event)
+    callbackSaveConfig(obj, src, event)
 
     % hardware control callbacks
     callbackEditComponentConfig(obj)

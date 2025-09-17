@@ -74,7 +74,7 @@ for lineNum = 1:height(tab)
         idx = obj.d.IDidxMap(componentID);
         if ~obj.d.Active{idx}
             % mark components as active
-            obj.d.AvailableHardwareTable.Data(idx,'Enable') = {true};
+            obj.h.AvailableHardwareTable.Data(idx,'Enable') = {true};
             obj.d.Active{idx} = true;
         end
         if isempty(component.SessionHandle)

@@ -202,6 +202,9 @@ function obj = LoadProtocol(obj, varargin)
 end
 
 function LoadTrial(obj, out)
+    % Loads a trial from a matrix of size c x s where c is the number of
+    % output channels and s is the number of samples in the trial.
+
     % release session (in case the previous run was incomplete)
     if obj.SessionHandle.Running
         obj.SessionHandle.stop
