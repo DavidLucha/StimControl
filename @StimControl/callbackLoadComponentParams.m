@@ -25,22 +25,22 @@ for i = 1:length(jsonData)
         otherwise
             disp("Unsupported hardware type. Come back later.")
     end
-    if contains(keys(obj.h.IDComponentMap), component.ComponentID) %todo this might not allow >1 piece of identical hardware - not currently a problem.
-        existingComponent = obj.h.IDComponentMap{component.ComponentID};
+    if contains(keys(obj.d.IDComponentMap), component.ComponentID) %todo this might not allow >1 piece of identical hardware - not currently a problem.
+        existingComponent = obj.d.IDComponentMap{component.ComponentID};
         existingComponent.SetParams(component.ConfigStruct);
     else
-        obj.h.Available{end+1} = component;
+        obj.d.Available{end+1} = component;
     end
 end
 
 % Refresh component data
-tData = obj.h.AvailableHardwareTable.Data;
-available = obj.h.Available;
-for i = height(tData)+1:length(obj.h.Available)
-    device = obj.h.Available{i};
+tData = obj.d.AvailableHardwareTable.Data;
+available = obj.d.Available;
+for i = height(tData)+1:length(obj.d.Available)
+    device = obj.d.Available{i};
     tData(end+1, :) = {class(device), device.ComponentID, device.GetStatus(), ~isempty(device.SessionHandle)};
     %TODO ADDITIONAL PREVIEW WINDOWS in CreatePanelSetupPreview AND START
     %PREVIEW IF INITIALISED
-    obj.h.AvailableHardwareTable.Data = tData;
+    obj.d.AvailableHardwareTable.Data = tData;
 end
 end

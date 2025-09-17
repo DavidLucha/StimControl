@@ -37,60 +37,66 @@ DAQ Channel Param files take the following fields and possible values. Informati
 ## General Notes
 I'm not a native MATLAB developer, so I've found it helpful to put comments in functions of the documentation that I found useful when building that function. 
 
-## The StimControl h struct
+### The StimControl h struct
 % GUI objects
-    baseGrid
-    tabs
-    Setup
-        Control.panel
-        Preview.panel
-        ComponentConfig.panel
-        Logo
-    Session
-        Tab
-        Grid
-        Control.panel
-        Info.panel
-        Hardware.panel
-        Preview.panel
-        Logo
-    Menu
-        File
-            Save
-                ComponentConfig
-                Protocol
-                StimControlSession
-            Load
-                ComponentConfig
-                StimControlSession
-    ConfirmComponentConfigBtn
-    CancelComponengConfigBtn
-    ComponentConfig
-        Label
-        Table
+baseGrid
+tabs
+Setup
+    Control.panel
+    Preview.panel
+    ComponentConfig.panel
+    Logo
+Session
+    Tab
+    Grid
+    Control.panel
+    Info.panel
+    Hardware.panel
+    Preview.panel
+    Logo
+Menu
+    File
+        Save
+            ComponentConfig
+            Protocol
+            StimControlSession
+        Load
+            ComponentConfig
+            StimControlSession
+ConfirmComponentConfigBtn
+CancelComponengConfigBtn
+ComponentConfig
+    Label
+    Table
+% notably not GUI objects but spiritually close
+ComponentConfig
+    SelectedComponentIndex
+    ConfigStruct
+    Component
+        Handle
+        Properties
+    ValsToUpdate
 
-% Component handles
-    Available 
-    Active 
-    ComponentConfig
-        SelectedComponentIndex
-        ConfigStruct
-        Component
-            Handle
-            Properties
-        ValsToUpdate
+### The StimControl d struct
+Available 
+Active 
+IDComponentMap          map from ComponentIDs to component handles
+IDidxMap                map from ComponentIDs to component's index in 'Available' - todo remove this, now we have IDComponentMap I don't know if it's needed?
+ProtocolComponents      map from Protocol subnames to ComponentIDs 
+ComponentProtocols      map from ComponentIDs to Protocol subnames (e.g. 'DAQ-Dev1': 'ThermodeA')
 
-% File handling
-    path
-        setup.base
-        session.base
-        nameExtension
-
+### The StimControl path struct
+setup.base
+session.base
+paramBase           hardware params
+protocolBase        experiment protocol files
+sessionBase         for StimControl session saving
+componentMaps       mapping components to protocols
 
 ## Adding New Hardware
 New hardware components should implement the HardwareComponent abstract class (which outlines required functions and properties), and have their defaults written in a struct of named Component Properties. 
 To fully integrate a new HardwareComponent into StimControl, you will need to implement the following functionality:
-- in StimControl.m under 'findAvailableHardware', find all hardware of the component type and add it to obj.h.Available as a struct compatible with the 'Struct' argument of the HardwareComponent class
+- in StimControl.m under 'findAvailableHardware', find all hardware of the component type and add it to obj.d.Available as a struct compatible with the 'Struct' argument of the HardwareComponent class
 - in callbackEditComponentConfig, under 'extract component', extract the component from the struct.
 
 ### Component Properties
@@ -144,8 +150,9 @@ When working with a ComponentProperty that takes a vector as its value (e.g. cam
 - [ ] pause button
 
 ### Camera
-- [x] Visualisation: Inticator when saturation / brightness is reaching full intensity so we know to adjust gain / light
+- [x] Visualisation: Indicator when saturation / brightness is reaching full intensity so we know to adjust gain / light
 - [ ] Figure out the buffering issues for multi-image-per-trigger acquisition, maybe thread it (check [imaq documentation](https://au.mathworks.com/help/imaq/videoinput.html) and [parallel computing documentation](https://au.mathworks.com/help/parallel-computing/quick-start-parallel-computing-in-matlab.html))
+- [ ] set CameraComponent up so that ConfigStruct is initialised to reflect current hardware config
 
 ### DAQ
 - [ ] get session loading working

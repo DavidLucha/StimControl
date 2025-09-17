@@ -23,8 +23,8 @@ end
 tab = readtable(obj.path.ComponentMapFile);
 
 % reset previous if value changed
-obj.h.ComponentProtocols = configureDictionary('string', 'cell');
-obj.h.ProtocolComponents = configureDictionary('string', 'cell');
+obj.d.ComponentProtocols = configureDictionary('string', 'cell');
+obj.d.ProtocolComponents = configureDictionary('string', 'cell');
 
 % for i = 1:length(fields(obj.p))
 %     %TODO MAKE THIS WORK - ACCOUNT FOR 'AnaA' and 'AnaB' in map but only
@@ -62,20 +62,20 @@ for lineNum = 1:height(tab)
             continue
         end
         componentID = targetComponentIDs{i};
-        component = obj.h.IDComponentMap{componentID};
+        component = obj.d.IDComponentMap{componentID};
         components{end+1} = component;
-        if isempty(obj.h.ComponentProtocols) || ~isKey(obj.h.ComponentProtocols, componentID)
-            obj.h.ComponentProtocols(componentID) = {cellstr(tab{lineNum,1}{:})};
+        if isempty(obj.d.ComponentProtocols) || ~isKey(obj.d.ComponentProtocols, componentID)
+            obj.d.ComponentProtocols(componentID) = {cellstr(tab{lineNum,1}{:})};
         else
-            tmp = obj.h.ComponentProtocols{componentID};
+            tmp = obj.d.ComponentProtocols{componentID};
             tmp{end+1} = tab{lineNum,1}{:};
-            obj.h.ComponentProtocols{componentID} = tmp;
+            obj.d.ComponentProtocols{componentID} = tmp;
         end
-        idx = obj.h.IDidxMap(componentID);
-        if ~obj.h.Active{idx}
+        idx = obj.d.IDidxMap(componentID);
+        if ~obj.d.Active{idx}
             % mark components as active
-            obj.h.AvailableHardwareTable.Data(idx,'Enable') = {true};
-            obj.h.Active{idx} = true;
+            obj.d.AvailableHardwareTable.Data(idx,'Enable') = {true};
+            obj.d.Active{idx} = true;
         end
         if isempty(component.SessionHandle)
             % initialise session if not already initialised
@@ -87,18 +87,18 @@ for lineNum = 1:height(tab)
             % component.StartPreview();
         end
     end
-    obj.h.ProtocolComponents(tab{lineNum,1}{:}) = {components};
+    obj.d.ProtocolComponents(tab{lineNum,1}{:}) = {components};
 end
 % TODO THROW ERROR IF ALL PARTS OF PROTOCOL AREN'T SUFFICIENTLY MAPPED
 
-ks = keys(obj.h.ComponentProtocols);
+ks = keys(obj.d.ComponentProtocols);
 for i = 1:length(ks)
     % do protocol-specific initialisation per device
     k = ks{i};
-    component = obj.h.IDComponentMap{k};
+    component = obj.d.IDComponentMap{k};
     if isa(component, 'DAQComponent')
         % TODO CAMERA INPUT VS OUTPUT CHANNEL TYPE SWITCHER
-        component.CreateChannels([], obj.h.ComponentProtocols{k});
+        component.CreateChannels([], obj.d.ComponentProtocols{k});
     end
 end
 end

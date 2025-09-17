@@ -41,7 +41,7 @@ end
 %% update table
 function updateComponentConfigTable(src,event,obj)
     rownum  = event.DisplaySelection(1);
-    component = obj.h.Available{obj.h.ComponentConfig.SelectedComponentIndex};
+    component = obj.d.Available{obj.h.ComponentConfig.SelectedComponentIndex};
     propertyName = event.DisplayRowName{rownum};
     c = 1;
     if iscategorical(event.Source.Data{rownum, 1}{1}) 
@@ -82,7 +82,7 @@ end
 %% Confirm / Cancel Component Configs
 function confirmComponentConfig(obj)
 % Configure component
-component = obj.h.Available{obj.h.ComponentConfig.SelectedComponentIndex};
+component = obj.d.Available{obj.h.ComponentConfig.SelectedComponentIndex};
 component.SetParams(obj.h.ComponentConfig.ConfigStruct);
 % Then clear everything
 obj.callbackCancelComponentConfig();

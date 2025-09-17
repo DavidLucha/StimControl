@@ -2,9 +2,9 @@ function callbackChangeTab(obj, src, event)
 if strcmpi(event.NewValue.Title, 'Experiment')
     %% TODO HOW DO I CONFIRM THEY WANT TO DO ALL THIS - BIG BUTTON???
     % move components over
-    for i = 1:length(obj.h.Available)
-        component = obj.h.Available{i};
-        if obj.h.Active{i}
+    for i = 1:length(obj.d.Available)
+        component = obj.d.Available{i};
+        if obj.d.Active{i}
             % make sure device is initialised
             if isempty(component.SessionHandle)
                 component.InitialiseSession();
@@ -18,8 +18,8 @@ if strcmpi(event.NewValue.Title, 'Experiment')
 
 elseif strcmpi(event.NewValue.Title, 'Setup')
     % move component previews back
-    for i = 1:length(obj.h.Available)
-        component = obj.h.Available{i};
+    for i = 1:length(obj.d.Available)
+        component = obj.d.Available{i};
         component.UpdatePreview(obj.h.Setup.PreviewPanels{i});
     end
 else

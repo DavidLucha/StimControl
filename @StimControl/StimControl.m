@@ -46,11 +46,11 @@ methods
         if ~contains(pwd, 'StimControl')
             obj.path.base = [pwd filesep 'StimControl'];
         end
-        obj.path.configBase = [obj.path.base filesep 'config'];
-        obj.path.paramBase = [obj.path.configBase filesep 'component_params'];
-        obj.path.protocolBase  = [obj.path.configBase filesep 'experiment_protocols'];
-        obj.path.sessionBase = [obj.path.configBase filesep 'session_presets'];
-        obj.path.componentMaps = [obj.path.configBase filesep 'component_protocol_maps'];
+        configBase = [obj.path.base filesep 'config'];
+        obj.path.paramBase = [configBase filesep 'component_params'];
+        obj.path.protocolBase  = [configBase filesep 'experiment_protocols'];
+        obj.path.sessionBase = [configBase filesep 'session_presets'];
+        obj.path.componentMaps = [configBase filesep 'component_protocol_maps'];
 
         %% Create data directory
         if ~exist(obj.path.dirData,'dir')
@@ -172,12 +172,12 @@ methods (Access = private)
     %% Inline functions
     function obj = findAvailableHardware(obj)
         %% Find available hardware
-        obj.h.Available = {};
-        obj.h.Active = {};
-        obj.h.IDComponentMap = configureDictionary('string', 'cell');
-        obj.h.IDidxMap = configureDictionary('string', 'double');
-        obj.h.ProtocolComponents = configureDictionary('string', 'cell');
-        obj.h.ComponentProtocols = configureDictionary('string', 'cell');
+        obj.d.Available = {};
+        obj.d.Active = {};
+        obj.d.IDComponentMap = configureDictionary('string', 'cell');
+        obj.d.IDidxMap = configureDictionary('string', 'double');
+        obj.d.ProtocolComponents = configureDictionary('string', 'cell');
+        obj.d.ComponentProtocols = configureDictionary('string', 'cell');
         
         % DAQs
         daqs = daqlist();
@@ -188,10 +188,10 @@ methods (Access = private)
                 'ID', s.DeviceID, ...
                 'Model', s.Model);
             comp = DAQComponent('Initialise', true, 'ConfigStruct', initStruct, 'ChannelConfig', false);
-            obj.h.IDComponentMap(comp.ComponentID) = {comp};
-            obj.h.IDidxMap(comp.ComponentID) = length(obj.h.Available) + 1;
-            obj.h.Available{end+1} = comp;
-            obj.h.Active{end+1} = true;
+            obj.d.IDComponentMap(comp.ComponentID) = {comp};
+            obj.d.IDidxMap(comp.ComponentID) = length(obj.d.Available) + 1;
+            obj.d.Available{end+1} = comp;
+            obj.d.Active{end+1} = true;
         end
     
         % Cameras
@@ -206,17 +206,17 @@ methods (Access = private)
                     'Adaptor', adaptorDevices.AdaptorName, ...
                     'ID', temp.DeviceName);
                  comp = CameraComponent('Initialise', true, 'ConfigStruct', initStruct);
-                 obj.h.IDComponentMap(comp.ComponentID) = {comp};
-                 obj.h.IDidxMap(comp.ComponentID) = length(obj.h.Available) + 1;
-                 obj.h.Available{end+1} = comp;
-                 obj.h.Active{end+1} = true;
+                 obj.d.IDComponentMap(comp.ComponentID) = {comp};
+                 obj.d.IDidxMap(comp.ComponentID) = length(obj.d.Available) + 1;
+                 obj.d.Available{end+1} = comp;
+                 obj.d.Active{end+1} = true;
             end
         end
     end
 
     function StartPreviews(obj)
-        for i = 1:length(obj.h.Available)
-            obj.h.Available{i}.StartPreview();
+        for i = 1:length(obj.d.Available)
+            obj.d.Available{i}.StartPreview();
         end
     end
 end

@@ -84,7 +84,7 @@ editComponentConfigBtn = uibutton(grid, ...
         'Column', length(grid.ColumnWidth)));
 
 %% Create Component Table
-obj.h.AvailableHardwareTable = uitable('Parent', grid, ...
+obj.d.AvailableHardwareTable = uitable('Parent', grid, ...
     'Layout', matlab.ui.layout.GridLayoutOptions( ...
         'Row', 1, ...
         'Column', [1 length(grid.ColumnWidth)]), ...
@@ -96,26 +96,26 @@ obj.h.AvailableHardwareTable = uitable('Parent', grid, ...
 %% Populate Component Table
 columnNames = {'Type', 'ID', 'Status', 'Enable'};
 tData = table();
-available = obj.h.Available;
-for i = 1:length(obj.h.Available)
-    device = obj.h.Available{i};
+available = obj.d.Available;
+for i = 1:length(obj.d.Available)
+    device = obj.d.Available{i};
     tData(end+1, :) = {class(device), device.ComponentID, device.GetStatus, ~isempty(device.SessionHandle)};
 end
 
 tData.Properties.VariableNames = columnNames;
-obj.h.AvailableHardwareTable.Data = tData;
+obj.d.AvailableHardwareTable.Data = tData;
 end
 
 %% UPDATE FUNCTIONS
 function updateComponentTableCell(src, event, obj)
     rowIndex = event.Indices(1);
-    component = obj.h.Available{rowIndex};
+    component = obj.d.Available{rowIndex};
     if event.NewData
-        obj.h.Active{rowIndex} = true;
+        obj.d.Active{rowIndex} = true;
         component.InitialiseSession();
         component.StartPreview();
     else
-        obj.h.Active{rowIndex} = false;
+        obj.d.Active{rowIndex} = false;
         component.StopPreview();
         % TODO de-initialise if needed?
     end

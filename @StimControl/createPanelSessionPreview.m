@@ -1,5 +1,5 @@
 function createPanelSessionPreview(obj, hPanel, ~)
-numComponents = length(obj.h.Available);
+numComponents = length(obj.d.Available);
 numRows = floor(sqrt(numComponents));
 numCols = ceil(numComponents/numRows);
 
@@ -39,7 +39,7 @@ for i = 1:numRows
             'XTickLabel', [], ...
             'YTick', [], ...
             'YTickLabel', []);
-        component = obj.h.Available{componentIdx};
+        component = obj.d.Available{componentIdx};
         ax.Title.String = component.ConfigStruct.ID;
         obj.h.Session.PreviewPanels{end+1} = ax;
         % component.UpdatePreviewPlot(obj.h.Session.PreviewPanels{end});
