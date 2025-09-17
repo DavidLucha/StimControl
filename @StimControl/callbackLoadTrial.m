@@ -23,6 +23,7 @@ for i = 1:length(ks)
         componentTrialData.(name) = trialData.(name);
     end
     component.LoadTrial(componentTrialData, genericTrialData);
+    component.SavePath = obj.dirExperiment;
 end
-
+% TODO ADD PREVIEWS??
 end

@@ -38,12 +38,6 @@ tData = obj.h.AvailableHardwareTable.Data;
 available = obj.h.Available;
 for i = height(tData)+1:length(obj.h.Available)
     device = obj.h.Available{i};
-    switch class(device)
-        case 'DAQComponent'
-            deviceID = device.ComponentID; %strcat(device.ConfigStruct.Vendor, '.', device.ConfigStruct.ID, '.', device.ConfigStruct.Model);
-        case 'CameraComponent'
-            deviceID = % strcat(device.ConfigStruct.Adaptor, '.', device.ConfigStruct.ID);
-    end
     tData(end+1, :) = {class(device), device.ComponentID, device.GetStatus(), ~isempty(device.SessionHandle)};
     %TODO ADDITIONAL PREVIEW WINDOWS in CreatePanelSetupPreview AND START
     %PREVIEW IF INITIALISED

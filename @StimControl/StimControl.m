@@ -1,22 +1,12 @@
 classdef StimControl < handle
 
-properties (SetAccess = private)
-    % active = struct( ...
-    %     'DAQ',      [], ...
-    %     'camera',   [], ...
-    %     'serial',   []);
-    % available = struct( ...
-    %     'DAQ',      [], ...
-    %     'camera',   [], ...
-    %     'serial',   []);
-end
-
 properties (Access = protected)
-    path = struct();
+    path = [];
 end
 
 properties %(Access = private)
     h           = []            % GUI handles
+    d           = []            % 
     p           = []            % stimulation parameters/protocol
     g           = []            % general protocol parameters
     idxStim     = []            % current stimulus index
@@ -32,9 +22,12 @@ properties %(Access = private)
 end
 
 properties (Dependent)
-    dirAnimal
     animalID
     experimentID
+    dirAnimal
+    dirExperiment
+    displayDate
+    displayDateTime
 end
 
 methods
@@ -58,16 +51,6 @@ methods
         obj.path.protocolBase  = [obj.path.configBase filesep 'experiment_protocols'];
         obj.path.sessionBase = [obj.path.configBase filesep 'session_presets'];
         obj.path.componentMaps = [obj.path.configBase filesep 'component_protocol_maps'];
-
-        obj.path.animalID = 'testAnimal';
-        obj.path.protocolName='testProtocol';
-        d = datetime("now");
-        d.Format = "yyyyMMdd";
-        obj.path.date = string(d);
-        d.Format  = "yyyyMMdd_hhmmss";
-        obj.path.datetime = string(d);
-        % organised by animalID / experimentDate / date_time_protocolName / orderNum_stimNum_stimComment 
-        % 
 
         %% Create data directory
         if ~exist(obj.path.dirData,'dir')
@@ -197,7 +180,6 @@ methods (Access = private)
         obj.h.ComponentProtocols = configureDictionary('string', 'cell');
         
         % DAQs
-        %TODO make them not immediately load their channels up
         daqs = daqlist();
         for i = 1:height(daqs)
             s = table2struct(daqs(i, :));
@@ -240,6 +222,38 @@ methods (Access = private)
 end
 
 methods
+    function filepath = get.dirAnimal(obj)
+        filepath = [obj.path.dirData filesep obj.animalID];
+        if ~exist(filepath,'dir')
+            mkdir(filepath)
+        end
+    end
+
+    function filepath = get.dirExperiment(obj)
+        tmpPath = [obj.path.dirAnimal filesep obj.displayDate];
+        if ~exist(tmpPath, 'dir')
+            mkdir(tmpPath);
+        end
+        tmpPath = [tmpPath filesep obj.displayDateTime '_' obj.experimentID];
+        if ~exist(tmpPath, 'dir')
+            mkdir(tmpPath);
+        end
+        filepath = tmpPath;
+    end
+
+    function out = get.displayDate(obj)
+        dt = datetime("now");
+        dt.Format = "yyyyMMdd";
+        out = string(dt);
+    end
+
+    function out = get.displayDateTime(obj)
+        dt = datetime("now");
+        dt.Format  = "yyyyMMdd_hhmmss";
+        obj.path.datetime = string(dt);
+        out = string(dt);
+    end
+    
     function set.trialNum(obj, value)
         nTrials = length(obj.p);
         validateattributes(value,{'numeric'},...
