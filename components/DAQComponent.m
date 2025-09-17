@@ -368,7 +368,6 @@ function out = GenerateDigitalStim(obj, stimType, stimLength, params)
             out(MsToTicks(params.delay)+MsToTicks(params.dur)) = 1;
     end
 end
-end
 
 %% DEVICE-SPECIFIC FUNCTIONS
 function obj = CreateChannels(obj, filename, protocolIDs)
@@ -452,8 +451,8 @@ function obj = CreateChannels(obj, filename, protocolIDs)
         obj.SessionHandle.Channels = channelList;
     end
 end
-
 end
+
 
 %% Private Methods
 methods (Access = protected)

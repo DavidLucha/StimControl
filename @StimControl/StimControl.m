@@ -59,8 +59,15 @@ methods
         obj.path.sessionBase = [obj.path.configBase filesep 'session_presets'];
         obj.path.componentMaps = [obj.path.configBase filesep 'component_protocol_maps'];
 
-        obj.path.animal = 'testAnimal';
-        obj.path.protocol='testProtocol';
+        obj.path.animalID = 'testAnimal';
+        obj.path.protocolName='testProtocol';
+        d = datetime("now");
+        d.Format = "yyyyMMdd";
+        obj.path.date = string(d);
+        d.Format  = "yyyyMMdd_hhmmss";
+        obj.path.datetime = string(d);
+        % organised by animalID / experimentDate / date_time_protocolName / orderNum_stimNum_stimComment 
+        % 
 
         %% Create data directory
         if ~exist(obj.path.dirData,'dir')

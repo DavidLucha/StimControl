@@ -18,14 +18,24 @@ Data = struct( ...
         'note', 'Distinguishes between multiple daqs with the same vendor'), ...
     ChannelConfig = ComponentProperty( ...
         'validatefcn', @(x) isstring(x) || ischar(x), ...
-        'default', GetDefaultChannelConfig()))
+        'default', DAQComponentProperties.GetDefaultChannelConfig))
 end
 methods (Static, Access=private)
     function out = GetDefaultChannelConfig()
-        if contains(pwd, 'StimControl')
-            out = [pwd filesep 'config' filesep 'component_params' filesep 'Default_OuterLab_DaqChanParams.csv'];
+        %DEBUG: TODO REMOVE
+        [s, out] = system('vol');
+        out = strsplit(out, '\n');
+        out = out{2}(end-8:end);
+        if strcmpi(out, '48AC-D74C')
+            filename = 'Minimal_LaserRoom_DaqChanParams.csv';
         else
-            out = [pwd filesep 'StimControl' filesep 'config' filesep 'component_params' filesep 'Default_OuterLab_DaqChanParams.csv'];
+            filename = 'Minimal_OuterLab_DaqChanParams.csv';
+        end
+        %END DEBUG
+        if contains(pwd, 'StimControl')
+            out = [pwd filesep 'config' filesep 'component_params' filesep filename];
+        else
+            out = [pwd filesep 'StimControl' filesep 'config' filesep 'component_params' filesep filename];
         end
     end
 end
