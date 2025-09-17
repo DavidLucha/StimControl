@@ -115,11 +115,11 @@ function updateComponentTableCell(src, event, obj)
     rowIndex = event.Indices(1);
     component = obj.d.Available{rowIndex};
     if event.NewData
-        obj.d.Active{rowIndex} = true;
+        obj.d.Active(rowIndex) = true;
         component.InitialiseSession();
         component.StartPreview();
     else
-        obj.d.Active{rowIndex} = false;
+        obj.d.Active(rowIndex) = false;
         component.StopPreview();
         % TODO de-initialise if needed?
     end

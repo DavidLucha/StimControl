@@ -168,7 +168,7 @@ methods (Access = private)
     function obj = findAvailableHardware(obj)
         %% Find available hardware
         obj.d.Available = {};
-        obj.d.Active = {};
+        obj.d.Active = [];
         obj.d.IDComponentMap = configureDictionary('string', 'cell');
         obj.d.IDidxMap = configureDictionary('string', 'double');
         obj.d.ProtocolComponents = configureDictionary('string', 'cell');
@@ -186,7 +186,7 @@ methods (Access = private)
             obj.d.IDComponentMap(comp.ComponentID) = {comp};
             obj.d.IDidxMap(comp.ComponentID) = length(obj.d.Available) + 1;
             obj.d.Available{end+1} = comp;
-            obj.d.Active{end+1} = true;
+            obj.d.Active(end+1) = true;
         end
     
         % Cameras
@@ -204,7 +204,7 @@ methods (Access = private)
                  obj.d.IDComponentMap(comp.ComponentID) = {comp};
                  obj.d.IDidxMap(comp.ComponentID) = length(obj.d.Available) + 1;
                  obj.d.Available{end+1} = comp;
-                 obj.d.Active{end+1} = true;
+                 obj.d.Active(end+1) = true;
             end
         end
     end

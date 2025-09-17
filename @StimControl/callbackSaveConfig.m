@@ -4,8 +4,11 @@ function callbackSaveConfig(obj, src, event)
     filepath = [obj.path.setup.base filesep 'componentParams'];
     filename = ['params' obj.path.nameExtension '_' char(datetime)];
     saveData = {};
-    for i = 1:length(obj.d.Active)
-        component = obj.d.Active{i};
+    for i = 1:length(obj.d.Available)
+        if ~obj.d.Active(i)
+            continue
+        end
+        component = obj.d.Available{i};
         saveData{end+1} = component.GetParams;
         component.SaveAuxiliaries(filepath);
     end

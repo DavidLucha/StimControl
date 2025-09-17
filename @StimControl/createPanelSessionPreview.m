@@ -1,7 +1,12 @@
 function createPanelSessionPreview(obj, hPanel, ~)
-numComponents = length(obj.d.Available);
+activeComponents = obj.d.Available(obj.d.Active == 1);
+numComponents = length(activeComponents);
 numRows = floor(sqrt(numComponents));
 numCols = ceil(numComponents/numRows);
+
+% if the display is being updated and not created, flag that component preview plots
+% should also be updated.
+updatePlots = isfield(obj.h.Session, 'PreviewGrid');
 
 obj.h.Session.PreviewGrid = uigridlayout(hPanel);
 if numRows > 1
@@ -26,7 +31,6 @@ obj.h.Session.FullscreenPreviewAxes = uiaxes( ...
                 'Column', colSpan), ...
             'Visible', false);
 obj.h.Session.FullscreenPreviewAxes.Title.String = "Preview";
-
 for i = 1:numRows
     for j = 1:numCols
         componentIdx = ((i-1) * numRows) + j;
@@ -39,9 +43,11 @@ for i = 1:numRows
             'XTickLabel', [], ...
             'YTick', [], ...
             'YTickLabel', []);
-        component = obj.d.Available{componentIdx};
+        component = activeComponents{componentIdx};
         ax.Title.String = component.ConfigStruct.ID;
         obj.h.Session.PreviewPanels{end+1} = ax;
-        % component.UpdatePreviewPlot(obj.h.Session.PreviewPanels{end});
+        if updatePlots
+            component.UpdatePreview('newPlot', obj.h.Session.PreviewPanels{end});
+        end
     end
 end

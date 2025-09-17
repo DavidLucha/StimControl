@@ -1,5 +1,5 @@
 function callbackLoadTrial(obj)
-if isempty(obj.d.Active)
+if isempty(obj.d.Active) || sum(obj.d.Active) == 0
     error("No hardware selected for protocol")
 elseif isempty(obj.p) || isempty(obj.g)
     error("No protocol available to load")

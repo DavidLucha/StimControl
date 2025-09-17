@@ -12,6 +12,12 @@ properties (Access = protected)
     HandleClass = ''
 end
 
+methods(Static, Access=public)
+    function Clear()
+        imaqreset;
+    end
+end
+
 methods (Access = public)
 function obj = CameraComponent(varargin)  
     p = obj.GetBaseParser();
@@ -117,12 +123,6 @@ function Stop(obj)
     if ~isempty(obj.SessionHandle) && isrunning(obj.SessionHandle)
         stop(obj.SessionHandle);
     end
-end
-
-% Complete reset. Clear device.
-function Clear(obj)
-    obj.Stop();
-    imaqreset;
 end
 
 % Start device preview

@@ -9,4 +9,4 @@ obj.callbackLoadTrial
 
 disp("DEBUG");
 keyboard;
-end
+endcount 

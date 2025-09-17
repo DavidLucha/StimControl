@@ -4,15 +4,21 @@ if strcmpi(event.NewValue.Title, 'Experiment')
     % move components over
     for i = 1:length(obj.d.Available)
         component = obj.d.Available{i};
-        if obj.d.Active{i}
+        if obj.d.Active(i)
             % make sure device is initialised
             if isempty(component.SessionHandle)
                 component.InitialiseSession();
             end
-            % update preview window
-            component.UpdatePreview('newPlot', obj.h.Session.PreviewPanels{i});
+        else
+            % de-initialise unnecessary devices
+            component.Stop();
+            
+            % % update preview window
+            % component.UpdatePreview('newPlot', obj.h.Session.PreviewPanels{i});
         end
     end
+    % update preview panel with final count of active components.
+    obj.createPanelSessionPreview(obj.h.Session.Preview.panel.params);
 elseif strcmpi(event.NewValue.Title, 'Setup')
     % move component previews back
     for i = 1:length(obj.d.Available)

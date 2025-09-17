@@ -72,10 +72,10 @@ for lineNum = 1:height(tab)
             obj.d.ComponentProtocols{componentID} = tmp;
         end
         idx = obj.d.IDidxMap(componentID);
-        if ~obj.d.Active{idx}
+        if ~obj.d.Active(idx)
             % mark components as active
             obj.h.AvailableHardwareTable.Data(idx,'Enable') = {true};
-            obj.d.Active{idx} = true;
+            obj.d.Active(idx) = true;
         end
         if isempty(component.SessionHandle)
             % initialise session if not already initialised

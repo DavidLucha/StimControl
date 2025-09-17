@@ -147,7 +147,8 @@ function obj = SetParam(obj, param, val)
 end
 
 % Save any additional device parameters to given savepath
-function SaveAuxiliaries(obj, filepath)
+% defaults to nothing - most hardware won't need this
+function SaveAuxiliaryConfig(obj, filepath)
     return;
 end
 
@@ -155,6 +156,11 @@ end
 function objStruct = GetParams(obj)
     objStruct = setfield(obj.ConfigStruct, 'ComponentID', obj.ComponentID);
 end
+end
+
+methods(Static, Abstract, Access=public)
+    % Complete reset. Clear device and all handles of device type.
+    Clear()
 end
 
 methods (Abstract, Access=public)
@@ -166,9 +172,6 @@ Start(obj)
 
 % Stop device
 Stop(obj)
-
-% Complete reset. Clear device
-Clear(obj)
 
 % Change device parameters
 SetParams(obj, varargin)

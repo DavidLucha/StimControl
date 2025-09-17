@@ -15,6 +15,13 @@ properties (Access = protected)
     SaveFID = [];
 end
 
+methods (Access = public, Static)
+    function Clear()
+        % Complete reset. Clear device.
+        daqreset;
+    end
+end
+
 methods (Access = public)
 function obj = DAQComponent(varargin)
     p = obj.GetBaseParser();
@@ -110,7 +117,7 @@ function daqStruct = GetParams(obj) %TODO this should all be handled in configst
     daqStruct.ComponentID = obj.ComponentID;
 end
 
-function SaveAuxiliaries(obj, filepath)
+function SaveAuxiliaryConfig(obj, filepath)
     channelData = obj.GetChanParams;
     writetable(channelData, filepath);
 end
@@ -147,14 +154,6 @@ function PrintInfo(obj)
     disp(' ');
     disp(obj.SessionHandle.Channels);
     disp(' ');
-end
-
-function Clear(obj)
-    % Completely clear the component session.
-    if isvalid(obj.SessionHandle) && obj.SessionHandle.Running
-        obj.Stop();
-    end
-    daqreset;
 end
 
 %% TODO STARTS HERE
