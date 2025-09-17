@@ -25,8 +25,12 @@ for i = 1:length(jsonData)
         otherwise
             disp("Unsupported hardware type. Come back later.")
     end
-    % TODO IF IT ALREADY EXISTS?? IMPLEMENT AN EQUALS
-    obj.h.Available{end+1} = component;
+    if contains(keys(obj.h.IDComponentMap), component.ComponentID) %todo this might not allow >1 piece of identical hardware - not currently a problem.
+        existingComponent = obj.h.IDComponentMap{component.ComponentID};
+        existingComponent.SetParams(component.ConfigStruct);
+    else
+        obj.h.Available{end+1} = component;
+    end
 end
 
 % Refresh component data
@@ -36,11 +40,13 @@ for i = height(tData)+1:length(obj.h.Available)
     device = obj.h.Available{i};
     switch class(device)
         case 'DAQComponent'
-            deviceID = strcat(device.ConfigStruct.Vendor, '.', device.ConfigStruct.ID, '.', device.ConfigStruct.Model);
+            deviceID = device.ComponentID; %strcat(device.ConfigStruct.Vendor, '.', device.ConfigStruct.ID, '.', device.ConfigStruct.Model);
         case 'CameraComponent'
-            deviceID = strcat(device.ConfigStruct.Adaptor, '.', device.ConfigStruct.ID);
+            deviceID = % strcat(device.ConfigStruct.Adaptor, '.', device.ConfigStruct.ID);
     end
-    tData(end+1, :) = {class(device), deviceID, 'Not Initialised', false};
+    tData(end+1, :) = {class(device), device.ComponentID, device.GetStatus(), ~isempty(device.SessionHandle)};
+    %TODO ADDITIONAL PREVIEW WINDOWS in CreatePanelSetupPreview AND START
+    %PREVIEW IF INITIALISED
     obj.h.AvailableHardwareTable.Data = tData;
 end
 end

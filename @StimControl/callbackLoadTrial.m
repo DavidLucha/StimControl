@@ -12,18 +12,17 @@ genericTrialData = struct( ...
     'tPre', trialData.tPre, ...
     'tPost', trialData.tPost, ...
     'nRepetitions', trialData.nRepetitions);
-% genericTrialData;
-ks = keys(obj.h.ComponentProtocols);
-for i = 1:length(ks)
-    componentID = ks{i};
+targetComponents = keys(obj.h.ComponentProtocols);
+for i = 1:length(targetComponents)
+    componentID = targetComponents{i};
     component = obj.h.IDComponentMap{componentID};
-    protocolNames = obj.h.ComponentProtocols(componentID);
+    componentProtocolNames = obj.h.ComponentProtocols{componentID};
     componentTrialData = struct();
-    for f = 1:length(protocolNames{:})
-        name = protocolNames{:}{f};
+    for j = 1:length(componentProtocolNames)
+        name = componentProtocolNames{j};
         componentTrialData.(name) = trialData.(name);
     end
     component.LoadTrial(componentTrialData, genericTrialData);
+    component.SavePath = obj.path.dirData;
 end
-
 end

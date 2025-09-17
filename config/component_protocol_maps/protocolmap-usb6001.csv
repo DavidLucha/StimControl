@@ -1,7 +1,7 @@
-﻿ProtocolName,ComponentID
-ThermodeA,Dev1-ni-USB-6001
-ThermodeB,Dev1-ni-USB-6001
-AnaA ,Dev1-ni-USB-6001
-AnaB ,Dev1-ni-USB-6001
-Vib,Dev1-ni-USB-6001
-ArbitraryA,Dev1-ni-USB-6001
+﻿ProtocolName,ComponentID,
+PWM,Dev1-ni-USB-6001,
+ArbitraryA,Dev1-ni-USB-6001,
+Ana,Dev1-ni-USB-6001,
+Vib,Dev1-ni-USB-6001,
+ArbitraryA,Dev1-ni-USB-6001,
+Cam,Dev1-ni-USB-6001,gentl-acA1440-220um (40407241)

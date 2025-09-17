@@ -4,7 +4,14 @@ Initially a fork from [WidefieldImager](https://github.com/churchlandlab/Widefie
 
 # NOTES FOR USERS
 ## PROTOCOL FILES
-In development. See ProtocolFiles for current setup.
+Types of Stimulus:
+Camera
+    hardware: repeat trigger
+    software: software trigger
+    rolling acquisition: frame captured record & start/stop trigger
+Light
+    Excitation (exclusive on right before imaging)
+    Illumination (solid on/off in trials or flash)
 
 ## PARAMETER FILES 
 Parameters are read from .json files. See ComponentProperties for a full list of the properties currently supported.
@@ -115,6 +122,7 @@ When working with a ComponentProperty that takes a vector as its value (e.g. cam
 - [ ] add a "dynamic" tag to attributes - true if they can be changed without a reboot, else false?
 - [ ] add widefield stuff to StimControl?
 - [ ] get David's stim paradigms in that bad boy
+- [ ] PROTOCOL FILES: allow a single identifier for multiple types of output (a syntax for function definitions) -currently surmountable using arbitrary files so no pressure
 
 ### StimControl GUI
 - [ ] add a pause button (lock off unless in inter-trial interval)

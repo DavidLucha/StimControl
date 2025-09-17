@@ -59,15 +59,20 @@ methods
         obj.path.sessionBase = [obj.path.configBase filesep 'session_presets'];
         obj.path.componentMaps = [obj.path.configBase filesep 'component_protocol_maps'];
 
+        obj.path.animal = 'testAnimal';
+        obj.path.protocol='testProtocol';
+
         %% Create data directory
         if ~exist(obj.path.dirData,'dir')
             mkdir(obj.path.dirData)
         end
 
         %% Find available hardware
+        disp("Initialising Available Hardware...")
         obj = obj.findAvailableHardware();
 
         %% Create figure and get things going
+        disp("Creating figure...")
         createFigure(obj)
         
         %% battery timer
@@ -81,6 +86,8 @@ methods
         
         % obj.p2GUI;
         % obj.checkSync
+        StartPreviews(obj);
+        disp("Ready")
     end
 end
 
@@ -183,6 +190,7 @@ methods (Access = private)
         obj.h.ComponentProtocols = configureDictionary('string', 'cell');
         
         % DAQs
+        %TODO make them not immediately load their channels up
         daqs = daqlist();
         for i = 1:height(daqs)
             s = table2struct(daqs(i, :));
@@ -190,15 +198,15 @@ methods (Access = private)
                 'Vendor', s.VendorID, ...
                 'ID', s.DeviceID, ...
                 'Model', s.Model);
-            comp = DAQComponent('Initialise', false, 'ConfigStruct', initStruct);
+            comp = DAQComponent('Initialise', true, 'ConfigStruct', initStruct, 'ChannelConfig', false);
             obj.h.IDComponentMap(comp.ComponentID) = {comp};
             obj.h.IDidxMap(comp.ComponentID) = length(obj.h.Available) + 1;
             obj.h.Available{end+1} = comp;
-            obj.h.Active{end+1} = false;
+            obj.h.Active{end+1} = true;
         end
     
         % Cameras
-        %TODO FIX WARNING HERE FOR GIGE
+        %TODO FIX/SUPPRESS WARNING HERE FOR GIGE
         adaptors = imaqhwinfo().InstalledAdaptors;
         for i = 1:length(adaptors)
             adaptorDevices = imaqhwinfo(adaptors{i});
@@ -208,12 +216,18 @@ methods (Access = private)
                 initStruct = struct( ...
                     'Adaptor', adaptorDevices.AdaptorName, ...
                     'ID', temp.DeviceName);
-                 comp = CameraComponent('Initialise', false, 'ConfigStruct', initStruct);
+                 comp = CameraComponent('Initialise', true, 'ConfigStruct', initStruct);
                  obj.h.IDComponentMap(comp.ComponentID) = {comp};
                  obj.h.IDidxMap(comp.ComponentID) = length(obj.h.Available) + 1;
                  obj.h.Available{end+1} = comp;
-                 obj.h.Active{end+1} = false;
+                 obj.h.Active{end+1} = true;
             end
+        end
+    end
+
+    function StartPreviews(obj)
+        for i = 1:length(obj.h.Available)
+            obj.h.Available{i}.StartPreview();
         end
     end
 end

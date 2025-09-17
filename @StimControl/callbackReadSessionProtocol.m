@@ -20,32 +20,79 @@ tab = readtable(obj.path.ComponentMapFile);
 obj.h.ComponentProtocols = configureDictionary('string', 'cell');
 obj.h.ProtocolComponents = configureDictionary('string', 'cell');
 
+% for i = 1:length(fields(obj.p))
+%     %TODO MAKE THIS WORK - ACCOUNT FOR 'AnaA' and 'AnaB' in map but only
+%     %Ana in protocol. For now, this isn't supported. Just get it exactly
+%     %right.
+%     subProtocols = fields(obj.p);
+%     subProtocolName = subProtocols{i};
+%     if ~any(contains(tab.ProtocolName, subProtocolName))
+%         % many things in the table can be mapped to the same protocol target 
+%         % -e.g. 'Ana' in protocol can be mapped to multiple analog outputs ('AnaA' and 'AnaB')
+%         % but we need to make sure this is the case and it's not just missing
+%         protNameTokens = regexp(subProtocolName, '^[A-z]+[A-Z]?$', 'once', 'tokens');
+%         protNamePrefix = protNameTokens{1};
+%         if ~any(contains(tab.ProtocolName, protNamePrefix))
+%             error("No mapping provided for sub-protocol %s", subProtocolName);
+%         end
+%         for i = 1:length(tab.ProtocolName)
+%             if contains(tab.ProtocolName{i}, protNamePrefix)
+%                 % duplicate? todo from here.
+%             end
+%         end
+%     end
+% end
+
 for lineNum = 1:height(tab)
+    if ~any(contains(fields(p), tab{lineNum, 1}))
+        % ignore rows without associated protocol labels
+        continue
+    end
     % fill out assigned ProtocolComponents
-    componentIDs = tab{lineNum,2:end};
+    targetComponentIDs = tab{lineNum,2:end};
     components = {};
-    for i = 1:length(componentIDs)
-        componentID = componentIDs{i};
-        component = obj.h.IDComponentMap(componentID);
-        component = component{:};
+    for i = 1:length(targetComponentIDs)
+        if isempty(targetComponentIDs{i})
+            continue
+        end
+        componentID = targetComponentIDs{i};
+        component = obj.h.IDComponentMap{componentID};
         components{end+1} = component;
         if isempty(obj.h.ComponentProtocols) || ~isKey(obj.h.ComponentProtocols, componentID)
             obj.h.ComponentProtocols(componentID) = {cellstr(tab{lineNum,1}{:})};
         else
-            tmp = obj.h.ComponentProtocols(componentID);
-            tmp = tmp{:};
+            tmp = obj.h.ComponentProtocols{componentID};
             tmp{end+1} = tab{lineNum,1}{:};
-            obj.h.ComponentProtocols(componentID) = {tmp};
+            obj.h.ComponentProtocols{componentID} = tmp;
         end
         idx = obj.h.IDidxMap(componentID);
         if ~obj.h.Active{idx}
-            % activate components that aren't active already
+            % mark components as active
             obj.h.AvailableHardwareTable.Data(idx,'Enable') = {true};
             obj.h.Active{idx} = true;
-            component.InitialiseSession();
+        end
+        if isempty(component.SessionHandle)
+            % initialise session if not already initialised
+            if isa(component, DAQComponent)
+                component.InitialiseSession('ChannelConfig', false);
+            else
+                component.InitialiseSession();
+            end
             % component.StartPreview();
         end
     end
     obj.h.ProtocolComponents(tab{lineNum,1}{:}) = {components};
+end
+% TODO THROW ERROR IF ALL PARTS OF PROTOCOL AREN'T SUFFICIENTLY MAPPED
+
+ks = keys(obj.h.ComponentProtocols);
+for i = 1:length(ks)
+    % do protocol-specific initialisation per device
+    k = ks{i};
+    component = obj.h.IDComponentMap{k};
+    if isa(component, 'DAQComponent')
+        % TODO CAMERA INPUT VS OUTPUT CHANNEL TYPE SWITCHER
+        component.CreateChannels([], obj.h.ComponentProtocols{k});
+    end
 end
 end

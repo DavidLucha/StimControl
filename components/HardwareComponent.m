@@ -103,18 +103,14 @@ end
 function status = GetStatus(obj)
 % Gets current device status
 % Options: abstract / empty / ready / running / error /  / loading
-    sessionStatus = obj.GetSessionStatus();
     if obj.Abstract
         status = 'abstract';
     elseif isempty(obj.SessionHandle)
-        status = 'empty';
-    elseif strcmpi(obj.Status, 'loading')
-        status = 'loading';
-    elseif(strcmpi(obj.Status, 'error'))
-        status = 'error';
-    elseif ~isempty(sessionStatus)
-        status = sessionStatus;
+        status = 'not initialised';
     else
+        status = obj.GetSessionStatus();
+    end
+    if isempty(status)
         status = 'unknown';
     end
 end

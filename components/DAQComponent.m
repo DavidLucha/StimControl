@@ -18,21 +18,22 @@ end
 methods (Access = public)
 function obj = DAQComponent(varargin)
     p = obj.GetBaseParser();
+    addParameter(p, 'ChannelConfig', '', @(x) isstring(x) | ischar(x) | islogical(x))
     parse(p, varargin{:});
     params = p.Results;
 
     obj = obj.Initialise(params);
     if params.Initialise && ~params.Abstract
-        obj = obj.InitialiseSession('ConfigStruct', params.Struct);
+        obj = obj.InitialiseSession('ConfigStruct', params.ConfigStruct, ...
+            'ChannelConfig', params.ChannelConfig);
     end
 end
 
 function obj = InitialiseSession(obj, varargin)
     % Initialise device. 
     %TODO STOP/START
-    strValidate = @(x) ischar(x) || isstring(x);
     p = inputParser;
-    addParameter(p, 'ChannelConfig', '', strValidate);
+    addParameter(p, 'ChannelConfig', '', @(x) ischar(x) || isstring(x) || islogical(x));
     addParameter(p, 'ConfigStruct', []);
     parse(p, varargin{:});
     params = p.Results;
@@ -55,7 +56,9 @@ function obj = InitialiseSession(obj, varargin)
     end
     
     %---channels---
-    obj = obj.CreateChannels(daqStruct.ChannelConfig);
+    if ~islogical(params.ChannelConfig) || params.ChannelConfig
+        obj = obj.CreateChannels(obj.ConfigStruct.ChannelConfig, []);
+    end
 end
 
 % Start device
@@ -367,6 +370,91 @@ function out = GenerateDigitalStim(obj, stimType, stimLength, params)
 end
 end
 
+%% DEVICE-SPECIFIC FUNCTIONS
+function obj = CreateChannels(obj, filename, protocolIDs)
+    % Create DAQ channels from filename.
+    if isempty(obj.SessionHandle) || ~isvalid(obj.SessionHandle)
+        error("DAQComponent %s has no valid session handle to attach channels to.", obj.ComponentID);
+    end
+    if isempty(filename)
+        filename = obj.ConfigStruct.ChannelConfig;
+        %% DEBUG
+        filename = [pwd filesep 'config' filesep 'component_params' filesep 'Minimal_OuterLab_DaqChanParams.csv'];
+    end
+    tab = readtable(filename);
+    s = size(tab);
+    if ~isMATLABReleaseOlderThan('R2024b')
+        channelList = daqchannellist;
+    end
+    for ii = 1:s(1)
+        try
+            warning('');
+            line = tab(ii, :); %TODO CHECK FOR BLANKS
+            % line.('deviceID') or line.(1);
+            if ~isempty(protocolIDs) && ~any(contains(protocolIDs, line.('ProtocolID'){:}))
+                % skip channels that aren't required for this protocol.
+                %TODO CHECK THIS WORKS FOR SUFFIXES e.g. ThermA-Recording
+                %vs ThermA-Driver vs ThermA
+                continue
+            end
+            deviceID = line.('deviceID'){1};
+            portNum = line.('portNum'){1}; 
+            channelName = line.('channelName'){1};
+            if isempty(channelName)
+                channelName = line.('Note'){1};
+            end
+            ioType = line.('ioType'){1};
+            signalType = line.('signalType'){1};
+            terminalConfig = line.('TerminalConfig');
+            if contains(class(terminalConfig), 'cell')
+                terminalConfig = terminalConfig{1};
+            end
+            range = line.('Range');
+            if contains(class(range), 'cell')
+                range = range{1};
+            end
+            channelID = line.('ProtocolID'){1};
+            if ~isMATLABReleaseOlderThan('R2024b')
+                channelList = add(channelList, ioType, deviceID, portNum, signalType, TerminalConfig=terminalConfig, Range=range);
+            else
+                switch ioType
+                    case 'input'
+                        ch = addinput(obj.SessionHandle,deviceID,portNum,signalType);
+                    case 'output'
+                        ch = addoutput(obj.SessionHandle,deviceID,portNum,signalType);
+                    case 'bidirectional'
+                        ch = addbidirectional(obj.SessionHandle,deviceID,portNum,signalType);
+                end
+                ch.Name = channelName;
+                if ~isempty(terminalConfig) && ~contains(class(ch), 'Digital')
+                    ch.TerminalConfig = terminalConfig;
+                end
+                if ~isempty(range) && ~contains(class(ch), 'Digital')
+                    range = str2num(range);
+                    ch.Range = range;
+                end
+                [warnMsg, warnId] = lastwarn;
+                if ~isempty(warnMsg)
+                    message = ['Warning encountered loading DAQComponent channel information on line ' char(string(ii))];
+                    warning(message);
+                end
+            end
+            obj.ChannelMap.(channelID) =  ch;
+        catch exception
+            % dbstack
+            % keyboard
+            message = ['Encountered an error reading channels config file on line ' ...
+                    char(string(ii)) ': ' exception.message ' Line skipped.'];
+            warning(message);
+        end
+    end
+    if ~isMATLABReleaseOlderThan('R2024b')
+        obj.SessionHandle.Channels = channelList;
+    end
+end
+
+end
+
 %% Private Methods
 methods (Access = protected)
 
@@ -380,7 +468,11 @@ end
 function status = GetSessionStatus(obj)
     % Query device status. TODO
     % options: ready / acquiring / writing / error / stopped / empty / loading
-    status = obj.SessionHandle.Status;
+    if isempty(obj.SessionHandle)
+        status = 'not initialised';
+    else
+        status = 'ok';
+    end
 end
 
 function name = FindDaqName(obj, deviceID, vendorID, model)
@@ -415,93 +507,6 @@ function name = FindDaqName(obj, deviceID, vendorID, model)
     end
     name = daqs(correctIndex).Vendor.ID;
 end
-
-function obj = CreateChannels(obj, filename)
-    % Create DAQ channels from filename.
-    if isempty(obj.SessionHandle) || ~isvalid(obj.SessionHandle)
-        %create a default DAQ session to attach channels to
-        obj.Clear();
-        obj = obj.InitialiseSession();
-    end
-    tab = readtable(filename);
-    s = size(tab);
-    if ~isMATLABReleaseOlderThan('R2024b')
-        channelList = daqchannellist;
-    end
-    for ii = 1:s(1)
-        try
-            warning('');
-            line = tab(ii, :); %TODO CHECK FOR BLANKS
-            % line.('deviceID') or line.(1);
-            deviceID = line.('deviceID'){1};
-            portNum = line.('portNum'){1}; 
-            channelName = line.('channelName'){1};
-            if isempty(channelName)
-                channelName = line.('Note'){1};
-            end
-            ioType = line.('ioType'){1};
-            signalType = line.('signalType'){1};
-            terminalConfig = line.('TerminalConfig');
-            if contains(class(terminalConfig), 'cell')
-                terminalConfig = terminalConfig{1};
-            end
-            range = line.('Range');
-            if contains(class(range), 'cell')
-                range = range{1};
-            end
-            channelID = line.('ProtocolID'){1};
-            if ~isMATLABReleaseOlderThan('R2024b')
-                channelList = add(channelList, ioType, deviceID, portNum, signalType, TerminalConfig=terminalConfig, Range=range);
-            else
-                switch ioType
-                    case 'input'
-                        ch = addinput(obj.SessionHandle,deviceID,portNum,signalType);
-                    case 'output'
-                        ch = addoutput(obj.SessionHandle,deviceID,portNum,signalType);
-                    case 'bidirectional'
-                        ch = addbidirectional(obj.SessionHandle,deviceID,portNum,signalType);
-                end
-                ch.Name = channelName;
-                if ~isempty(terminalConfig) && ~contains(class(ch), 'Digital')
-                    ch.TerminalConfig = terminalConfig;
-                end
-                if ~isempty(range) && ~contains(class(ch), 'Digital')
-                    range = obj.GetRangeFromString(range);
-                    ch.Range = range;
-                end
-                [warnMsg, warnId] = lastwarn;
-                if ~isempty(warnMsg)
-                    message = ['Warning encountered loading DAQComponent channel information on line ' char(string(ii))];
-                    warning(message);
-                end
-            end
-            obj.ChannelMap.(channelID) =  ch;
-        catch exception
-            % dbstack
-            % keyboard
-            message = ['Encountered an error reading channels config file on line ' ...
-                    char(string(ii)) ': ' exception.message ' Line skipped.'];
-            warning(message);
-        end
-    end
-    if ~isMATLABReleaseOlderThan('R2024b')
-        obj.SessionHandle.Channels = channelList;
-    end
-end
-
-function r = GetRangeFromString(obj, rString)
-    % Get range from string. Used for parsing channel params.
-    r0 = split(rString);
-    r0 = split(r0{1}, '[');
-    r0 = r0{2};
-    r0 = str2double(r0);
-    r1 = split(rString);
-    r1 = split(r1{2}, ']');
-    r1 = r1{1};
-    r1 = str2double(r1);
-    r = [r0 r1];
-end
-
 
 %%TODO!! STARTS HERE
 function preloadChannels(obj, p, idxStim)
