@@ -165,6 +165,7 @@ function StopPreview(obj)
         delete(obj.PreviewPlot.Children(1));
     end
     stoppreview(obj.SessionHandle);
+    closepreview(obj.SessionHandle);
     obj.Previewing = false;
 end
 
