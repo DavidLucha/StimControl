@@ -1,4 +1,4 @@
-function callbackReadSessionProtocol(obj)
+function callbackLoadProtocol(obj, src, event)
 if ~isfield(obj.path, 'SessionProtocolFile') || isempty(obj.path.SessionProtocolFile) %TODO OR CHANGED
     [filename, dir] = uigetfile([obj.path.protocolBase filesep '*.stim'], 'Select protocol');
     if filename == 0
@@ -101,4 +101,7 @@ for i = 1:length(ks)
         component.CreateChannels([], obj.d.ComponentProtocols{k});
     end
 end
+
+%% GUI updates
+% enable start/stop button
 end

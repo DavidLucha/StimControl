@@ -17,6 +17,7 @@ properties %(Access = private)
     name        = 'StimControl'
     pFile       = []
     isRunning   = false;
+    isPaused    = false;
     hardwareParams
     trialNum
 end
@@ -97,15 +98,14 @@ methods (Access = private)
     callbackDebug(obj, src, event)
     
     % experiment control callbacks
-    callbackLoadTrial(obj)
-    callbackSessionStart(obj)
-    callbackTrialStart(obj)
-    callbackSessionPause(obj)
-    callbackSessionResume(obj)
-    callbackSessionStop(obj)
-    callbackNewTrial(obj)
-    callbackNewExperiment(obj)
-    callbackNewAnimal(obj)
+    callbackLoadProtocol(obj, src, event)
+    callbackLoadTrial(obj, src, event)
+    callbackStartStop(obj, src, event)
+    callbackPauseResume(obj, src, event)
+    callbackTrialStart(obj, src, event)
+    callbackNewTrial(obj, src, event)
+    callbackSelectTrial(obj, src, event)
+    callbackSelectAnimal(obj, src, event)
 
     % file control callbacks
     callbackLoadConfig(obj, src, event)
@@ -113,7 +113,7 @@ methods (Access = private)
 
     % hardware control callbacks
     callbackEditComponentConfig(obj)
-    callbackViewHardwareOutput(obj)
+    % callbackViewHardwareOutput(obj)
 
     % misc
     callbackFileExit(obj,~,~)

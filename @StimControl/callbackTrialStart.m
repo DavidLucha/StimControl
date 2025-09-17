@@ -1,5 +1,0 @@
-function callbackTrialStart(obj)
-
-
-
-end
