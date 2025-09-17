@@ -12,7 +12,7 @@ properties (Access = protected)
     ChannelMap = struct();
     HandleClass = 'daq.interfaces.DataAcquisition';
     TrackedChannels = {};
-    SaveFID
+    SaveFID = [];
 end
 
 methods (Access = public)
@@ -364,6 +364,7 @@ function out = GenerateDigitalStim(obj, stimType, stimLength, params)
             out(MsToTicks(params.delay)) = 1;
             out(MsToTicks(params.delay)+MsToTicks(params.dur)) = 1;
     end
+end
 end
 
 %% Private Methods

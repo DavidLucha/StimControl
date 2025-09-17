@@ -18,6 +18,15 @@ Data = struct( ...
         'note', 'Distinguishes between multiple daqs with the same vendor'), ...
     ChannelConfig = ComponentProperty( ...
         'validatefcn', @(x) isstring(x) || ischar(x), ...
-        'default', [pwd filesep 'config' filesep 'component_params' filesep 'Default_OuterLab_DaqChanParams.csv']))
+        'default', GetDefaultChannelConfig()))
+end
+methods (Static, Access=private)
+    function out = GetDefaultChannelConfig()
+        if contains(pwd, 'StimControl')
+            out = [pwd filesep 'config' filesep 'component_params' filesep 'Default_OuterLab_DaqChanParams.csv'];
+        else
+            out = [pwd filesep 'StimControl' filesep 'config' filesep 'component_params' filesep 'Default_OuterLab_DaqChanParams.csv'];
+        end
+    end
 end
 end

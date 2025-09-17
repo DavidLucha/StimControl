@@ -131,6 +131,7 @@ function UpdatePreview(obj, varargin)
     if ~isempty(newPlot)
         obj.PreviewPlot = newPlot;
     end
+    pause(0.1); % TODO fix: temporary measure - wait for hardware to update.
     if restart
         obj.StartPreview();
     end

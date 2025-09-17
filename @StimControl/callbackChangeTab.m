@@ -10,7 +10,7 @@ if strcmpi(event.NewValue.Title, 'Experiment')
                 component.InitialiseSession();
             end
             % update preview window
-            component.UpdatePreview(obj.h.Session.PreviewPanels{i});
+            component.UpdatePreview('newPlot', obj.h.Session.PreviewPanels{i});
         end
     end
 

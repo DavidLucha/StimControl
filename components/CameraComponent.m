@@ -114,7 +114,7 @@ end
 % Stop device
 function Stop(obj)
     obj.StopPreview();
-    if ~isempty(obj.SessionHandle)
+    if ~isempty(obj.SessionHandle) && isrunning(obj.SessionHandle)
         stop(obj.SessionHandle);
     end
 end
