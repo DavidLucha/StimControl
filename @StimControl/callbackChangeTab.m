@@ -12,9 +12,6 @@ if strcmpi(event.NewValue.Title, 'Experiment')
         else
             % de-initialise unnecessary devices
             component.Stop();
-            
-            % % update preview window
-            % component.UpdatePreview('newPlot', obj.h.Session.PreviewPanels{i});
         end
     end
     % update preview panel with final count of active components.

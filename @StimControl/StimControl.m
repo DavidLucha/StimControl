@@ -89,7 +89,6 @@ methods (Access = private)
     createPanelComponentConfig(obj, hPanel, ~, component)
     createPanelSessionControl(obj, hPanel, ~)
     createPanelSessionPreview(obj, hPanel, ~)
-    createPanelSessionInfo(obj, hPanel, ~)
     createPanelSessionHardware(obj, hPanel, ~)
 
     % app control callbacks
@@ -248,6 +247,14 @@ methods
         obj.path.datetime = string(dt);
         out = string(dt);
     end
+
+    function set.animalID(obj, val)
+
+    end
+
+    function set.experimentID(obj, val)
+
+    end
     
     function set.trialNum(obj, value)
         nTrials = length(obj.p);
@@ -271,6 +278,10 @@ methods
         % obj.h.LED.edit.ledDelay.Value      = obj.p(value).ledDelay;
         % obj.p2serial(obj.p(value));
         % obj.p2GUI
+    end
+
+    function updatePathDisplay(obj)
+
     end
 
     % function out = get.dirAnimal(obj)

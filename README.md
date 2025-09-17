@@ -160,6 +160,7 @@ When working with a ComponentProperty that takes a vector as its value (e.g. cam
 
 ### Code Cleanup
 - [ ] move ComponentID to ComponentProperties with generator function
+- [ ] switch preview build to single createpanelpreview function
 
 ## Things I Had A Bad Time With
 Consider this like that one counter:
