@@ -19,6 +19,7 @@ properties %(Access = private)
     isRunning   = false;
     isPaused    = false;
     hardwareParams
+    trialIdx    = 1;
 end
 
 properties (Dependent)
@@ -28,6 +29,7 @@ properties (Dependent)
     dirAnimal
     dirExperiment
     status
+    activeComponents
 end
 
 methods
@@ -111,7 +113,9 @@ methods (Access = private)
 
     % hardware control callbacks
     callbackEditComponentConfig(obj, ~, ~)
-    % callbackViewHardwareOutput(obj)
+
+    % Run it all
+    Stimulate(obj)
 
     % misc
     callbackFileExit(obj,~,~)
@@ -252,7 +256,9 @@ methods
     end
 
     function set.experimentID(obj, val)
-        obj.h.protocolSelectDropDown.Items{end+1} = val;
+        if ~contains(obj.h.protocolSelectDropDown.Items, val)
+            obj.h.protocolSelectDropDown.Items{end+1} = val;
+        end
         obj.h.protocolSelectDropDown.Value = val;
         % TODO UPDATE GUI HERE - trialnum, estimated time, etc.
     end
@@ -318,6 +324,10 @@ methods
 
     function val = get.status(obj)
         val = lower(obj.h.statusLabel.Text);
+    end
+
+    function activeComponents = get.activeComponents(obj)
+        activeComponents = obj.d.Available(obj.d.Active == 1);
     end
     
     function set.trialNum(obj, value)

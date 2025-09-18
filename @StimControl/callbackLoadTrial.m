@@ -1,21 +1,39 @@
 function callbackLoadTrial(obj, src, event)
+% Sets trial number if changed, and preloads trial data into   
 if src == obj.h.prevTrialBtn
-    obj.trialNum = obj.trialNum - 1;
+    if obj.trialNum == 1
+        obj.trialNum = length(obj.p);
+    else
+        obj.trialNum = obj.trialNum - 1;
+    end
 elseif src == obj.h.nextTrialBtn
-    obj.trialNum = obj.trialNum - 1;
+    if obj.trialNum == length(obj.p)
+        obj.trialNum = 1;
+    else
+        obj.trialNum = obj.trialNum + 1;
+    end
 end
-if isempty(obj.d.Active) || sum(obj.d.Active) == 0
+
+% Load a trial
+if sum(obj.d.Active) == 0
     obj.errorMsg('please select at least one hardware component');
 elseif isempty(obj.p) || isempty(obj.g)
     obj.errorMsg('please select a protocol');
 end
-if isempty(obj.trialNum)
-    obj.trialNum = 1;
-end
+
+obj.h.trialInformationScroller.Value = '';
+obj.h.trialInformationScroller.FontColor = 'black';
+
 trialData = obj.p(obj.trialNum);
+if isfield(trialData, 'tStim')
+    tStim = trialData.tStim;
+else
+    tStim = 0;
+end
 genericTrialData = struct( ...
     'tPre', trialData.tPre, ...
     'tPost', trialData.tPost, ...
+    'tStim', tStim', ...
     'nRepetitions', trialData.nRepetitions);
 ks = keys(obj.d.ComponentProtocols);
 for i = 1:length(ks)
@@ -27,8 +45,17 @@ for i = 1:length(ks)
         name = protocolNames{:}{f};
         componentTrialData.(name) = trialData.(name);
     end
-    component.LoadTrial(componentTrialData, genericTrialData);
+    component.LoadTrialFromParams(componentTrialData, genericTrialData);
     component.SavePath = obj.dirExperiment;
 end
-% TODO ADD PREVIEWS??
+
+tTrial = (genericTrialData.tPre + genericTrialData.tPost + genericTrialData.tStim) / 1000;
+trialMins = floor(tTrial / 60);
+trialSecs = ceil(tTrial - (trialMins * 60));
+obj.h.StatusCountdownLabel.Text = sprintf('-%d:%d', trialMins, trialSecs);
+obj.h.numTrialsElapsedLabel.Text = sprintf('Trial %d / %d', obj.trialIdx, length(obj.p));
+obj.h.trialTimeEstimate.Text = sprintf('00:00 / %d:%d', trialMins, trialSecs);
+
+
+% TODO ADD PREVIEWS
 end

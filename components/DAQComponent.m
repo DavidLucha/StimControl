@@ -96,7 +96,7 @@ function SetParams(obj, varargin)
 end
 
 function daqStruct = GetParams(obj) %TODO this should all be handled in configstruct but I gotta check that works.
-    % Get current device parameters for saving. Generic.          
+    % Get current device parameters for saving          
     daqs = daqlist().DeviceInfo;
     correctIndex = -1;
     for i = 1:length(daqs)
@@ -237,7 +237,7 @@ function LoadTrialFromParams(obj, componentTrialData, genericTrialData)
 
     for i = 1:length(fds)
         fieldName = fds{i};
-        chIdx = obj.ChannelMap.fieldName.Index;
+        chIdx = obj.ChannelMap.(fieldName).Index;
         if regexpi(fieldName, '^Thermode[A-z]*')
             % Thermode 
         elseif regexpi(fieldName, '^((Ana)|(Vib)|(Piezo))[A-z]*')
@@ -379,9 +379,12 @@ function obj = CreateChannels(obj, filename, protocolIDs)
     end
     if isempty(filename)
         filename = obj.ConfigStruct.ChannelConfig;
-        %% DEBUG
-        filename = [pwd filesep 'config' filesep 'component_params' filesep 'Minimal_OuterLab_DaqChanParams.csv'];
     end
+    % clear previous channels, if any
+    if length(obj.SessionHandle.Channels) > 0
+        removechannel(obj.SessionHandle, [1 length(obj.SessionHandle.Channels)]);
+    end
+    % obj.SessionHandle.
     tab = readtable(filename);
     s = size(tab);
     if ~isMATLABReleaseOlderThan('R2024b')

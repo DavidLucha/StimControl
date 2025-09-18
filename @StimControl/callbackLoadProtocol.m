@@ -123,9 +123,25 @@ for i = 1:length(ks)
     component = obj.d.IDComponentMap{k};
     if isa(component, 'DAQComponent')
         % TODO CAMERA INPUT VS OUTPUT CHANNEL TYPE SWITCHER
+        % TODO detect if channel already exists? maybe remove all old
+        % channels
         component.CreateChannels([], obj.d.ComponentProtocols{k});
     end
 end
+
+%% calculate estimated time + rest time
+if ~isfield(obj.p, 'tStim')
+    totalTStim = 0;
+else
+    totalTStim = sum([obj.p.tStim]);
+end
+protocolTotalTimeSecs = ((obj.g.dPause(1) + ((sum([obj.p.tPre]) + sum([obj.p.tPost]) + totalTStim)/1000))*obj.g.nProtRep) - obj.g.dPause(1);
+protocolTimeMins = floor(protocolTotalTimeSecs/60);
+protocolTimeSecs = ceil(protocolTotalTimeSecs - (60*protocolTimeMins));
+obj.h.protocolTimeEstimate.Text = sprintf('0:00 / %d:%d', protocolTimeMins, protocolTimeSecs);
+
+%% Load first trial
+obj.callbackLoadTrial(src, event);
 
 %% update status (GUI updates handled in here)
 obj.status = 'ready';

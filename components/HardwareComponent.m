@@ -8,6 +8,7 @@ properties (Access = public)
     Name
     SessionHandle
     SavePath
+    SavePrefix
     Required
     Abstract
     ConfigStruct
