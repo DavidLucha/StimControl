@@ -21,9 +21,6 @@ elseif isempty(obj.p) || isempty(obj.g)
     obj.errorMsg('please select a protocol');
 end
 
-obj.h.trialInformationScroller.Value = '';
-obj.h.trialInformationScroller.FontColor = 'black';
-
 trialData = obj.p(obj.trialNum);
 if isfield(trialData, 'tStim')
     tStim = trialData.tStim;
@@ -45,8 +42,8 @@ for i = 1:length(ks)
         name = protocolNames{:}{f};
         componentTrialData.(name) = trialData.(name);
     end
-    component.LoadTrialFromParams(componentTrialData, genericTrialData);
     component.SavePath = obj.dirExperiment;
+    component.LoadTrialFromParams(componentTrialData, genericTrialData);
 end
 
 tTrial = (genericTrialData.tPre + genericTrialData.tPost + genericTrialData.tStim) / 1000;

@@ -130,14 +130,17 @@ When working with a ComponentProperty that takes a vector as its value (e.g. cam
 - [ ] PROTOCOL FILES: allow a single identifier for multiple types of output (a syntax for function definitions) -currently surmountable using arbitrary files so no pressure
 
 ### StimControl GUI
-- [ ] add a pause button (lock off unless in inter-trial interval)
-- [ ] move single stim button down next to trial button
+- [x] add a pause button (lock off unless in inter-trial interval)
+- [ ] ~~move single stim button down next to trial button~~
 - [x] turn the session setup and dev1 thing into one tab, experiment control into a separate tab
-- [ ] put a confirm button in the setup tab, don't just save everything if you switch tabs. Or maybe a "save?" popup? is this necessary? maybe just check when switching if any active components are in an error state.
+- [ ] ~~put a confirm button in the setup tab, don't just save everything if you switch tabs. Or maybe a "save?" popup? is this necessary? maybe just check when switching if any active components are in an error state.~~
 - [ ] python socketing - make it easy to add functionality with python
 
 ### StimControl QOL
 - [x] for loadprotocol etc. - only do it if not already assigned or "select new" has been pressed
+- [ ] make it so you only have to click the map once
+- [ ] add loading indicators
+- [ ] Event for window resize to reshape (at least) daq preview window
 
 ### StimControl config
 - [ ] rejig the stimulus files to allow for function-style definitions. The mapping is driving me bonkers.
@@ -166,7 +169,7 @@ When working with a ComponentProperty that takes a vector as its value (e.g. cam
 - [ ] move ComponentID to ComponentProperties with generator function
 - [ ] switch preview build to single createpanelpreview function
 
-## Things I Had A Bad Time With
+## A Non-Matlab User's Guide To Matlab
 Consider this like that one counter:
 ![Dear programmer: When I wrote this code, only god and I knew how it worked. Now, only god knows it! Therefore, if you are trying to optimize this routine and it fails (most surely), please increase this counter as a warning for the next person: total_hours_wasted_here = 254](https://preview.redd.it/hwqj7yx9vm211.jpg?width=640&crop=smart&auto=webp&s=d8dbb52e8272c553603a8ca66f48ca85a8a40de9)
 
@@ -220,3 +223,6 @@ function createPanelThermode(obj,hPanel,~,idxThermode,nThermodes)
 obj.h.(thermodeID).panel.params = uipanel(obj.h.fig,...
     'CreateFcn',    {@obj.createPanelThermode,ii,length(obj.s)});
 ```
+
+### Things To Look Into
+[Data Linking](https://au.mathworks.com/help/matlab/ref/matlab.graphics.internal.linkdata.html) - dynamic updates of plots as the data changes

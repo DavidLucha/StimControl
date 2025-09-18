@@ -139,6 +139,10 @@ protocolTotalTimeSecs = ((obj.g.dPause(1) + ((sum([obj.p.tPre]) + sum([obj.p.tPo
 protocolTimeMins = floor(protocolTotalTimeSecs/60);
 protocolTimeSecs = ceil(protocolTotalTimeSecs - (60*protocolTimeMins));
 obj.h.protocolTimeEstimate.Text = sprintf('0:00 / %d:%d', protocolTimeMins, protocolTimeSecs);
+obj.h.trialInformationScroller.Value = '';
+obj.h.trialInformationScroller.FontColor = 'black';
+
+obj.updateDateTime;
 
 %% Load first trial
 obj.callbackLoadTrial(src, event);

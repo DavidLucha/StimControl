@@ -220,25 +220,28 @@ end
 
 methods
     function filepath = get.dirAnimal(obj)
-        filepath = fullfile(obj.dirData,obj.animalID);
+        filepath = fullfile(obj.path.dirData,obj.animalID);
         if ~exist(filepath,'dir')
             mkdir(filepath)
         end
     end
 
     function filepath = get.dirExperiment(obj)
-        tmpPath = [obj.path.dirAnimal filesep obj.path.date];
+        if ~isfield(obj.path, 'date')
+            obj.UpdateDateTime
+        end
+        tmpPath = [obj.dirAnimal filesep obj.path.date];
         if ~exist(tmpPath, 'dir')
             mkdir(tmpPath);
         end
-        tmpPath = [tmpPath filesep obj.displayDateTime '_' obj.experimentID];
+        tmpPath = [tmpPath filesep obj.path.date '_' obj.path.time '_' obj.experimentID];
         if ~exist(tmpPath, 'dir')
             mkdir(tmpPath);
         end
         filepath = tmpPath;
     end
 
-    function updateDateTtime(obj)
+    function updateDateTime(obj)
         obj.updateDate;
         obj.updateTime;
     end
@@ -246,13 +249,13 @@ methods
     function updateDate(obj)
         dt = datetime("now");
         dt.Format = "yyyyMMdd";
-        obj.path.date = string(dt);
+        obj.path.date = char(dt);
     end
 
     function updateTime(obj)
         dt = datetime("now");
         dt.Format  = "hhmmss";
-        obj.path.time = string(dt);
+        obj.path.time = char(dt);
     end
 
     function set.experimentID(obj, val)
@@ -284,6 +287,7 @@ methods
             obj.h.statusLabel.Text = 'Not Initialised';
             obj.h.statusLamp.Color = '#808080';
             obj.h.startStopExperimentBtn.Enable = 'off';
+            obj.h.startStopExperimentBtn.Text = 'START';
             obj.h.pauseBtn.Enable = 'off';
             obj.isRunning = false;
             obj.isPaused = false;
@@ -292,6 +296,7 @@ methods
             obj.h.statusLabel.Text = 'Ready';
             obj.h.statusLamp.Color = '#00FF00';
             obj.h.startStopExperimentBtn.Enable = 'on';
+            obj.h.startStopExperimentBtn.Text = 'START';
             obj.h.pauseBtn.Enable = 'off';
             obj.isRunning = false;
             obj.isPaused = false;
@@ -300,7 +305,9 @@ methods
             obj.h.statusLabel.Text = 'Running';
             obj.h.statusLamp.Color = '#FFA500';
             obj.h.startStopExperimentBtn.Enable = 'on'; %TODO or on?
+            obj.h.startStopExperimentBtn.Text = 'STOP';
             obj.h.pauseBtn.Enable = 'off';
+            obj.h.pauseBtn.Text = 'PAUSE';
             obj.isRunning = true;
             obj.isPaused = false;
 
@@ -308,7 +315,9 @@ methods
             obj.h.statusLabel.Text = 'Inter-trial';
             obj.h.statusLamp.Color = '#FFFFFF';
             obj.h.startStopExperimentBtn.Enable = 'on';
+            obj.h.startStopExperimentBtn.Text = 'STOP';
             obj.h.pauseBtn.Enable = 'on';
+            obj.h.pauseBtn.Text = 'PAUSE';
             obj.isRunning = true;
             obj.isPaused = false;
 
@@ -316,9 +325,14 @@ methods
             obj.h.statusLabel.Text = 'Paused';
             obj.h.statusLamp.Color = '#008080';
             obj.h.startStopExperimentBtn.Enable = 'on';
+            obj.h.startStopExperimentBtn.Text = 'STOP';
             obj.h.pauseBtn.Enable = 'on';
+            obj.h.pauseBtn.Text = 'RESUME';
             obj.isRunning = true;
             obj.isPaused = true;
+        elseif strcmpi(val, 'loading')
+            obj.h.statusLabel.Text = 'Loading...';
+            obj.h.statusLamp.Color = '#FFFF00';
         end
     end
 

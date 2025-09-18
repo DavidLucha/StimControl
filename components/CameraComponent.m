@@ -135,7 +135,7 @@ function StartPreview(obj)
     if ~isempty(obj.PreviewPlot)
         imshow(zeros(vidRes(2),vidRes(1),nbands),[],'parent',obj.PreviewPlot);
     else
-        obj.PreviewPlot = imshow(zeros(vidRes(2),vidRes(1),nbands),[],'parent',obj.PreviewPlot);
+        obj.PreviewPlot = imshow(zeros(vidRes(2),vidRes(1),nbands),[]);
     end
     preview(obj.SessionHandle, obj.PreviewPlot.Children);
     axis(obj.PreviewPlot, "tight");
@@ -270,13 +270,7 @@ function GetInspector(obj)
     inspect(obj.ConfigStruct);
 end
 
-function LoadProtocol(obj, varargin)
-    %TODO THIS
-    % depending on trigger type this could be dicey? hardware is
-    % taken care of with daq but software is gonna be rough
-end
-
-function LoadTrial(obj, componentTrialData, genericTrialData)
+function LoadTrialFromParams(obj, componentTrialData, genericTrialData)
 end
 
 function TakeSnapShot(obj, savePath)

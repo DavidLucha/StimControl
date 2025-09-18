@@ -13,6 +13,13 @@ properties (Access = protected)
     HandleClass = 'daq.interfaces.DataAcquisition';
     TrackedChannels = {};
     SaveFID = [];
+    PreviewData = [];
+    PreviewTimeAxis = [];
+    tPrePost = [];
+end
+
+properties(Access = private)
+    StackedPreview = [];
 end
 
 methods (Access = public, Static)
@@ -70,7 +77,7 @@ end
 
 % Start device
 function Start(obj)
-    if ~isempty(obj.SavePath) || length(obj.SavePath) == 0
+    if ~isempty(obj.SavePath) || length(obj.SavePath) ~= 0
         obj.SaveFID = fopen(obj.SavePath, 'w');
     end
     % run stimulation
@@ -86,6 +93,9 @@ end
 %Stop device
 function Stop(obj)
     stop(obj.SessionHandle);
+    if ~isempty(obj.SaveFID)
+        close(obj.SaveFID)
+    end
 end
 
 % Change device parameters TODO ALL OF THESE REQUIRE A RESTART I THINK
@@ -118,11 +128,6 @@ function daqStruct = GetParams(obj) %TODO this should all be handled in configst
 end
 
 function SaveAuxiliaryConfig(obj, filepath)
-    channelData = obj.GetChanParams;
-    writetable(channelData, filepath);
-end
-
-function channelData = GetChanParams(obj)
     % Get channel parameters for saving. DAQ-specific.
     channels = obj.SessionHandle.Channels;
     channelData = {'deviceID' 'portNum' 'channelName' 'ioType' ...
@@ -147,6 +152,7 @@ function channelData = GetChanParams(obj)
         chanCell = {deviceID portNum name ioType signalType terminalConfig range};
         channelData(i+1,:) = chanCell;
     end
+    writetable(channelData, filepath);
 end
 
 function PrintInfo(obj)
@@ -156,60 +162,57 @@ function PrintInfo(obj)
     disp(' ');
 end
 
-%% TODO STARTS HERE
 function StartPreview(obj)
     % Dynamically visualise object output
-    % if ~isempty(obj.PreviewPlot)
-    %     return
-    % else
-    %     return
-    % end
-    % if isempty(obj.SessionHandle)
-    %     return;
-    % end
+    if isempty(obj.PreviewPlot) || isempty(obj.SessionHandle)
+        return
+    elseif isempty(obj.PreviewData)
+        obj.Previewing = true;
+        obj.PreviewPlot.Visible = 'on';
+        x = obj.PreviewPlot.xLim(2);
+        y = obj.PreviewPlot.yLim(2);
+        imshow(ones(x,y),[],'parent',obj.PreviewPlot, ...
+            'axis', 'tight');
+        text(x/2,y/2, 'No data', ...
+            'Parent', obj.PreviewPlot, 'FontSize', 16, 'FontWeight','bold', ...
+            'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle', ...
+            'Color', 'black');
+        return
+    end
+    obj.Previewing = true;
+    obj.StackedPreview = stackedplot(obj.PreviewPlot.Parent, obj.PreviewTimeAxis, obj.PreviewData, ...
+        'DisplayLabels', {obj.SessionHandle.Channels.Name}, ...
+        'Layout', obj.PreviewPlot.Layout, ...
+        'Position', obj.PreviewPlot.Position);
+    obj.PreviewPlot.Visible = 'off';
 end
 
 function StopPreview(obj)
-    return
-end
-
-% Load a full experimental protocol
-function obj = LoadProtocol(obj, varargin)
-    parser = inputParser;
-    stringValidate = @(x) ischar(x) || isstring(x);
-    intValidate = @(x) ~isinf(x) && floor(x) == x;
-    addParameter(parser, 'idxStim', 1, intValidate);
-    addParameter(parser, 'filepath', '', stringValidate);
-    addParameter(parser, 'p', '', @isstruct);
-    addParameter(parser, 'g','', @isstruct);
-    parse(parser, varargin{:});
-
-    if ~isempty(parser.Results.filepath)
-        [p, g] = readParameters(parser.Results.filepath);
-    elseif ~isempty(parser.Results.p) && ~isempty(parser.Results.g)
-        p = parser.Results.p;
-        g = parser.Results.g;
+    if isempty(obj.PreviewPlot) || isempty(obj.SessionHandle)
+        return
+    elseif ~isempty(obj.PreviewPlot.Children)
+        delete(obj.PreviewPlot.Children);
     else
-        error("No protocol provided for DAQComponent. Provide a " + ...
-            "protocol using LoadProtocol and defining either the " + ...
-            "'filename' or 'p' and 'g' arguments.")
+        delete(obj.StackedPreview);
+        obj.PreviewPlot.Visible = 'on';
     end
-    obj.SessionInfo.p = p;
-    obj.SessionInfo.g = g;
-
-    % obj.LoadTrial('idxStim', parser.Results.idxStim);
+    obj.Previewing = false;
 end
 
 function LoadTrial(obj, out)
     % Loads a trial from a matrix of size c x s where c is the number of
     % output channels and s is the number of samples in the trial.
-
+    
+    obj.PreviewData = out;
     % release session (in case the previous run was incomplete)
     if obj.SessionHandle.Running
         obj.SessionHandle.stop
     end
-    obj.DAQ.queueOutputData(out)            % queue data
-    prepare(obj.DAQ)                        % prepare data acquisition
+    preload(obj.SessionHandle, out);
+    % prepare(obj.SessionHandle)                        % prepare data acquisition
+    if ~isempty(obj.PreviewPlot)
+        obj.StartPreview
+    end
 end
 
 function LoadTrialFromParams(obj, componentTrialData, genericTrialData)
@@ -224,57 +227,72 @@ function LoadTrialFromParams(obj, componentTrialData, genericTrialData)
 
     tPre     = genericTrialData.tPre  / 1000;
     tPost    = genericTrialData.tPost / 1000;
-    tStim   = genericTrialData.tStim  / 1000;
-    tTotal  = tPre + tStim + tPost;
+    tStim    = genericTrialData.tStim  / 1000;
+    tTotal   = tPre + tStim + tPost;
+    obj.tPrePost = [genericTrialData.tPre genericTrialData.tPost];
 
     % Add Listener 
     obj.SessionHandle.ScansAvailableFcn = @obj.plotData;
 
     fds = fields(componentTrialData);
-    timeAxis = linspace(1/obj.SessionHandle.Rate,tTotal,tTotal*obj.SessionHandle.Rate)-tPre;
+    timeAxis = linspace(1/obj.SessionHandle.Rate,tTotal,tTotal*obj.SessionHandle.Rate)-tPre; %todo this falls apart if the rate !=1000 - need fixed?
+    obj.PreviewTimeAxis = timeAxis;
+    stimLength = numel(timeAxis);
     % Preallocate all zeros
     out = zeros(numel(timeAxis), length(obj.SessionHandle.Channels));
 
     for i = 1:length(fds)
         fieldName = fds{i};
-        chIdx = obj.ChannelMap.(fieldName).Index;
+        chIdx = obj.ChannelMap.(fieldName);
         if regexpi(fieldName, '^Thermode[A-z]*')
             % Thermode 
+
         elseif regexpi(fieldName, '^((Ana)|(Vib)|(Piezo))[A-z]*')
             % Analog 
+            stim = obj.GenerateAnalogStim('PWM', stimLength, componentTrialData.(fieldName));
+            out(:,chIdx) = stim;
+
         elseif regexpi(fieldName, '^(Dig)[A-z]*')
             % Arbitrary digital 
+            stim = obj.GenerateArbitraryStim(stimLength, componentTrialData.(fieldName));
+            out(:,chIdx) = stim;
+
         elseif regexpi(fieldName, '^((PWM)|(LED))[A-z]*')
             % PWM 
+            stim = obj.GenerateDigitalStim('pwm', stimLength, componentTrialData.(fieldName));
+            out(:,chIdx) = stim;
+
         elseif regexpi(fieldName, '^Piezo[A-z]*')
             % Piezo
+            stim = obj.GenerateAnalogStim('piezo', stimLength, componentTrialData.(fieldName));
+            out(:,chIdx) = stim;
+
         elseif regexpi(fieldName, '^(Cam)[A-z]*')
             % Camera trigger TODO what if it's just a start??
             if contains(channels(chIdx).Type, 'Output')
-                framerate = componentTrialData.(fieldName).Rate;
-                framerate_unitstep = round(obj.SessionHandle.Rate/framerate);
-                for jjj = 1:round(framerate_unitstep/2)
-                    out(jjj:framerate_unitstep:end,chIdx) = 1;
-                end
+                stim = obj.GenerateDigitalStim('repeattrigger', stimLength, componentTrialData.(fieldName));
+                out(:,chIdx) = stim;
             else
                 % set for input - I think this means do nothing? TODO check
             end
         elseif regexpi(fieldName, '^Arbitrary[A-z]*')
             % Arbitrary output.
+            % stim = obj.GenerateArbitraryStim(stimLength, componentTrialData.(fieldName));
+            % out(:,chIdx) = stim;
         else
             error('Unsupported data type for DAQComponent: %s', fieldName);
         end
     end
-
     obj.LoadTrial(out);
 end
 
 function out = GenerateAnalogStim(obj, stimType, stimLength, params)
+    % stimLength is in DAQ ticks
     % Accepts stimType / params combinations of:
     % piezo: ramp (default 20), freq, amp, dur, delay, rep
     rate = obj.ConfigStruct.Rate;
     MsToTicks = @(x) round(x*rate/1000);
-    out = zeros(1, MsToTicks(stimLength));
+    out = zeros(1, stimLength);
     Aurorasf = 1/52; % (1V per 50mN as per book,20241125 measured as 52mN per 1 V PB)
 
     switch lower(stimType)
@@ -291,7 +309,8 @@ function out = GenerateAnalogStim(obj, stimType, stimLength, params)
             piezostimunity = [piezostimunity(1:ramp) piezohold piezostimunity(ramp+1:end)];
             
             if params.rep>0 % TODO MAKE SURE THIS IS CONSISTENT - DOES REP1 MEAN 2 INSTANCES OR ONE
-                out(MsToTicks(params.delay))
+                % I actually think in previous runs this just meant "are we using piezo or not" 
+                % out(MsToTicks(params.delay))
                 for pp = 1:rep
                     pos1 = (pp-1) .*(1/piezoFreq) ; % in seconds
                     tloc = find(tax>=pos1); tloc = tloc(1);
@@ -302,7 +321,13 @@ function out = GenerateAnalogStim(obj, stimType, stimLength, params)
     end
 end
 
+function out = GenerateArbitraryStim(obj, stimLength, params)
+
+end
+
 function out = GenerateDigitalStim(obj, stimType, stimLength, params)
+    % Generates a digital stim given a stimtype, length, and params
+    % stimLength is in DAQ ticks.
     % Accepts stimType / params combinations of:
     % PWM: dc (duty cycle, 0<=dc<=100), freq (Hz), dur, delay, rep, repdel, rampup, rampdown
     % square: delay, dur, rep, repdel
@@ -312,7 +337,12 @@ function out = GenerateDigitalStim(obj, stimType, stimLength, params)
     %% TODO ADD TTL SCANIMAGE
     rate = obj.ConfigStruct.Rate;
     MsToTicks = @(x) round(x*rate/1000);
-    out = zeros(1, MsToTicks(stimLength));
+    out = zeros(1, stimLength);
+    if ~isfield(params, 'delay')
+        delay = 1;
+    else
+        delay = MsToTicks(params.delay);
+    end
     switch lower(stimType)
         case 'pwm'
             if params.rampup + params.rampdown > params.dur
@@ -328,7 +358,7 @@ function out = GenerateDigitalStim(obj, stimType, stimLength, params)
             rampDownPeriods = round(MsToTicks(params.rampdown) / periodTicks); %TODO SIMPLIFY
             rampDownTickDecrease = onTicks / rampDownPeriods;
             highPeriods = totalPeriods - (rampUpPeriods + rampDownPeriods);
-            offset = MsToTicks(params.delay) + 1;
+            offset = delay;
             % generate single stim
             singleStim = zeros(1, durationTicks);
             for i = 1:rampUpPeriods:periodTicks
@@ -336,16 +366,16 @@ function out = GenerateDigitalStim(obj, stimType, stimLength, params)
             end
             st = rampUpPeriods*periodTicks + 1;
             for i = st:st + highPeriods:periodTicks
-                singleStim(i:i+onTicks) = ones(1, onTicks);
+                singleStim(i:i+onTicks) = 1;
             end
             st = st + (highPeriods * periodTicks);
             for i = st:st + rampUpPeriods:periodTicks
-                singleStim(i:i+round(onTicks - (rampDownTickDecrease * i))) = ones(1, onTicks - (rampDownTickDecrease*i));
+                singleStim(i:i+round(onTicks - (rampDownTickDecrease * i))) = 1;
             end
             repdelTicks = MsToTicks(params.repdel);
             totalDurTicks = (repdelTicks + durationTicks) * params.rep;
             for i = offset+1:offset+1+totalDurTicks:durationTicks+numel(singleStim)
-                out(i:i+numel(singleStim)) = singleStim;
+                out(i:i+numel(singleStim)-1) = singleStim;
             end
 
         case 'square'
@@ -355,19 +385,26 @@ function out = GenerateDigitalStim(obj, stimType, stimLength, params)
             end
 
         case 'repeattrigger'
-            framerateTicks = round(rate * params.freq);
+            %TODO currently assumes trigger length as basically 50DC PWM -
+            % parametrise?
+            framerateTicks = round(rate/params.freq);
             if ~isfield(params, 'dur')
-                out(MsToTicks(params.delay):framerateTicks:end) = 1;
+                endIdx = length(out);
+                out(delay:framerateTicks:end) = 1;
             else
-                out(MsToTicks(params.delay):framerateTicks:MsToTicks(params.dur+params.delay)) = 1;
+                endIdx = delay + MsToTicks(params.dur);
+                out(delay:framerateTicks:MsToTicks(params.dur)+delay) = 1;
+            end
+            for i = 1:framerateTicks:endIdx-framerateTicks
+                out(i:i+round(framerateTicks/2)) = 1;
             end
 
         case 'singletrigger'
-            out(MsToTicks(params.delay)) = 1;
+            out(delay) = 1;
 
         case 'startstoptrigger'
-            out(MsToTicks(params.delay)) = 1;
-            out(MsToTicks(params.delay)+MsToTicks(params.dur)) = 1;
+            out(delay) = 1;
+            out(delay+MsToTicks(params.dur)) = 1;
     end
 end
 
@@ -423,11 +460,11 @@ function obj = CreateChannels(obj, filename, protocolIDs)
             else
                 switch ioType
                     case 'input'
-                        ch = addinput(obj.SessionHandle,deviceID,portNum,signalType);
+                        [ch, idx] = addinput(obj.SessionHandle,deviceID,portNum,signalType);
                     case 'output'
-                        ch = addoutput(obj.SessionHandle,deviceID,portNum,signalType);
+                        [ch, idx] = addoutput(obj.SessionHandle,deviceID,portNum,signalType);
                     case 'bidirectional'
-                        ch = addbidirectional(obj.SessionHandle,deviceID,portNum,signalType);
+                        [ch, idx] = addbidirectional(obj.SessionHandle,deviceID,portNum,signalType);
                 end
                 ch.Name = channelName;
                 if ~isempty(terminalConfig) && ~contains(class(ch), 'Digital')
@@ -443,7 +480,7 @@ function obj = CreateChannels(obj, filename, protocolIDs)
                     warning(message);
                 end
             end
-            obj.ChannelMap.(channelID) =  ch;
+            obj.ChannelMap.(channelID) =  idx;
         catch exception
             % dbstack
             % keyboard
@@ -539,10 +576,6 @@ function preloadChannels(obj, p, idxStim)
     end
     
     out(:,npreQSTtrig+kk+2) = piezostim;
-    
-    
-    
-    
     
     obj.DAQ.queueOutputData(out)            % queue data
     prepare(obj.DAQ)                        % prepare data acquisition

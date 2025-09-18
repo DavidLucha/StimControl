@@ -119,10 +119,6 @@ end
 
 out(:,npreQSTtrig+kk+2) = piezostim;
 
-
-
-
-
 obj.DAQ.queueOutputData(out)            % queue data
 prepare(obj.DAQ)                        % prepare data acquisition
 
