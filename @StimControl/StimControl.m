@@ -19,16 +19,14 @@ properties %(Access = private)
     isRunning   = false;
     isPaused    = false;
     hardwareParams
-    trialNum
 end
 
 properties (Dependent)
     animalID
     experimentID
+    trialNum
     dirAnimal
     dirExperiment
-    displayDate
-    displayDateTime
 end
 
 methods
@@ -36,18 +34,18 @@ methods
         % close all
         daqreset
         imaqreset
+        obj.path.base = pwd;
+        if ~contains(pwd, 'StimControl')
+            obj.path.base = [pwd filesep 'StimControl'];
+        end
         addpath(pwd)
-        addpath(genpath(fullfile(pwd,'components')))
-        addpath(genpath(fullfile(pwd,'common')))
+        addpath(genpath(fullfile(obj.path.base,'components')))
+        addpath(genpath(fullfile(obj.path.base,'common')))
         clc
         disp('Welcome to StimControl')
         
         %% Initialise Path
         obj.path.dirData = fullfile(getenv('UserProfile'),'Desktop','logs');
-        obj.path.base = pwd;
-        if ~contains(pwd, 'StimControl')
-            obj.path.base = [pwd filesep 'StimControl'];
-        end
         configBase = [obj.path.base filesep 'config'];
         obj.path.paramBase = [configBase filesep 'component_params'];
         obj.path.protocolBase  = [configBase filesep 'experiment_protocols'];
@@ -104,7 +102,6 @@ methods (Access = private)
     callbackPauseResume(obj, src, event)
     callbackTrialStart(obj, src, event)
     callbackNewTrial(obj, src, event)
-    callbackSelectTrial(obj, src, event)
     callbackSelectAnimal(obj, src, event)
 
     % file control callbacks
@@ -218,14 +215,14 @@ end
 
 methods
     function filepath = get.dirAnimal(obj)
-        filepath = [obj.path.dirData filesep obj.animalID];
+        filepath = fullfile(obj.dirData,obj.animalID);
         if ~exist(filepath,'dir')
             mkdir(filepath)
         end
     end
 
     function filepath = get.dirExperiment(obj)
-        tmpPath = [obj.path.dirAnimal filesep obj.displayDate];
+        tmpPath = [obj.path.dirAnimal filesep obj.path.date];
         if ~exist(tmpPath, 'dir')
             mkdir(tmpPath);
         end
@@ -236,25 +233,40 @@ methods
         filepath = tmpPath;
     end
 
-    function out = get.displayDate(obj)
+    function updateDateTtime(obj)
+        obj.updateDate;
+        obj.updateTime;
+    end
+
+    function updateDate(obj)
         dt = datetime("now");
         dt.Format = "yyyyMMdd";
-        out = string(dt);
+        obj.path.date = string(dt);
     end
 
-    function out = get.displayDateTime(obj)
+    function updateTime(obj)
         dt = datetime("now");
-        dt.Format  = "yyyyMMdd_hhmmss";
-        obj.path.datetime = string(dt);
-        out = string(dt);
-    end
-
-    function set.animalID(obj, val)
-
+        dt.Format  = "hhmmss";
+        obj.path.time = string(dt);
     end
 
     function set.experimentID(obj, val)
+        obj.h.protocolSelectDropDown.Items{end+1} = val;
+        obj.h.protocolSelectDropDown.Value = val;
+        % TODO UPDATE GUI HERE - trialnum, estimated time, etc.
+    end
 
+    function out = get.experimentID(obj)
+        out = obj.h.protocolSelectDropDown.Value;
+    end
+
+    function set.animalID(obj, val)
+        obj.h.animalSelectDropDown.Items{end+1} = val;
+        obj.h.animalSelectDropDown.Value = val;
+    end
+
+    function out = get.animalID(obj)
+        out = obj.h.animalSelectDropDown.Value;
     end
     
     function set.trialNum(obj, value)
@@ -262,6 +274,11 @@ methods
         validateattributes(value,{'numeric'},...
             {'scalar','integer','real','nonnegative','<=',nTrials})
         obj.trialNum = value;
+        
+        obj.h.numTrialsElapsedLabel.Text = sprintf('Trial: %d/%d', value, nTrials);
+        obj.h.trialNumDisplay.Value = value;
+        obj.h.totalTrialsLabel.Text = sprintf('/ %d', nTrials);
+        obj.h.trialTimeEstimate.Text = sprintf('timeEstimate');
         % TODO UPDATE GUI (as below)
         % obj.h.protocol.edit.nStim.String   = sprintf('%d/%d',value,nTrials);
         % obj.h.protocol.edit.Comment.String = obj.p(value).Comments;
@@ -283,6 +300,15 @@ methods
 
     function updatePathDisplay(obj)
 
+    end
+
+    function errorMsg(obj, message)
+        try
+            obj.h.trialInformationScroller.Value = char(message);
+            obj.h.trialInformationScroller.FontColor = 'red';
+        catch % handle likely not initialised
+            error(message)
+        end
     end
 
     % function out = get.dirAnimal(obj)

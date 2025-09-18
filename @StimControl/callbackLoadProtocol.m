@@ -1,15 +1,24 @@
 function callbackLoadProtocol(obj, src, event)
-if ~isfield(obj.path, 'SessionProtocolFile') || isempty(obj.path.SessionProtocolFile) %TODO OR CHANGED
+if src ~= obj.h.protocolSelectDropDown
+    % not implemented.
+    return
+end
+
+if strcmpi(src.Value, 'Browse...')
     [filename, dir] = uigetfile([obj.path.protocolBase filesep '*.stim'], 'Select protocol');
     if filename == 0
         return
     end
     obj.path.SessionProtocolFile = [dir filename];
+else
+    obj.experimentID = src.Value;
+    obj.path.SessionProtocolFile = [obj.path.protocolBase filesep src.Value];
 end
 [p, g] = readProtocol(obj.path.SessionProtocolFile);
 obj.p = p;
 obj.g = g;
 obj.idxStim = 1;
+obj.trialNum = 1;
 
 % TODO figure out if mapping stage is necessary and don't ask if not
 if ~isfield(obj.path, 'ComponentMapFile') ||  isempty(obj.path.ComponentMapFile) %TODO OR CHANGED
@@ -103,5 +112,6 @@ for i = 1:length(ks)
 end
 
 %% GUI updates
+% obj.h.
 % enable start/stop button
 end

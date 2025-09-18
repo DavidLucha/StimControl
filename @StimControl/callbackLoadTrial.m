@@ -1,8 +1,8 @@
-function callbackLoadTrial(obj)
+function callbackLoadTrial(obj, src, event)
 if isempty(obj.d.Active) || sum(obj.d.Active) == 0
-    error("No hardware selected for protocol")
+    obj.errorMsg('please select at least one hardware component');
 elseif isempty(obj.p) || isempty(obj.g)
-    error("No protocol available to load")
+    obj.errorMsg('please select a protocol');
 end
 if isempty(obj.trialNum)
     obj.trialNum = 1;
