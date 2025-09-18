@@ -127,7 +127,8 @@ When working with a ComponentProperty that takes a vector as its value (e.g. cam
 - [x] add a "dynamic" tag to attributes - true if they can be changed without a reboot, else false?
 - [ ] add widefield stuff to StimControl?
 - [ ] get David's stim paradigms in that bad boy
-- [ ] PROTOCOL FILES: allow a single identifier for multiple types of output (a syntax for function definitions) -currently surmountable using arbitrary files so no pressure
+- [ ] PROTOCOL FILES: allow a single identifier for multiple types of output (a syntax for function definitions) -currently surmountable using arbitrary files so no pressure (see StimControl QOL)
+- [ ] 
 
 ### StimControl GUI
 - [x] add a pause button (lock off unless in inter-trial interval)

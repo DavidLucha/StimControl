@@ -163,7 +163,7 @@ function PrintInfo(obj)
 end
 
 function StartPreview(obj)
-    % Dynamically visualise object output
+    % Dynamically visualise object output TODO FILTER FOR ONLY INFORMATIVE ONES
     if isempty(obj.PreviewPlot) || isempty(obj.SessionHandle)
         return
     elseif isempty(obj.PreviewData)

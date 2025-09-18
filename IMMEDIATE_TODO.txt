@@ -1,9 +1,0 @@
-StimControl.mat
-- set data directory per clarissa's advice last meeting
-
-callbackLoadTrial
-- set savepath for each component and set up saving within component
-
-set up session loading & a trial run where it does what you want!!!
-
-actually do a dry run
