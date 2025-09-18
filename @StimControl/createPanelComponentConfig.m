@@ -24,14 +24,14 @@ obj.h.ConfirmComponentConfigBtn = uibutton(grid, 'Text', 'Confirm', ...
     'Layout', matlab.ui.layout.GridLayoutOptions( ...
         'Row', 3, ...
         'Column', 2), ...
-    'ButtonPushedFcn', @(src, event) confirmComponentConfig, ...
+    'ButtonPushedFcn', @(src, event) confirmComponentConfig(obj, src, event), ...
     'Enable', false);
 
 obj.h.CancelComponentConfigBtn = uibutton(grid, 'Text', 'Cancel', ...
     'Layout', matlab.ui.layout.GridLayoutOptions( ...
         'Row', 3, ...
         'Column', 1), ...
-    'ButtonPushedFcn', @(src, event) cancelComponentConfig, ...
+    'ButtonPushedFcn', @(src, event) cancelComponentConfig(obj, src, event), ...
     'Enable', false);
 
 end
@@ -80,19 +80,22 @@ function updateComponentConfigTable(src,event,obj)
 end
 
 %% Confirm / Cancel Component Configs
-function confirmComponentConfig(obj)
+function confirmComponentConfig(obj, src, event)
 % Configure component
 component = obj.d.Available{obj.h.ComponentConfig.SelectedComponentIndex};
-component.SetParams(obj.h.ComponentConfig.ConfigStruct);
+if isfield(obj.h.ComponentConfig, 'ValsToUpdate')
+    component.SetParams(obj.h.ComponentConfig.ValsToUpdate);
+end
 % Then clear everything
-obj.callbackCancelComponentConfig();
+cancelComponentConfig(obj, src, event);
 end
 
-function cancelComponentConfig(obj)
+function cancelComponentConfig(obj, src, event)
 obj.h.ComponentConfig.Label.Text = "No Component Selected";
 obj.h.ComponentConfig.Component.Handle = [];
 obj.h.ComponentConfig.Component.Properties = [];
 obj.h.ComponentConfig.Table.Data = table();
+obj.h.ComponentConfig.ValsToUpdate = struct();
 
 obj.h.ConfirmComponentConfigBtn.Enable = false;
 obj.h.CancelComponentConfigBtn.Enable = false;

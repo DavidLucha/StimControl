@@ -1,5 +1,6 @@
 function callbackEditComponentConfig(obj, ~, ~)
-%% first, retrieve selected component from obj.
+% Edit a component using the ComponentConfig GUI. 
+    %% first, retrieve selected component from obj.
 rowIndex = obj.h.AvailableHardwareTable.Selection;
 if isempty(rowIndex)
     disp("no row selected");

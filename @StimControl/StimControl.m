@@ -110,7 +110,7 @@ methods (Access = private)
     callbackSaveConfig(obj, src, event)
 
     % hardware control callbacks
-    callbackEditComponentConfig(obj)
+    callbackEditComponentConfig(obj, ~, ~)
     % callbackViewHardwareOutput(obj)
 
     % misc
