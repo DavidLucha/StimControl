@@ -1,18 +1,32 @@
 function callbackLoadProtocol(obj, src, event)
+% Load a protocol file. Maps protocol inputs/outputs to hardware components.
+% and updates GUI to allow trial start.
+% eventually this will be more intelligent and able to handle ambiguity, but for now
+% the mapping files need to be perfectly aligned to the protocol.
+
 if src ~= obj.h.protocolSelectDropDown
     % not implemented.
     return
 end
 
 if strcmpi(src.Value, 'Browse...')
+    warning("This will cause problems if you choose something outside the default protocol base path, " + ...
+        "switch off, then switch back to it through the dropdown. Be careful!");
     [filename, dir] = uigetfile([obj.path.protocolBase filesep '*.stim'], 'Select protocol');
     if filename == 0
         return
     end
     obj.path.SessionProtocolFile = [dir filename];
+    experimentID = strsplit(filename, '.');
+    obj.experimentID = experimentID{1};     % todo this will cause problems later on 
+                                            % because the base protocol path isn't being updated 
+                                            % (this is on purpose so the path 
+                                            % to all the other protocol files
+                                            % doesn't get screwy but it's
+                                            % on the list to fix)
 else
     obj.experimentID = src.Value;
-    obj.path.SessionProtocolFile = [obj.path.protocolBase filesep src.Value];
+    obj.path.SessionProtocolFile = [obj.path.protocolBase filesep src.Value '.stim'];
 end
 [p, g] = readProtocol(obj.path.SessionProtocolFile);
 obj.p = p;
@@ -21,6 +35,8 @@ obj.idxStim = 1;
 obj.trialNum = 1;
 
 % TODO figure out if mapping stage is necessary and don't ask if not
+% TODO this is mostly for debugging anyway. Get rid of it when you're done
+% here.
 if ~isfield(obj.path, 'ComponentMapFile') ||  isempty(obj.path.ComponentMapFile) %TODO OR CHANGED
     [filename, dir] = uigetfile([obj.path.componentMaps filesep '*.csv'], 'Select Stimulus Map');
     if filename == 0
@@ -111,7 +127,6 @@ for i = 1:length(ks)
     end
 end
 
-%% GUI updates
-% obj.h.
-% enable start/stop button
+%% update status (GUI updates handled in here)
+obj.status = 'ready';
 end

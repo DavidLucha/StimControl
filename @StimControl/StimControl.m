@@ -27,6 +27,7 @@ properties (Dependent)
     trialNum
     dirAnimal
     dirExperiment
+    status
 end
 
 methods
@@ -268,15 +269,64 @@ methods
     function out = get.animalID(obj)
         out = obj.h.animalSelectDropDown.Value;
     end
+
+    function set.status(obj, val)
+        % supported values: 
+        % NOT INITIALISED / READY / RUNNING / INTER-TRIAL / PAUSED / ERROR
+        val = lower(val);
+        if strcmpi(val, 'not initialised')
+            obj.h.statusLabel.Text = 'Not Initialised';
+            obj.h.statusLamp.Color = '#808080';
+            obj.h.startStopExperimentBtn.Enable = 'off';
+            obj.h.pauseBtn.Enable = 'off';
+            obj.isRunning = false;
+            obj.isPaused = false;
+
+        elseif strcmpi(val, 'ready')
+            obj.h.statusLabel.Text = 'Ready';
+            obj.h.statusLamp.Color = '#00FF00';
+            obj.h.startStopExperimentBtn.Enable = 'on';
+            obj.h.pauseBtn.Enable = 'off';
+            obj.isRunning = false;
+            obj.isPaused = false;
+
+        elseif strcmpi(val, 'running')
+            obj.h.statusLabel.Text = 'Running';
+            obj.h.statusLamp.Color = '#FFA500';
+            obj.h.startStopExperimentBtn.Enable = 'on'; %TODO or on?
+            obj.h.pauseBtn.Enable = 'off';
+            obj.isRunning = true;
+            obj.isPaused = false;
+
+        elseif strcmpi(val, 'inter-trial')
+            obj.h.statusLabel.Text = 'Inter-trial';
+            obj.h.statusLamp.Color = '#FFFFFF';
+            obj.h.startStopExperimentBtn.Enable = 'on';
+            obj.h.pauseBtn.Enable = 'on';
+            obj.isRunning = true;
+            obj.isPaused = false;
+
+        elseif strcmpi(val, 'paused')
+            obj.h.statusLabel.Text = 'Paused';
+            obj.h.statusLamp.Color = '#008080';
+            obj.h.startStopExperimentBtn.Enable = 'on';
+            obj.h.pauseBtn.Enable = 'on';
+            obj.isRunning = true;
+            obj.isPaused = true;
+        end
+    end
+
+    function val = get.status(obj)
+        val = lower(obj.h.statusLabel.Text);
+    end
     
     function set.trialNum(obj, value)
         nTrials = length(obj.p);
         validateattributes(value,{'numeric'},...
             {'scalar','integer','real','nonnegative','<=',nTrials})
-        obj.trialNum = value;
         
         obj.h.numTrialsElapsedLabel.Text = sprintf('Trial: %d/%d', value, nTrials);
-        obj.h.trialNumDisplay.Value = value;
+        obj.h.trialNumDisplay.Value = value;   
         obj.h.totalTrialsLabel.Text = sprintf('/ %d', nTrials);
         obj.h.trialTimeEstimate.Text = sprintf('timeEstimate');
         % TODO UPDATE GUI (as below)
@@ -296,6 +346,10 @@ methods
         % obj.h.LED.edit.ledDelay.Value      = obj.p(value).ledDelay;
         % obj.p2serial(obj.p(value));
         % obj.p2GUI
+    end
+
+    function val = get.trialNum(obj)
+        val = obj.h.trialNumDisplay.Value;
     end
 
     function updatePathDisplay(obj)

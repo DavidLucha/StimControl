@@ -133,13 +133,17 @@ When working with a ComponentProperty that takes a vector as its value (e.g. cam
 - [ ] add a pause button (lock off unless in inter-trial interval)
 - [ ] move single stim button down next to trial button
 - [x] turn the session setup and dev1 thing into one tab, experiment control into a separate tab
-- [ ] put a confirm button in the setup tab, don't just save everything if you switch tabs. Or maybe a "save?" popup?
-- [ ] add ability to repeat arbitrary stims - maybe within the .astim?
+- [ ] put a confirm button in the setup tab, don't just save everything if you switch tabs. Or maybe a "save?" popup? is this necessary? maybe just check when switching if any active components are in an error state.
 - [ ] python socketing - make it easy to add functionality with python
 
 ### StimControl QOL
-- [ ] for loadprotocol etc. - only do it if not already assigned or "select new" has been pressed
+- [x] for loadprotocol etc. - only do it if not already assigned or "select new" has been pressed
+
+### StimControl config
+- [ ] rejig the stimulus files to allow for function-style definitions. The mapping is driving me bonkers.
+- [ ] add ability to repeat arbitrary stims - maybe within the .astim?
 - [ ] make more robust to mismatches between hardware and software
+- [ ] persistent text file(?) mapping computer IDs with protocol / param / mapping files so you only have to select everything once per experiment
 
 ### Widefield GUI
 - [x] jank when changing bin size / folders / etc.

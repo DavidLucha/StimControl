@@ -1,4 +1,9 @@
 function callbackLoadTrial(obj, src, event)
+if src == obj.h.prevTrialBtn
+    obj.trialNum = obj.trialNum - 1;
+elseif src == obj.h.nextTrialBtn
+    obj.trialNum = obj.trialNum - 1;
+end
 if isempty(obj.d.Active) || sum(obj.d.Active) == 0
     obj.errorMsg('please select at least one hardware component');
 elseif isempty(obj.p) || isempty(obj.g)

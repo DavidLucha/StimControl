@@ -1,4 +1,4 @@
-function callbackEditComponentConfig(obj)
+function callbackEditComponentConfig(obj, ~, ~)
 %% first, retrieve selected component from obj.
 rowIndex = obj.h.AvailableHardwareTable.Selection;
 if isempty(rowIndex)
