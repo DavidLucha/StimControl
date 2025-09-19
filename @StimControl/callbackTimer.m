@@ -7,8 +7,15 @@ if strcmpi(obj.h.tabs.SelectedTab.Title, 'Setup')
         component = obj.d.Available{i};
         obj.h.AvailableHardwareTable.Data.Status{i} = component.GetStatus;
     end
-    
 else
+
+    % update task timers
+
+    % update thermode gui
+
+    % update output gui?
+
+
     % update GUI in experiment tab
     if ~obj.DAQ.IsRunning && ~obj.isRunning
         for ii = 1:obj.nThermodes

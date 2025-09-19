@@ -1,4 +1,4 @@
-function callbackLoadTrial(obj, src, event)
+function callbackLoadTrial(obj, src, ~)
 % Sets trial number if changed, and preloads trial data into   
 if src == obj.h.prevTrialBtn
     if obj.trialNum == 1
@@ -42,7 +42,6 @@ for i = 1:length(ks)
         name = protocolNames{:}{f};
         componentTrialData.(name) = trialData.(name);
     end
-    component.SavePath = obj.dirExperiment;
     component.LoadTrialFromParams(componentTrialData, genericTrialData);
 end
 

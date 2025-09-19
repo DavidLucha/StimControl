@@ -20,6 +20,8 @@ properties %(Access = private)
     isPaused    = false;
     hardwareParams
     trialIdx    = 1;
+    tLastStatusChange = 0;
+    taskPool    = [];
 end
 
 properties (Dependent)
@@ -115,7 +117,7 @@ methods (Access = private)
     callbackEditComponentConfig(obj, ~, ~)
 
     % Run it all
-    Stimulate(obj)
+    runTrial(obj)
 
     % misc
     callbackFileExit(obj,~,~)
@@ -282,6 +284,8 @@ methods
     function set.status(obj, val)
         % supported values: 
         % NOT INITIALISED / READY / RUNNING / INTER-TRIAL / PAUSED / ERROR
+        % / LOADING
+        obj.tLastStatusChange = tic;
         val = lower(val);
         if strcmpi(val, 'not initialised')
             obj.h.statusLabel.Text = 'Not Initialised';
@@ -330,8 +334,9 @@ methods
             obj.h.pauseBtn.Text = 'RESUME';
             obj.isRunning = true;
             obj.isPaused = true;
+
         elseif strcmpi(val, 'loading')
-            obj.h.statusLabel.Text = 'Loading...';
+            obj.h.statusLabel.Text = 'Loading';
             obj.h.statusLamp.Color = '#FFFF00';
         end
     end

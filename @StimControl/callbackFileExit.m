@@ -7,6 +7,9 @@ delete(obj.h.fig)
 stop(obj.t)
 delete(obj.t)
 
+% remove parallel pool sessions
+delete(gcp('nocreate'))
+
 % if QSTcontrol was called via the batch file, also quit Matlab
 if ~usejava('desktop')
     exit

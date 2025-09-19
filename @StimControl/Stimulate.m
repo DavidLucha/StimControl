@@ -1,3 +1,0 @@
-function RunExperiment(obj)
-
-end

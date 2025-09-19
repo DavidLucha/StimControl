@@ -169,10 +169,9 @@ function StartPreview(obj)
     elseif isempty(obj.PreviewData)
         obj.Previewing = true;
         obj.PreviewPlot.Visible = 'on';
-        x = obj.PreviewPlot.xLim(2);
-        y = obj.PreviewPlot.yLim(2);
-        imshow(ones(x,y),[],'parent',obj.PreviewPlot, ...
-            'axis', 'tight');
+        x = 400;
+        y = 400;
+        imshow(ones(x,y),[],'parent',obj.PreviewPlot);
         text(x/2,y/2, 'No data', ...
             'Parent', obj.PreviewPlot, 'FontSize', 16, 'FontWeight','bold', ...
             'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle', ...

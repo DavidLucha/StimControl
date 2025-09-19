@@ -3,6 +3,8 @@ function callbackLoadProtocol(obj, src, event)
 % and updates GUI to allow trial start.
 % eventually this will be more intelligent and able to handle ambiguity, but for now
 % the mapping files need to be perfectly aligned to the protocol.
+obj.status = 'loading';
+obj.updateDateTime; % update the datetime for component savepaths
 
 if src ~= obj.h.protocolSelectDropDown
     % not implemented.
@@ -24,6 +26,8 @@ if strcmpi(src.Value, 'Browse...')
                                             % to all the other protocol files
                                             % doesn't get screwy but it's
                                             % on the list to fix)
+elseif strcmpi(src.Value, '')
+    return
 else
     obj.experimentID = src.Value;
     obj.path.SessionProtocolFile = [obj.path.protocolBase filesep src.Value '.stim'];
