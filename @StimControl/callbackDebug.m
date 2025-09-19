@@ -1,21 +1,32 @@
 function callbackDebug(obj, src, event)    
 keyboard;
-testfcn(obj);
+% runTrial(obj);
 disp("DEBUG");
 keyboard;
 end
 
-function testfcn(obj)
-if isempty(gcp('nocreate'))
-    p = parpool;
-else
-    p= gcp('nocreate');             % this takes a while to initialise.
+function runTrial(obj)
+    % runs a single trial. Assumes trial dat is pre-loaded for each component.
+    % use obj.callbackLoadTrial to make this a reality!
+    % designed to be run in a thread so it's pausable.
+    
+    obj.d.executionTimer = timer(...
+            'StartDelay',       0, ...
+            'Period',           300, ...
+            'ExecutionMode',    'fixedRate', ...
+            'TimerFcn',         @testRun);
+    start(obj.d.executionTimer);
 end
 
-experimentThread = parfeval(p, @testExperiment, 0, obj);
-disp("GREAT SUCCESS");
+function testRun(obj, ~, ~)
+    disp("BOO");
 end
 
-function out = testExperiment(test)
-out = "SECOND SUCCESS";`
+function trialStop(obj)
+    obj.status = 'loading';
+    for i = 1:length(obj.activeComponents)
+        component = obj.activeComponents{i};
+        component.Stop();
+    end
+    obj.status = 'ready';
 end

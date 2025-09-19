@@ -121,6 +121,7 @@ methods (Access = private)
 
     % misc
     callbackFileExit(obj,~,~)
+    callbackTimer(obj, ~, ~)
 
     % createPanelAnimal(obj,hPanel,~)
     % createPanelProtocol(obj,hPanel,~)
