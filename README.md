@@ -142,6 +142,7 @@ When working with a ComponentProperty that takes a vector as its value (e.g. cam
 - [ ] make it so you only have to click the map once
 - [ ] add loading indicators
 - [ ] Event for window resize to reshape (at least) daq preview window
+- [ ] 'AlternativesOk' in HardwareComponent for device searching vs strict init behaviour
 
 ### StimControl config
 - [ ] rejig the stimulus files to allow for function-style definitions. The mapping is driving me bonkers.
