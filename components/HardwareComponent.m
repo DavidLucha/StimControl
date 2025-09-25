@@ -188,7 +188,14 @@ methods(Static, Abstract, Access=public)
 end
 
 methods (Abstract, Access=public)
-% Initialise hardware session. Accepts one arg to varargin - 'ConfigStruct'
+% Initialise hardware session. By default, accepts two args:
+% 'ConfigStruct'        (struct)    a struct of all device settings you want set
+% 'KeepHardwareConfig'  (logical)   [TODO, LOGIC NOT IMPLEMENTED] determines behaviour for attributes 
+%                                   not explicitly set with ConfigStruct.
+%                                   If false, enforces default settings for
+%                                   hardware configuration. If true,
+%                                   retains the hardware's existing
+%                                   settings
 InitialiseSession(obj, varargin)
 
 % Start device

@@ -51,6 +51,7 @@ function obj = InitialiseSession(obj, varargin)
     p = inputParser;
     addParameter(p, 'ChannelConfig', '', @(x) ischar(x) || isstring(x) || islogical(x));
     addParameter(p, 'ConfigStruct', []);
+    addParameter(p, 'KeepHardwareSettings', []);
     parse(p, varargin{:});
     params = p.Results;
 

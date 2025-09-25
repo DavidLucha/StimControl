@@ -24,3 +24,8 @@ Number of channels: 23
    21    dio  Dev1   port0/line2  OutputOnly          n/a                Vibration A
    22    dio  Dev1   port0/line7  OutputOnly          n/a                Thermode Trigger
    23    ao   Dev1   ao0          Voltage (SingleEnd) -10 to +10 Volts   Aurora Force Command Voltage
+
+   laser room camera channels: brown -> PFI2, yellow (pre-existing): p0:4
+   outer lab camera channels: brown -> P0:3, yellow -> P0:2
+
+Brown is line 3, yellow is line 4.

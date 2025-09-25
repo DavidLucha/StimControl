@@ -45,8 +45,10 @@ end
 function obj = InitialiseSession(obj, varargin)
     p = inputParser;
     addParameter(p, 'ConfigStruct', []);
+    addParameter(p, 'KeepHardwareSettings', []);
     parse(p, varargin{:});
     params = p.Results;
+    
     obj.Status = "loading";
 
     %---device---
@@ -159,14 +161,13 @@ function StartPreview(obj)
     colormap(obj.PreviewPlot,cMap);
 
     if strcmpi(obj.ConfigStruct.TriggerMode, 'hardware')
-        x = mean([0, vidRes(2)]);
-        y = mean([0, vidRes(1)]);
-        text(x,y, 'LIVE PREVIEW NOT AVAILABLE IN HARDWARE TRIGGER MODE', ...
+        x = obj.PreviewPlot.XLim(2)/2;
+        y = obj.PreviewPlot.YLim(2)/2;
+        text(x,y, ['Preview not available', newline, 'in hardware trigger mode'], ...
             'Parent', obj.PreviewPlot, 'FontSize', 16, 'FontWeight','bold', ...
             'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle', ...
-            'Color', 'red');
+            'Color', 'black');
     end
-
     obj.Previewing = true;
 end
 
@@ -271,6 +272,9 @@ function obj = SetParams(obj, paramsStruct)
     if updateBinning
         imaqreset;
         obj = obj.InitialiseSession();
+    end
+    if previewPaused
+        obj.StartPreview();
     end
     obj.Status = "ok";
 end
@@ -388,6 +392,7 @@ function UpdateTriggerMode(obj)
             % src.TriggerActivation = "none";
     end
     triggerconfig(obj.SessionHandle, obj.ConfigStruct.TriggerMode);
+    
 end
 
 % Gets current device status
