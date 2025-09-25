@@ -1,5 +1,5 @@
 classdef (Abstract, HandleCompatible) HardwareComponent < handle
-%Abstract class representing all hardware components
+% Abstract class representing all hardware components
 properties(Abstract, Constant, Access = public)
     ComponentProperties
 end
@@ -15,6 +15,7 @@ properties (Access = public)
     PreviewPlot = []
     Previewing = false
     ComponentID
+    TriggerTimer = [];
 end
 
 properties (Abstract, Access = protected)
@@ -22,19 +23,23 @@ properties (Abstract, Access = protected)
 end
 
 methods(Access=public)
-% All device constructors can take the following arguments, 
-% as well as device-specific arguments:
-% 'Required'    (logical, true)     whether to throw errors as errors or warnings
-% 'Handle'      (handle, [])        the handle to an existing session of that component type
-% 'ConfigStruct'(struct, [])        struct containing initialisation params - see
-%                                   ComponentProperties
-% 'SavePath'    (string, '')        the path to save outputs
-% 'Abstract'    (logical, false)    if false, does not attempt to initialise a
-%                                   session with hardware but retains access to class logic.
-% Initialise    (logical, true)     if true, session with hardware will be
-%                                   immediately started upon object creation.
-%                                   If false, can be initialised later using obj.Configure
+
 function p = GetBaseParser(obj)
+    % All device constructors can take the following arguments:
+    % 'Required'    (logical, true)     whether to throw errors as errors or warnings
+    % 'Handle'      (handle, [])        the handle to an existing session of that component type
+    % 'ConfigStruct'(struct, [])        struct containing initialisation params - see
+    %                                   ComponentProperties
+    % 'SavePath'    (string, '')        the path to save outputs
+    % 'Abstract'    (logical, false)    if false, does not attempt to initialise a
+    %                                   session with hardware but retains access to class logic.
+    % Initialise    (logical, true)     if true, session with hardware will be
+    %                                   immediately started upon object creation.
+    %                                   If false, can be initialised later using obj.Configure
+    % AlternativesOk(logical, false)    [NOT IMPLEMENTED YET] Whether to search for alternative
+    %                                   available hardware of the same type if
+    %                                   the defined hardware component isn't
+    %                                   available. May lead to unpredictable behaviour.
     p = inputParser;
     strValidate = @(x) ischar(x) || isstring(x);
     handleValidate = @(x) (contains(class(x), obj.HandleClass)) || isempty(x);
@@ -47,6 +52,7 @@ function p = GetBaseParser(obj)
     addParameter(p, 'ComponentID', false, @(x) ischar(x) || isstring(x) || islogical(x));
 end
 
+% Initialise the component. Will attempt to start a session with the hardware
 function obj = Initialise(obj, params)
     obj.SavePath = params.SavePath;
     obj.Required = params.Required;
@@ -153,6 +159,23 @@ function SaveAuxiliaryConfig(obj, filepath)
     return;
 end
 
+function CreateSoftwareTriggerTimer(obj, rate)
+    % creates a timer that generates a single trigger signal at a given interval. 
+    % Used when component is set to software-triggered or doesn't support pre-loading data.
+    % NOTE: the timing for this will be much less reliable & consistent.
+    if ~isempty(obj.TriggerTimer) || isvalid(obj.TriggerTimer)
+        stop(obj.TriggerTimer);
+        delete(obj.TriggerTimer);
+    end
+    period = max(0.0011, 1/rate);
+    obj.triggerTimer = timer(...
+            'StartDelay',       0, ...
+            'Period',           period, ...
+            'ExecutionMode',    'fixedRate', ...
+            'TimerFcn',         @obj.SoftwareTrigger);
+
+end
+
 % get current device parameters for saving
 function objStruct = GetParams(obj)
     objStruct = setfield(obj.ConfigStruct, 'ComponentID', obj.ComponentID);
@@ -169,7 +192,7 @@ methods (Abstract, Access=public)
 InitialiseSession(obj, varargin)
 
 % Start device
-Start(obj)
+StartTrial(obj)
 
 % Stop device
 Stop(obj)
@@ -182,6 +205,7 @@ StartPreview(obj)
 
 % Dynamic visualisation of the object output
 StopPreview(obj)
+
 
 % Print device information
 PrintInfo(obj)
@@ -197,6 +221,8 @@ methods(Abstract, Access=protected)
 status = GetSessionStatus(obj)
 
 componentID = GetComponentID(obj)
+
+SoftwareTrigger(obj, ~, ~)
 
 end
 end

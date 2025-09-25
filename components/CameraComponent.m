@@ -19,7 +19,19 @@ methods(Static, Access=public)
 end
 
 methods (Access = public)
-function obj = CameraComponent(varargin)  
+function obj = CameraComponent(varargin)
+% Class for interfacing with a generic IMAQ toolbox camera. 
+% Constructor takes the following arguments::
+% 'Required'    (logical, true)     whether to throw errors as errors or warnings
+% 'Handle'      (handle, [])        the handle to an existing session of that component type
+% 'ConfigStruct'(struct, [])        struct containing initialisation params - see
+%                                   ComponentProperties
+% 'SavePath'    (string, '')        the path to save outputs
+% 'Abstract'    (logical, false)    if false, does not attempt to initialise a
+%                                   session with hardware but retains access to class logic.
+% Initialise    (logical, true)     if true, session with hardware will be
+%                                   immediately started upon object creation.
+%                                   If false, can be initialised later using obj.Configure
     p = obj.GetBaseParser();
     parse(p, varargin{:});
     params = p.Results;
@@ -102,7 +114,7 @@ function obj = InitialiseSession(obj, varargin)
 end
 
 % Start device
-function Start(obj)
+function StartTrial(obj)
     if isempty(obj.SessionHandle)
         return
     end
@@ -110,6 +122,9 @@ function Start(obj)
         start(obj.SessionHandle);
     end
     obj.FrameCount = 1;
+    if strcmpi(obj.SessionHandle.TriggerMode,'immediate')
+        trigger(obj.SessionHandle);
+    end
     if ~isrunning(obj.SessionHandle)
         obj.Status = 'error';
     else
@@ -271,6 +286,9 @@ function GetInspector(obj)
 end
 
 function LoadTrialFromParams(obj, componentTrialData, genericTrialData)
+    % TODO restart camera to reset framecount?
+    % check triggermode and change if needed
+    % detect number of triggers needed / framerate / etc.
 end
 
 function TakeSnapShot(obj, savePath)
@@ -326,19 +344,21 @@ function componentID = GetComponentID(obj)
 end
 
 function ReceiveFrame(obj, src, vidObj)
+    if ~exist(strcat(obj.SavePath, filesep, obj.ComponentID, obj.SavePrefix), 'dir')
+        mkdir(obj.SavePath, obj.SavePrefix)
+    end
     try
         imgs = getdata(src,src.FramesAvailable); 
         obj.LastAcquisition = tic;
         numImgs = size(imgs);
         numImgs = numImgs(4);
         for i = 1:numImgs
-            imname = strcat(obj.SavePath, filesep, string(obj.FrameCount), '_', string(datetime(datetime, "Format", 'yyyyMMdd_HHmmss.SSS')), ".TIFF");
+            imname = strcat(obj.SavePath, obj.SavePrefix, filesep, string(obj.FrameCount), '_', string(datetime(datetime, "Format", 'yyyyMMdd_HHmmss.SSS')), ".TIFF");
             imwrite(imgs(:,:,:,i),imname);
             obj.FrameCount = obj.FrameCount + 1;
         end
     catch exception
-        obj.Status = "error";
-        disp("Encountered an error imaging.")
+        disp("Encountered an error imaging on CameraComponent %s", obj.ComponentID)
         dbstack
         disp(exception.message)
     end
@@ -388,5 +408,10 @@ end
 function img = GetCurrentPreviewDisplay(obj)
     img = getimage(obj.PreviewPlot);
 end
+
+function SoftwareTrigger(obj, ~, ~)
+%%TODO
+end
+
 end
 end

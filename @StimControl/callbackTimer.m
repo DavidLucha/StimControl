@@ -8,21 +8,18 @@ if strcmpi(obj.h.tabs.SelectedTab.Title, 'Setup')
         obj.h.AvailableHardwareTable.Data.Status{i} = component.GetStatus;
     end
 else
-
-    % update task timers
-
+    %update hardware status - thermode battery, etc.
+    
     % update thermode gui
-
-    % update output gui?
-
+    
 
     % update GUI in experiment tab
-    if ~obj.DAQ.IsRunning && ~obj.isRunning
-        for ii = 1:obj.nThermodes
-            if obj.s(ii).existPort
-                obj.h.(['Thermode' char(64+ii)]).battery.Value = ...
-                    obj.s(ii).battery;
-            end
-        end
-    end
+    % if ~obj.DAQ.IsRunning && ~obj.isRunning
+    %     for ii = 1:obj.nThermodes
+    %         if obj.s(ii).existPort
+    %             obj.h.(['Thermode' char(64+ii)]).battery.Value = ...
+    %                 obj.s(ii).battery;
+    %         end
+    %     end
+    % end
 end

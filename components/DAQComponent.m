@@ -20,6 +20,8 @@ end
 
 properties(Access = private)
     StackedPreview = [];
+    triggerIdx = 1; % for on-demand DAQ write operations only.
+    timeoutWait = 0;
 end
 
 methods (Access = public, Static)
@@ -76,23 +78,46 @@ function obj = InitialiseSession(obj, varargin)
 end
 
 % Start device
-function Start(obj)
+function StartTrial(obj)
+    % Starts device with a preloaded session. 
     if ~isempty(obj.SavePath) || length(obj.SavePath) ~= 0
-        obj.SaveFID = fopen(obj.SavePath, 'w');
+        obj.SaveFID = fopen(strcat(obj.SavePath, filesep, obj.savePrefix), 'w');
     end
-    % run stimulation
-    startBackground(obj.DAQ);               % start data acquisition
-    try
-        wait(obj.DAQ,tTotal+1)          	% wait for data acquisition
-    catch me
-        warning(me.identifier,'%s',...      % rethrow timeout error as warning
-            me.message); 
+    if isvalid(obj.TriggerTimer) && ~isempty(obj.TriggerTimer)
+        % run stimulation on matlab timer
+        start(obj.TriggerTimer);
+        try
+            wait(obj.TriggerTimer,obj.timeoutWait)       % wait for data acquisition
+        catch me
+            warning(me.identifier,'%s',...      % rethrow timeout error as warning
+                me.message); 
+        end
+    else
+        % run stimulation on DAQ clock
+        startBackground(obj.SessionHandle);               % start data acquisition
+        try
+            wait(obj.SessionHandle,obj.timeoutWait)       % wait for data acquisition
+        catch me
+            warning(me.identifier,'%s',...      % rethrow timeout error as warning
+                me.message); 
+        end
     end
+    % finished - close file
+    if ~isempty(obj.SavePath) || length(obj.SavePath) ~= 0
+        fclose(obj.SaveFID);
+    end
+
 end
 
-%Stop device
+% Stop device
 function Stop(obj)
-    stop(obj.SessionHandle);
+    if obj.SessionHandle.Running
+        stop(obj.SessionHandle);
+    end
+    if ~isempty(obj.TriggerTimer) && isvalid(obj.TriggerTimer) && obj.TriggerTimer.Running
+        stop(obj.TriggerTimer);
+        delete(obj.TriggerTimer);
+    end
     if ~isempty(obj.SaveFID)
         close(obj.SaveFID)
     end
@@ -207,9 +232,18 @@ function LoadTrial(obj, out)
     if obj.SessionHandle.Running
         obj.SessionHandle.stop
     end
-    preload(obj.SessionHandle, out);
-    % prepare(obj.SessionHandle)                        % prepare data acquisition
-    if ~isempty(obj.PreviewPlot)
+    if obj.SessionHandle.Rate == 0 && any(contains({obj.SessionHandle.Channels.Type}, 'Output'))
+        % clocked sampling not supported - timer required for outputs.
+        % TODO this might not strictly be true - might be possible to
+        % connect to a clock for SOME DAQS - USB6001 is not one of them though
+        obj.CreateSoftwareTriggerTimer(obj.ComponentConfig.Rate);
+
+    elseif any(contains({obj.SessionHandle.Channels.Type}, 'Output'))
+        % normal DAQ things hell yeah
+        preload(obj.SessionHandle, out);
+    end
+
+    if ~isempty(obj.PreviewPlot) % show preview data
         obj.StartPreview
     end
 end
@@ -223,18 +257,23 @@ function LoadTrialFromParams(obj, componentTrialData, genericTrialData)
     
     channels = obj.SessionHandle.Channels;
     rate = obj.SessionHandle.Rate;
+    if rate==0
+        % Software triggering required - only on-demand operations supported.
+        rate = obj.ConfigStruct.Rate;
+    end
 
     tPre     = genericTrialData.tPre  / 1000;
     tPost    = genericTrialData.tPost / 1000;
     tStim    = genericTrialData.tStim  / 1000;
     tTotal   = tPre + tStim + tPost;
     obj.tPrePost = [genericTrialData.tPre genericTrialData.tPost];
+    obj.timeoutWait = tTotal;
 
     % Add Listener 
     obj.SessionHandle.ScansAvailableFcn = @obj.plotData;
 
     fds = fields(componentTrialData);
-    timeAxis = linspace(1/obj.SessionHandle.Rate,tTotal,tTotal*obj.SessionHandle.Rate)-tPre; %todo this falls apart if the rate !=1000 - need fixed?
+    timeAxis = linspace(1/rate,tTotal,tTotal*rate)-tPre; %todo this falls apart if the rate !=1000? - need fixed?
     obj.PreviewTimeAxis = timeAxis;
     stimLength = numel(timeAxis);
     % Preallocate all zeros
@@ -301,6 +340,7 @@ function out = GenerateAnalogStim(obj, stimType, stimLength, params)
             else
                 ramp = params.ramp;
             end
+            piezoAmp = params.amp * Aurorasf; piezoAmp = min([piezoAmp 9.5]);  %added a safety block here 2024.11.15
             piezostimunitx = -ramp:ramp;
             piezostimunity = normpdf(piezostimunitx,0,3);
             piezostimunity = piezostimunity./max(piezostimunity);
@@ -321,7 +361,7 @@ function out = GenerateAnalogStim(obj, stimType, stimLength, params)
 end
 
 function out = GenerateArbitraryStim(obj, stimLength, params)
-
+    disp("WAGH");
 end
 
 function out = GenerateDigitalStim(obj, stimType, stimLength, params)
@@ -333,7 +373,6 @@ function out = GenerateDigitalStim(obj, stimType, stimLength, params)
     % repeattrigger: freq, delay, dur(optional, defaults to full duration)
     % singletrigger: delay
     % startstoptrigger: delay, dur
-    %% TODO ADD TTL SCANIMAGE
     rate = obj.ConfigStruct.Rate;
     MsToTicks = @(x) round(x*rate/1000);
     out = zeros(1, stimLength);
@@ -503,19 +542,37 @@ function componentID = GetComponentID(obj)
     componentID = [componentID{:}];
 end
 
-% gets current device status. TODO
+function SoftwareTrigger(obj, ~, ~)
+    if obj.triggerIdx >= length(obj.PreviewData)
+        write(obj.SessionHandle, obj.PreviewData(obj.triggerIdx,:))
+    else
+        obj.Stop();
+    end
+end
+
+% gets current device status.
 % Options: ready / running / error
 function status = GetSessionStatus(obj)
-    % Query device status. TODO
-    % options: ready / acquiring / writing / error / stopped / empty / loading
+    % Query device status.
     if isempty(obj.SessionHandle)
         status = 'not initialised';
+    elseif ~isvalid(obj.SessionHandle)
+        status = 'DAQ deleted';
+    elseif obj.SessionHandle.Running
+        status = 'running'; % DAQ running
+    elseif ~isempty(obj.TriggerTimer) && isvalid(obj.TriggerTimer) && obj.TriggerTimer.Running
+        status = 'running'; % Software triggered timer running
+    elseif obj.SessionHandle.NumScansQueued ~= 0
+        status = 'ready'; % ready for DAQ triggered run
+    elseif ~isempty(obj.PreviewData)
+        status = 'ready'; % ready for software triggered run
     else
-        status = 'ok';
+        status = 'no data loaded';
     end
 end
 
 function name = FindDaqName(obj, deviceID, vendorID, model)
+    % TODO shouldn't use this within StimControl but it's useful for other applications
     % Find available daq names
     % https://au.mathworks.com/help/daq/daq.interfaces.dataacquisition.html
     try
@@ -546,66 +603,6 @@ function name = FindDaqName(obj, deviceID, vendorID, model)
         correctIndex = x;
     end
     name = daqs(correctIndex).Vendor.ID;
-end
-
-%%TODO!! STARTS HERE
-function preloadChannels(obj, p, idxStim)
-
-    
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %%%%%%%%%%%%%%%%% ADD ANALOG OUTPUT GENERATION %%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    ramp1 = 20;  % original was 15, trying with 2 on 13.12.2024 change 2 on 20250501
-    piezostimunitx = -ramp1:ramp1;
-    piezostimunity = normpdf(piezostimunitx,0,3);
-    piezostimunity = piezostimunity./max(piezostimunity);
-    piezohold = ones(1,piezoDur);
-    piezostimunity = [piezostimunity(1:ramp1) piezohold piezostimunity(ramp1+1:end)];
-    
-    piezostim = zeros(size(tax ));
-    if piezoStimNum>0
-        for pp = 1:piezoStimNum
-            pos1 = (pp-1) .*(1/piezoFreq) ; % in seconds
-            tloc = find(tax>=pos1); tloc = tloc(1);
-            piezostim(tloc:tloc+numel(piezostimunity)-1) = piezostim(tloc:tloc+numel(piezostimunity)-1)+piezostimunity;
-        end
-        piezostim = piezostim.*piezoAmp;
-    else
-       piezostim = zeros(size(tax )); 
-    end
-    
-    out(:,npreQSTtrig+kk+2) = piezostim;
-    
-    obj.DAQ.queueOutputData(out)            % queue data
-    prepare(obj.DAQ)                        % prepare data acquisition
-    
-    % wait for thermodes to reach neutral temperature
-    obj.waitForNeutral
-    
-    % open output file (if filename provided)
-    if nargin > 1
-        output  = true;
-        fid1    = fopen(fnOut,'w');
-    else
-        output  = false;
-    end
-    
-    % run stimulation
-    startBackground(obj.DAQ);               % start data acquisition
-    try
-        wait(obj.DAQ,tTotal+1)          	% wait for data acquisition
-    catch me
-        warning(me.identifier,'%s',...      % rethrow timeout error as warning
-            me.message); 
-    end
-    
-    % close output file
-    if output
-        fclose(fid1);
-    end
-    
-    % delete listener
-    delete(lh);
 end
 
 

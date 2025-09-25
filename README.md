@@ -129,6 +129,7 @@ When working with a ComponentProperty that takes a vector as its value (e.g. cam
 - [ ] get David's stim paradigms in that bad boy
 - [ ] PROTOCOL FILES: allow a single identifier for multiple types of output (a syntax for function definitions) -currently surmountable using arbitrary files so no pressure (see StimControl QOL)
 - [ ] put something in protocolmap for "trigger device" so you don't have to trigger them all one after another
+- [ ] Set up the ComponentConfig so that only relevant component attributes are visible (i.e. you can't see output line for a camera that's hardware-triggered? unless that's not the case)
 
 ### StimControl GUI
 - [x] add a pause button (lock off unless in inter-trial interval)
@@ -142,29 +143,33 @@ When working with a ComponentProperty that takes a vector as its value (e.g. cam
 - [ ] make it so you only have to click the map once
 - [ ] add loading indicators
 - [ ] Event for window resize to reshape (at least) daq preview window
+- [ ] 'AlternativesOk' in HardwareComponent for device searching vs strict init behaviour
 
 ### StimControl config
 - [ ] rejig the stimulus files to allow for function-style definitions. The mapping is driving me bonkers.
 - [ ] add ability to repeat arbitrary stims - maybe within the .astim?
-- [ ] make more robust to mismatches between hardware and software
-- [ ] persistent text file(?) mapping computer IDs with protocol / param / mapping files so you only have to select everything once per experiment
+- [ ] make more robust to mismatches between hardware and software labels
+- [ ] persistent text file(?) mapping computer IDs with protocol / param / mapping files so you only have to select everything once per PC or if something changes
 
 ### Widefield GUI
 - [x] jank when changing bin size / folders / etc.
 - [ ] creating new animal may also create erroneous experiment folders if you're ALSO changing experiment
-- [ ] Session param saving! (nb this should be done in matlab)
+- [ ] Session param saving! (nb this should be done in matlab) - LOW PRIORITY
 - [ ] ROI masking
 - [ ] be able to also see deltaF/F (set pre-stim time and set average for pre-stim as zero) (for fluorescence trace: (F - F0) / F0)
 - [ ] pause button
 
 ### Camera
 - [x] Visualisation: Indicator when saturation / brightness is reaching full intensity so we know to adjust gain / light
-- [ ] Figure out the buffering issues for multi-image-per-trigger acquisition, maybe thread it (check [imaq documentation](https://au.mathworks.com/help/imaq/videoinput.html) and [parallel computing documentation](https://au.mathworks.com/help/parallel-computing/quick-start-parallel-computing-in-matlab.html))
-- [ ] set CameraComponent up so that ConfigStruct is initialised to reflect current hardware config
+- [ ] Figure out the buffering issues for multi-image-per-trigger acquisition, maybe thread it (check [imaq documentation](https://au.mathworks.com/help/imaq/videoinput.html) and [parallel computing documentation](https://au.mathworks.com/help/parallel-computing/quick-start-parallel-computing-in-matlab.html)) NB - this is something nobody at the lab has figured out how to do yet
+- [ ] set all HardwareComponents up so that ConfigStruct is initialised to reflect current hardware config if it exists. This will involve not setting ComponentConfig until component is initialised or config is provided, and then reading config struct 
 
 ### DAQ
 - [ ] get session loading working
+- [ ] TEST SAVING
 - [ ] add parametrised analog outputs - ramp, noise, sine
+- [ ] Clean up SaveComponentConfig - you don't need to search for the daq, you have all the params already. Just return the config file.
+- [ ] Live preview! Look into data linking below
 
 ### Code Cleanup
 - [ ] move ComponentID to ComponentProperties with generator function
@@ -182,15 +187,10 @@ if you want to extract the value from a categorical, I extracted it from its cat
 newVal = src.Data.values{rownum};
     if iscategorical(newVal)
         cat = categories(newVal);
-        try %TODO fix. this is stupid. I hate categoricals.
-            cat = str2double(cat);
-            idx = find(categorical(cat) == newVal);
-            newVal = cat(idx);
-        catch
-            cat = categories(newVal);
-            idx = find(categorical(cat) == newVal);
-            newVal = cat{idx};
-        end
+        idx = find(categorical(cat) == newVal);
+        newVal = cat{idx};
+        %if ~isNan str2double(newVal)
+            %newVal = str2double(newVal) %for numeric categories
     end
 ```
 

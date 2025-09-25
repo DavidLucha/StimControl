@@ -56,22 +56,18 @@ function updateComponentConfigTable(src,event,obj)
     removeStyle(src);
     newVal = src.Data.values{rownum};
     if iscategorical(newVal)
-        cat = categories(newVal);
-        try %there must be a better way to do this, categoricals my behated.
-            cat = str2double(cat);
-            idx = find(categorical(cat) == newVal);
-            newVal = cat(idx);
-        catch
-            cat = categories(newVal);
-            idx = find(categorical(cat) == newVal);
-            newVal = cat{idx};
+        cats = categories(newVal);
+        idx = find(categorical(cats) == newVal);
+        newVal = cats{idx};
+        if ~isnan(str2double(newVal))
+            newVal = str2double(newVal);
         end
     end
     component.ConfigStruct.(propertyName) = newVal;
     if component.ComponentProperties.(propertyName).dynamic
         component.SetParam(propertyName, newVal);
     else
-        if isempty(obj.h.ComponentConfig.ValsToUpdate)
+        if ~isfield(obj.h.ComponentConfig, 'ValsToUpdate') || isempty(obj.h.ComponentConfig.ValsToUpdate)
             obj.h.ComponentConfig.ValsToUpdate = struct(propertyName, newVal);
         else
             obj.h.ComponentConfig.ValsToUpdate.(propertyName) = newVal;

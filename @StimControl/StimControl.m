@@ -6,7 +6,7 @@ end
 
 properties %(Access = private)
     h           = []            % GUI handles
-    d           = []            % 
+    d           = []            % HardwareComponent handles
     p           = []            % stimulation parameters/protocol
     g           = []            % general protocol parameters
     idxStim     = []            % current stimulus index
@@ -20,7 +20,8 @@ properties %(Access = private)
     isPaused    = false;
     hardwareParams
     trialIdx    = 1;
-    tLastStatusChange = 0;
+    tLastStatusChange = 0;  % for timers
+    tOffset = 0;            % for pausing
     taskPool    = [];
 end
 
@@ -73,7 +74,7 @@ methods
         %% battery timer
         obj.t = timer(...
             'StartDelay',       0, ...
-            'Period',           300, ...
+            'Period',           1, ...
             'ExecutionMode',    'fixedRate', ...
             'StartFcn',         @obj.callbackTimer, ...
             'TimerFcn',         @obj.callbackTimer);
