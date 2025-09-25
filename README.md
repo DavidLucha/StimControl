@@ -129,6 +129,7 @@ When working with a ComponentProperty that takes a vector as its value (e.g. cam
 - [ ] get David's stim paradigms in that bad boy
 - [ ] PROTOCOL FILES: allow a single identifier for multiple types of output (a syntax for function definitions) -currently surmountable using arbitrary files so no pressure (see StimControl QOL)
 - [ ] put something in protocolmap for "trigger device" so you don't have to trigger them all one after another
+- [ ] Set up the ComponentConfig so that only relevant component attributes are visible (i.e. you can't see output line for a camera that's hardware-triggered? unless that's not the case)
 
 ### StimControl GUI
 - [x] add a pause button (lock off unless in inter-trial interval)
