@@ -28,6 +28,7 @@ function runTrial(obj, src, event)
         component.StartTrial;
     end
     obj.trialIdx = obj.trialIdx + 1;
+    disp("STARTED")
 
     obj.d.executionTimer = timer(...
             'StartDelay',       0, ...

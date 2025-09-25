@@ -139,6 +139,7 @@ When working with a ComponentProperty that takes a vector as its value (e.g. cam
 - [ ] 'AlternativesOk' in HardwareComponent for device searching vs strict init behaviour
 - [ ] make componentconfig automatically pop up when config table is clicked, no need for "edit component config" to see config
 - [ ] can't currently see protocol previews without an attached session handle? (DAQ relevant) 
+- [ ] some way of ensuring a session is preloaded before allowing 'start' - if you stop then start without changing the trial number it causes crashes atm
 
 ### StimControl config
 - [ ] rejig the stimulus files to allow for function-style definitions. The mapping is driving me bonkers.

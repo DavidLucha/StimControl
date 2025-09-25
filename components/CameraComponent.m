@@ -125,9 +125,9 @@ function StartTrial(obj)
         start(obj.SessionHandle);
     end
     obj.FrameCount = 1;
-    if strcmpi(obj.SessionHandle.TriggerMode,'immediate')
-        trigger(obj.SessionHandle);
-    end
+    % if strcmpi(obj.SessionHandle.TriggerMode,'immediate')
+    %     trigger(obj.SessionHandle);
+    % end
     if ~isrunning(obj.SessionHandle)
         obj.Status = 'error';
     else

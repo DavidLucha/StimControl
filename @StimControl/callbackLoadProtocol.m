@@ -140,7 +140,7 @@ for i = 1:length(ks)
 end
 
 %% calculate estimated time + rest time
-protocolTotalTimeSecs = ((obj.g.dPause(1) + ((sum([obj.p.tPre]) + sum([obj.p.tPost]))))*obj.g.nProtRep) - obj.g.dPause(1);
+protocolTotalTimeSecs = ((obj.g.dPause(1) + ((sum([obj.p.tPre]) + sum([obj.p.tPost]))/1000))*obj.g.nProtRep) - obj.g.dPause(1);
 protocolTimeMins = floor(protocolTotalTimeSecs/60);
 protocolTimeSecs = ceil(protocolTotalTimeSecs - (60*protocolTimeMins));
 obj.h.protocolTimeEstimate.Text = sprintf('0:00 / %d:%d', protocolTimeMins, protocolTimeSecs);

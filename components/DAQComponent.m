@@ -1,4 +1,4 @@
-classdef (HandleCompatible) DAQComponent < HardwareComponent
+    classdef (HandleCompatible) DAQComponent < HardwareComponent
 % Generic wrapper class for DAQ objects
 % https://au.mathworks.com/help/daq/daq.interfaces.dataacquisition.html
 % https://au.mathworks.com/help/daq/daq.interfaces.dataacquisition.write.html
@@ -10,6 +10,7 @@ end
 properties (Access = protected)
     SessionInfo = struct();
     ChannelMap = struct();
+    OutChanIdxes = [];
     HandleClass = 'daq.interfaces.DataAcquisition';
     TrackedChannels = {};
     SaveFID = [];
@@ -243,11 +244,12 @@ function LoadTrial(obj, out)
     % Loads a trial from a matrix of size c x s where c is the number of
     % output channels and s is the number of samples in the trial.
     
-    obj.PreviewData = out;
+    % obj.PreviewData = out;
     % release session (in case the previous run was incomplete)
     if obj.SessionHandle.Running
         obj.SessionHandle.stop
     end
+    flush(obj.SessionHandle);
     if obj.SessionHandle.Rate == 0 && any(contains({obj.SessionHandle.Channels.Type}, 'Output'))
         % clocked sampling not supported - timer required for outputs.
         % TODO this might not strictly be true - might be possible to
@@ -292,50 +294,53 @@ function LoadTrialFromParams(obj, componentTrialData, genericTrialData)
     obj.PreviewTimeAxis = timeAxis;
     stimLength = numel(timeAxis);
     % Preallocate all zeros
-    out = zeros(numel(timeAxis), length(obj.SessionHandle.Channels));
+    previewOut = zeros(numel(timeAxis), length(obj.SessionHandle.Channels));
+    out = zeros(numel(timeAxis), sum(contains({obj.SessionHandle.Channels.Type}, 'Output')));
 
     for i = 1:length(fds)
         fieldName = fds{i};
         chIdx = obj.ChannelMap.(fieldName);
+        outIdx = find(obj.OutChanIdxes == chIdx);
         if regexpi(fieldName, '^Thermode[A-z]*')
             % Thermode 
-
+            continue
         elseif regexpi(fieldName, '^((Ana)|(Vib)|(Piezo))[A-z]*')
             % Analog 
+            continue
             stim = obj.GenerateAnalogStim('PWM', stimLength, componentTrialData.(fieldName));
-            out(:,chIdx) = stim;
 
         elseif regexpi(fieldName, '^(Dig)[A-z]*')
             % Arbitrary digital 
             stim = obj.GenerateArbitraryStim(stimLength, componentTrialData.(fieldName));
-            out(:,chIdx) = stim;
 
         elseif regexpi(fieldName, '^((PWM)|(LED))[A-z]*')
             % PWM 
             stim = obj.GenerateDigitalStim('pwm', stimLength, componentTrialData.(fieldName));
-            out(:,chIdx) = stim;
 
         elseif regexpi(fieldName, '^Piezo[A-z]*')
             % Piezo
             stim = obj.GenerateAnalogStim('piezo', stimLength, componentTrialData.(fieldName));
-            out(:,chIdx) = stim;
 
         elseif regexpi(fieldName, '^(Cam)[A-z]*')
             % Camera trigger TODO what if it's just a start??
             if contains(channels(chIdx).Type, 'Output')
                 stim = obj.GenerateDigitalStim('repeattrigger', stimLength, componentTrialData.(fieldName));
-                out(:,chIdx) = stim;
             else
                 % set for input - I think this means do nothing? TODO check
+                continue
             end
         elseif regexpi(fieldName, '^Arbitrary[A-z]*')
             % Arbitrary output.
+            continue
             % stim = obj.GenerateArbitraryStim(stimLength, componentTrialData.(fieldName));
             % out(:,chIdx) = stim;
         else
             error('Unsupported data type for DAQComponent: %s', fieldName);
         end
+        out(:,outIdx) = stim;
+        previewOut(:,chIdx) = stim;
     end
+    obj.PreviewData = previewOut;
     obj.LoadTrial(out);
 end
 
@@ -516,8 +521,10 @@ function obj = CreateChannels(obj, filename, protocolIDs)
                         [ch, idx] = addinput(obj.SessionHandle,deviceID,portNum,signalType);
                     case 'output'
                         [ch, idx] = addoutput(obj.SessionHandle,deviceID,portNum,signalType);
+                        obj.OutChanIdxes(end+1) = idx;
                     case 'bidirectional'
                         [ch, idx] = addbidirectional(obj.SessionHandle,deviceID,portNum,signalType);
+                        obj.OutChanIdxes(end+1) = idx;
                 end
                 ch.Name = channelName;
                 if ~isempty(terminalConfig) && ~contains(class(ch), 'Digital')
@@ -621,13 +628,14 @@ function name = FindDaqName(obj, deviceID, vendorID, model)
 end
 
 
-function plotData(~,event)
-    
+function plotData(obj, ~,event)
+    data = read(event.Source);
     % manage persistent variables
     persistent nTherm idTherm idxData
     if isempty(nTherm)
         nTherm = obj.nThermodes;
     end
+    
     if isempty(idxData)
         idxData = 1:(4*nTherm);
     end
