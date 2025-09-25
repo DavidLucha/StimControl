@@ -1,4 +1,4 @@
-function runTrial(obj, src)
+function runTrial(obj, src, event)
     % runs a single trial. Assumes trial data is pre-loaded for each component.
     % use obj.callbackLoadTrial to make this a reality!
 

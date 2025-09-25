@@ -118,7 +118,7 @@ methods (Access = private)
     callbackEditComponentConfig(obj, ~, ~)
 
     % Run it all
-    runTrial(obj)
+    runTrial(obj, src, event)
 
     % misc
     callbackFileExit(obj,~,~)
@@ -292,8 +292,8 @@ methods
         if strcmpi(val, 'not initialised')
             obj.h.statusLabel.Text = 'Not Initialised';
             obj.h.statusLamp.Color = '#808080';
-            obj.h.startStopExperimentBtn.Enable = 'off';
-            obj.h.startStopExperimentBtn.Text = 'START';
+            obj.h.StartStopBtn.Enable = 'off';
+            obj.h.StartStopBtn.Text = 'START';
             obj.h.pauseBtn.Enable = 'off';
             obj.isRunning = false;
             obj.isPaused = false;
@@ -301,8 +301,8 @@ methods
         elseif strcmpi(val, 'ready')
             obj.h.statusLabel.Text = 'Ready';
             obj.h.statusLamp.Color = '#00FF00';
-            obj.h.startStopExperimentBtn.Enable = 'on';
-            obj.h.startStopExperimentBtn.Text = 'START';
+            obj.h.StartStopBtn.Enable = 'on';
+            obj.h.StartStopBtn.Text = 'START';
             obj.h.pauseBtn.Enable = 'off';
             obj.isRunning = false;
             obj.isPaused = false;
@@ -310,8 +310,8 @@ methods
         elseif strcmpi(val, 'running')
             obj.h.statusLabel.Text = 'Running';
             obj.h.statusLamp.Color = '#FFA500';
-            obj.h.startStopExperimentBtn.Enable = 'on'; %TODO or on?
-            obj.h.startStopExperimentBtn.Text = 'STOP';
+            obj.h.StartStopBtn.Enable = 'on'; %TODO or on?
+            obj.h.StartStopBtn.Text = 'STOP';
             obj.h.pauseBtn.Enable = 'off';
             obj.h.pauseBtn.Text = 'PAUSE';
             obj.isRunning = true;
@@ -320,8 +320,8 @@ methods
         elseif strcmpi(val, 'inter-trial')
             obj.h.statusLabel.Text = 'Inter-trial';
             obj.h.statusLamp.Color = '#FFFFFF';
-            obj.h.startStopExperimentBtn.Enable = 'on';
-            obj.h.startStopExperimentBtn.Text = 'STOP';
+            obj.h.StartStopBtn.Enable = 'on';
+            obj.h.StartStopBtn.Text = 'STOP';
             obj.h.pauseBtn.Enable = 'on';
             obj.h.pauseBtn.Text = 'PAUSE';
             obj.isRunning = true;
@@ -330,8 +330,8 @@ methods
         elseif strcmpi(val, 'paused')
             obj.h.statusLabel.Text = 'Paused';
             obj.h.statusLamp.Color = '#008080';
-            obj.h.startStopExperimentBtn.Enable = 'on';
-            obj.h.startStopExperimentBtn.Text = 'STOP';
+            obj.h.StartStopBtn.Enable = 'on';
+            obj.h.StartStopBtn.Text = 'STOP';
             obj.h.pauseBtn.Enable = 'on';
             obj.h.pauseBtn.Text = 'RESUME';
             obj.isRunning = true;
@@ -354,12 +354,27 @@ methods
     function set.trialNum(obj, value)
         nTrials = length(obj.p);
         validateattributes(value,{'numeric'},...
-            {'scalar','integer','real','nonnegative','<=',nTrials})
-        
-        obj.h.numTrialsElapsedLabel.Text = sprintf('Trial: %d/%d', value, nTrials);
+            {'scalar','integer','real','nonnegative','<=',nTrials});
+
+        if value == 0
+            obj.h.numTrialsElapsedLabel.Text = sprintf('Trial: %d/%d', value, nTrials);
+            obj.h.trialNumDisplay.Value = 0;   
+            obj.h.totalTrialsLabel.Text = "/ 0";
+            obj.h.StatusCountdownLabel.Text = "-0:00";
+            obj.h.numTrialsElapsedLabel.Text = "Trial 0 / 0";
+            obj.h.trialTimeEstimate.Text = "00:00 / 00:00";
+            obj.status = 'not initialised';
+            return
+        end
+        tTrial = (obj.p(value).tPre + obj.p(value).tPost) / 1000;
+        trialMins = floor(tTrial / 60);
+        trialSecs = ceil(tTrial - (trialMins * 60));
+        obj.h.StatusCountdownLabel.Text = sprintf('-%d:%d', trialMins, trialSecs);
+        obj.h.numTrialsElapsedLabel.Text = sprintf('Trial %d / %d', obj.trialIdx, length(obj.p));
+        obj.h.trialTimeEstimate.Text = sprintf('00:00 / %d:%d', trialMins, trialSecs);
         obj.h.trialNumDisplay.Value = value;   
         obj.h.totalTrialsLabel.Text = sprintf('/ %d', nTrials);
-        obj.h.trialTimeEstimate.Text = sprintf('timeEstimate');
+
         % TODO UPDATE GUI (as below)
         % obj.h.protocol.edit.nStim.String   = sprintf('%d/%d',value,nTrials);
         % obj.h.protocol.edit.Comment.String = obj.p(value).Comments;

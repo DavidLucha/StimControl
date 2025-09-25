@@ -10,6 +10,7 @@ properties (Access = protected)
     Status
     LastAcquisition
     HandleClass = ''
+    FrameCount = 1;
 end
 
 methods(Static, Access=public)

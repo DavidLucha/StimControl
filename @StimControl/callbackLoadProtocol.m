@@ -16,7 +16,7 @@ if strcmpi(src.Value, 'Browse...')
         "switch off, then switch back to it through the dropdown. Be careful!");
     [filename, dir] = uigetfile([obj.path.protocolBase filesep '*.stim'], 'Select protocol');
     if filename == 0
-        return
+        src.Value = '';
     end
     obj.path.SessionProtocolFile = [dir filename];
     experimentID = strsplit(filename, '.');
@@ -26,12 +26,18 @@ if strcmpi(src.Value, 'Browse...')
                                             % to all the other protocol files
                                             % doesn't get screwy but it's
                                             % on the list to fix)
-elseif strcmpi(src.Value, '')
-    return
-else
+elseif ~strcmpi(src.Value, '')
     obj.experimentID = src.Value;
     obj.path.SessionProtocolFile = [obj.path.protocolBase filesep src.Value '.stim'];
 end
+
+if strcmpi(src.Value, '')
+    obj.h.trialInformationScroller.Value = '';
+    obj.h.trialInformationScroller.FontColor = 'black';
+    obj.trialNum = 0;
+    return
+end
+
 [p, g] = readProtocol(obj.path.SessionProtocolFile);
 obj.p = p;
 obj.g = g;
@@ -134,12 +140,7 @@ for i = 1:length(ks)
 end
 
 %% calculate estimated time + rest time
-if ~isfield(obj.p, 'tStim')
-    totalTStim = 0;
-else
-    totalTStim = sum([obj.p.tStim]);
-end
-protocolTotalTimeSecs = ((obj.g.dPause(1) + ((sum([obj.p.tPre]) + sum([obj.p.tPost]) + totalTStim)/1000))*obj.g.nProtRep) - obj.g.dPause(1);
+protocolTotalTimeSecs = ((obj.g.dPause(1) + ((sum([obj.p.tPre]) + sum([obj.p.tPost]))))*obj.g.nProtRep) - obj.g.dPause(1);
 protocolTimeMins = floor(protocolTotalTimeSecs/60);
 protocolTimeSecs = ceil(protocolTotalTimeSecs - (60*protocolTimeMins));
 obj.h.protocolTimeEstimate.Text = sprintf('0:00 / %d:%d', protocolTimeMins, protocolTimeSecs);

@@ -82,9 +82,9 @@ end
 function StartTrial(obj)
     % Starts device with a preloaded session. 
     if ~isempty(obj.SavePath) || length(obj.SavePath) ~= 0
-        obj.SaveFID = fopen(strcat(obj.SavePath, filesep, obj.savePrefix), 'w');
+        obj.SaveFID = fopen(strcat(obj.SavePath, filesep, obj.SavePrefix), 'w');
     end
-    if isvalid(obj.TriggerTimer) && ~isempty(obj.TriggerTimer)
+    if ~isempty(obj.TriggerTimer) && isvalid(obj.TriggerTimer)
         % run stimulation on matlab timer
         start(obj.TriggerTimer);
         try
@@ -95,7 +95,8 @@ function StartTrial(obj)
         end
     else
         % run stimulation on DAQ clock
-        startBackground(obj.SessionHandle);               % start data acquisition
+        nScans = obj.SessionHandle.NumScansQueued;
+        start(obj.SessionHandle, "NumScans", nScans);               % start data acquisition
         try
             wait(obj.SessionHandle,obj.timeoutWait)       % wait for data acquisition
         catch me
@@ -120,7 +121,11 @@ function Stop(obj)
         delete(obj.TriggerTimer);
     end
     if ~isempty(obj.SaveFID)
-        close(obj.SaveFID)
+        try
+            fclose(obj.SaveFID);
+        catch
+            %file already closed. Do nothing.
+        end
     end
 end
 
@@ -192,7 +197,10 @@ function StartPreview(obj)
     % Dynamically visualise object output TODO FILTER FOR ONLY INFORMATIVE ONES
     if isempty(obj.PreviewPlot) || isempty(obj.SessionHandle)
         return
-    elseif isempty(obj.PreviewData)
+    end
+    %clear previous preview data, if any
+    obj.StopPreview;
+    if isempty(obj.PreviewData)
         obj.Previewing = true;
         obj.PreviewPlot.Visible = 'on';
         x = 400;
@@ -205,8 +213,13 @@ function StartPreview(obj)
         return
     end
     obj.Previewing = true;
+    names = {obj.SessionHandle.Channels.Name};
+    ids = {obj.SessionHandle.Channels.ID};
+    comb = {names{:}; ids{:}}';
+    fmt = ['%s' newline '%s'];
+    displayLabels = compose(fmt, string(comb));
     obj.StackedPreview = stackedplot(obj.PreviewPlot.Parent, obj.PreviewTimeAxis, obj.PreviewData, ...
-        'DisplayLabels', {obj.SessionHandle.Channels.Name}, ...
+        'DisplayLabels', displayLabels, ...
         'Layout', obj.PreviewPlot.Layout, ...
         'Position', obj.PreviewPlot.Position);
     obj.PreviewPlot.Visible = 'off';
@@ -215,9 +228,11 @@ end
 function StopPreview(obj)
     if isempty(obj.PreviewPlot) || isempty(obj.SessionHandle)
         return
-    elseif ~isempty(obj.PreviewPlot.Children)
+    end
+    if ~isempty(obj.PreviewPlot.Children)
         delete(obj.PreviewPlot.Children);
-    else
+    end
+    if ~isempty(obj.StackedPreview) && isvalid(obj.StackedPreview)
         delete(obj.StackedPreview);
         obj.PreviewPlot.Visible = 'on';
     end
@@ -265,8 +280,7 @@ function LoadTrialFromParams(obj, componentTrialData, genericTrialData)
 
     tPre     = genericTrialData.tPre  / 1000;
     tPost    = genericTrialData.tPost / 1000;
-    tStim    = genericTrialData.tStim  / 1000;
-    tTotal   = tPre + tStim + tPost;
+    tTotal   = tPre + tPost;
     obj.tPrePost = [genericTrialData.tPre genericTrialData.tPost];
     obj.timeoutWait = tTotal;
 

@@ -121,29 +121,24 @@ When working with a ComponentProperty that takes a vector as its value (e.g. cam
 ### General
 - [ ] GUI that spits out hardware parameters and protocol
 - [ ] Implement additional hardware: Aurora serial
-- [x] See about making a generic inspect() style interface for all components [(see here)](https://au.mathworks.com/help/instrument/generic-instrument-drivers.html?s_tid=CRUX_lftnav)
-- [x] I don't looove that the component defaults are hardcoded but they're also not really hardcoded? maybe if we just add the option to ignore defaults we should be fine?
-- [x] NB with repInf it doesn't quite work - maybe support for rep-1 instead??
-- [x] add a "dynamic" tag to attributes - true if they can be changed without a reboot, else false?
 - [ ] add widefield stuff to StimControl?
 - [ ] get David's stim paradigms in that bad boy
+- [ ] Select at the start of the session which hardware you want to use, and initialise DAQ channels etc. then - DO NOT reaload channels for every new protocol file!!!
 - [ ] PROTOCOL FILES: allow a single identifier for multiple types of output (a syntax for function definitions) -currently surmountable using arbitrary files so no pressure (see StimControl QOL)
 - [ ] put something in protocolmap for "trigger device" so you don't have to trigger them all one after another
 - [ ] Set up the ComponentConfig so that only relevant component attributes are visible (i.e. you can't see output line for a camera that's hardware-triggered? unless that's not the case)
 
 ### StimControl GUI
-- [x] add a pause button (lock off unless in inter-trial interval)
-- [ ] ~~move single stim button down next to trial button~~
-- [x] turn the session setup and dev1 thing into one tab, experiment control into a separate tab
-- [ ] ~~put a confirm button in the setup tab, don't just save everything if you switch tabs. Or maybe a "save?" popup? is this necessary? maybe just check when switching if any active components are in an error state.~~
 - [ ] python socketing - make it easy to add functionality with python
 
 ### StimControl QOL
 - [x] for loadprotocol etc. - only do it if not already assigned or "select new" has been pressed
-- [ ] make it so you only have to click the map once
+- [ ] make it so you only have to click the map once (sidequest - why does it automatically minimise when you click the component map??)
 - [ ] add loading indicators
 - [ ] Event for window resize to reshape (at least) daq preview window
 - [ ] 'AlternativesOk' in HardwareComponent for device searching vs strict init behaviour
+- [ ] make componentconfig automatically pop up when config table is clicked, no need for "edit component config" to see config
+- [ ] can't currently see protocol previews without an attached session handle? (DAQ relevant) 
 
 ### StimControl config
 - [ ] rejig the stimulus files to allow for function-style definitions. The mapping is driving me bonkers.
@@ -174,6 +169,7 @@ When working with a ComponentProperty that takes a vector as its value (e.g. cam
 ### Code Cleanup
 - [ ] move ComponentID to ComponentProperties with generator function
 - [ ] switch preview build to single createpanelpreview function
+- [ ] add [progress bar](https://au.mathworks.com/help/matlab/ref/uiprogressdlg.html) to loading screens?
 
 ## A Non-Matlab User's Guide To Matlab
 Consider this like that one counter:

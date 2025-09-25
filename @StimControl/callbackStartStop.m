@@ -9,8 +9,11 @@ if obj.isRunning
     if ~strcmpi(selection, "OK")
         return
     end
-    for idx = 1:sum(obj.d.Active)
+    if isfield(obj.d, 'executionTimer') ...
+            && isvalid(obj.d.executionTimer) && isrunning(obj.d.executionTimer)
         stop(obj.d.executionTimer);
+    end
+    for idx = 1:sum(obj.d.Active)
         component = obj.activeComponents{idx};
         component.Stop();
     end
@@ -27,7 +30,13 @@ for i = 1:sum(obj.d.Active)
     component = obj.activeComponents{i};
     component.SavePath = obj.dirExperiment;
 end
-
+try
+    runExperiment(obj, src, event);
+catch e
+    updateInteractivity(obj, 'on');
+    obj.status = 'error';
+    rethrow(e);
+end
 end
 
 function runExperiment(obj, src, event)
@@ -41,9 +50,10 @@ end
 % refresh information scroller
 obj.h.trialInformationScroller.Value = '';
 
-for i = 1:nTrials
-    obj.trialNum = trialNums(i);
-    obj.runTrial(src); % spawns an execution timer
+obj.trialNum = trialNums(1);
+
+for i = 2:nTrials
+    obj.runTrial(src, event); % spawns an execution timer
     wait(obj.d.executionTimer);
     delete(obj.d.executionTimer);
     if i ~= nTrials
@@ -54,6 +64,8 @@ for i = 1:nTrials
             'ExecutionMode',    'fixedRate', ...
             'TimerFcn',         @interTrialTimerFcn);
         start(obj.d.interTrialTimer);
+        obj.trialNum = trialNums(i);
+        obj.callbackLoadTrial(src, event); % load trial during inter-trial period
         wait(obj.d.interTrialTimer);
         delete(obj.d.interTrialTimer)
     end
