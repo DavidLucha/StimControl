@@ -61,6 +61,9 @@ tab = readtable(obj.path.ComponentMapFile);
 obj.d.ComponentProtocols = configureDictionary('string', 'cell');
 obj.d.ProtocolComponents = configureDictionary('string', 'cell');
 
+% refresh information scroller
+obj.h.trialInformationScroller.Value = '';
+
 % for i = 1:length(fields(obj.p))
 %     %TODO MAKE THIS WORK - ACCOUNT FOR 'AnaA' and 'AnaB' in map but only
 %     %Ana in protocol. For now, this isn't supported. Just get it exactly

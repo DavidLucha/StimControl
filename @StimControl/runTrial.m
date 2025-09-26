@@ -9,8 +9,8 @@ function runTrial(obj, src, event)
     if isfield(obj.p, 'Comments')
         comment = obj.p(obj.trialNum).Comments;
     end
-    obj.h.trialInformationScroller.Value = [obj.h.trialInformationScroller.Value, ...
-        newline, char(sprintf("%d(%d): %s", obj.trialIdx, obj.trialNum, comment))];
+    obj.h.trialInformationScroller.Value{end+1} = ...
+        char(sprintf("%d(%d): %s", obj.trialIdx, obj.trialNum, comment));
 
     % Set save prefixes
     if src == obj.h.StartStopBtn
@@ -28,36 +28,47 @@ function runTrial(obj, src, event)
         component.StartTrial;
     end
     obj.trialIdx = obj.trialIdx + 1;
-    disp("STARTED")
+    % disp("STARTED")
+    tPre = [obj.p.tPre];
+    tPost = [obj.p.tPost];
+    tTotal = tPre(obj.trialNum) + tPost(obj.trialNum);
 
     obj.d.executionTimer = timer(...
             'StartDelay',       0, ...
             'Period',           1, ...
             'ExecutionMode',    'fixedRate', ...
-            'TimerFcn',         @trialRun, ...
-            'StopFcn',          @trialStop, ...
-            'UserData',         src == obj.h.StartStopBtn);
+            'TimerFcn',         @(timer, event)trialRun(timer, event, obj), ...
+            'StopFcn',          @(timer, event)trialStop(timer, event, obj), ...
+            'UserData',         src == obj.h.StartStopBtn, ...
+            'TasksToExecute',   round(tTotal / 100),...
+            'Name',             'executionTimer');
     obj.status = 'running';
     start(obj.d.executionTimer);
+    
+    if src ~= obj.h.StartStopBtn
+        wait(obj.d.executionTimer);
+        obj.status = 'ready';
+    end
 end
 
-function trialRun(obj, ~, ~)
+function trialRun(timer, event, obj)
     persistent startSec;
     persistent trialSecs;
     persistent experimentStartSecs;
     persistent experimentTotalSecs;
-    if isempty(trialSecs)
+    if isempty(trialSecs) || startSec == 0
         totalTimeLabel = strip(split(obj.h.trialTimeEstimate.Text, '/'));
-        trialSecs = seconds(duration(totalTimeLabel{2}, 'Format', 'mm:ss'));
+        trialSecs = seconds(duration(totalTimeLabel{2}, 'InputFormat', 'mm:ss'));
         startSec = tic;
         experimentTimeLabel = strip(split(obj.h.protocolTimeEstimate.Text, '/'));
-        experimentTotalSecs = seconds(duration(experimentTimeLabel{2}));
-        experimentStartSecs = seconds(duration(experimentTimeLabel{1}));
+        experimentTotalSecs = seconds(duration(experimentTimeLabel{2}, 'InputFormat', 'mm:ss'));
+        experimentStartSecs = seconds(duration(experimentTimeLabel{1}, 'InputFormat', 'mm:ss'));
     end
     if ~any(cellfun(@(c) strcmpi(c.GetStatus(), 'running'), obj.activeComponents))
         % all components finished
         obj.state = 'inter-trial';
         stop(obj.d.executionTimer)
+        startSec = 0;
     else
         secsElapsed = toc(startSec);
         % update GUI
@@ -76,8 +87,7 @@ function trialRun(obj, ~, ~)
     end
 end
 
-function trialStop(obj, ~, ~)
-    obj.status = 'loading';
+function trialStop(timer, event, obj)
     for i = 1:length(obj.activeComponents)
         component = obj.activeComponents{i};
         component.Stop();

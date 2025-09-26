@@ -125,21 +125,20 @@ When working with a ComponentProperty that takes a vector as its value (e.g. cam
 - [ ] get David's stim paradigms in that bad boy
 - [ ] Select at the start of the session which hardware you want to use, and initialise DAQ channels etc. then - DO NOT reaload channels for every new protocol file!!!
 - [ ] PROTOCOL FILES: allow a single identifier for multiple types of output (a syntax for function definitions) -currently surmountable using arbitrary files so no pressure (see StimControl QOL)
-- [ ] put something in protocolmap for "trigger device" so you don't have to trigger them all one after another
-- [ ] Set up the ComponentConfig so that only relevant component attributes are visible (i.e. you can't see output line for a camera that's hardware-triggered? unless that's not the case)
-
-### StimControl GUI
-- [ ] python socketing - make it easy to add functionality with python
+- [ ] put something in protocolmap for "trigger device" so you don't have to trigger them all one after another?
+- [ ] Choose active hardware at start of session, not start of protocol. Pick it ONCE
 
 ### StimControl QOL
 - [x] for loadprotocol etc. - only do it if not already assigned or "select new" has been pressed
 - [ ] make it so you only have to click the map once (sidequest - why does it automatically minimise when you click the component map??)
 - [ ] add loading indicators
-- [ ] Event for window resize to reshape (at least) daq preview window
 - [ ] 'AlternativesOk' in HardwareComponent for device searching vs strict init behaviour
 - [ ] make componentconfig automatically pop up when config table is clicked, no need for "edit component config" to see config
 - [ ] can't currently see protocol previews without an attached session handle? (DAQ relevant) 
 - [ ] some way of ensuring a session is preloaded before allowing 'start' - if you stop then start without changing the trial number it causes crashes atm
+- [ ] error handling during run that doesn't require an app restart
+- [ ] python socketing - make it easy to add functionality with python
+- [ ] check timers for busymode - should be queue for the important ones, NOT DROP
 
 ### StimControl config
 - [ ] rejig the stimulus files to allow for function-style definitions. The mapping is driving me bonkers.
@@ -166,6 +165,7 @@ When working with a ComponentProperty that takes a vector as its value (e.g. cam
 - [ ] add parametrised analog outputs - ramp, noise, sine
 - [ ] Clean up SaveComponentConfig - you don't need to search for the daq, you have all the params already. Just return the config file.
 - [ ] Live preview! Look into data linking below
+- [ ] add config for primary vs secondary (hardware-triggered) daqs?
 
 ### Code Cleanup
 - [ ] move ComponentID to ComponentProperties with generator function

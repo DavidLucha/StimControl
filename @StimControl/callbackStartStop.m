@@ -10,8 +10,14 @@ if obj.isRunning
         return
     end
     if isfield(obj.d, 'executionTimer') ...
-            && isvalid(obj.d.executionTimer) && isrunning(obj.d.executionTimer)
+            && isvalid(obj.d.executionTimer) ...
+            && strcmpi(obj.d.executionTimer.Running, 'on')
         stop(obj.d.executionTimer);
+        delete(obj.d.executionTimer);
+    elseif isfield(obj.d, 'interTrialTimer') ...
+            && isvalid(obj.d.interTrialTimer)
+        stop(obj.d.interTrialTimer);
+        delete(obj.d.interTrialTimer);
     end
     for idx = 1:sum(obj.d.Active)
         component = obj.activeComponents{idx};
@@ -47,14 +53,16 @@ else
     trialNums = 1:nTrials;
 end
 
-% refresh information scroller
-obj.h.trialInformationScroller.Value = '';
-
 obj.trialNum = trialNums(1);
+% obj.runTrial(src, event);
 
 for i = 2:nTrials
     obj.runTrial(src, event); % spawns an execution timer
     wait(obj.d.executionTimer);
+    while any(cellfun(@(c) strcmpi(c.GetStatus(), 'running'), obj.activeComponents))
+        start(obj.d.executionTimer);
+        wait(obj.d.executionTimer);
+    end
     delete(obj.d.executionTimer);
     if i ~= nTrials
         obj.status = 'inter-trial';
@@ -62,32 +70,50 @@ for i = 2:nTrials
             'StartDelay',       0, ...
             'Period',           1, ...
             'ExecutionMode',    'fixedRate', ...
-            'TimerFcn',         @interTrialTimerFcn);
+            'TimerFcn',         @(timer, event)interTrialTimerFcn(timer, event, obj), ...
+            'TasksToExecute',   obj.g.dPause + 5, ...
+            'Name',             'interTrialTimer');
+        obj.h.StatusCountdownLabel.Text = sprintf("-%s", string(duration(seconds(obj.g.dPause), 'Format', 'mm:ss')));
         start(obj.d.interTrialTimer);
         obj.trialNum = trialNums(i);
         obj.callbackLoadTrial(src, event); % load trial during inter-trial period
         wait(obj.d.interTrialTimer);
+        while strcmpi(obj.status, 'paused')
+            start(obj.d.interTrialTimer);
+            wait(obj.d.interTrialTimer);
+        end
         delete(obj.d.interTrialTimer)
     end
 end
+obj.status = 'ready';
 end
 
-function interTrialTimerFcn(obj, ~, ~)
-    persistent secsLeft;
-    if isempty(secsLeft)
-        secsLeft = obj.g.dPause;
-    elseif secsLeft == 0
+function interTrialTimerFcn(timer, event, obj)
+    persistent countdownSecs;
+    persistent startTic;
+    if strcmpi(obj.status, 'paused')
+        % Clear timer variables, then do nothing while we wait.
+        if ~isempty(startTic) && startTic > 0
+            startTic = 0;
+            delete(countdownSecs);
+        end
+        return
+    end
+    if isempty(countdownSecs) || startTic == 0
+        % first run or restarting after a pause
+        startTic = tic;
+        countdownSecs = seconds(duration(obj.h.StatusCountdownLabel.Text(2:end), ...
+            'InputFormat', 'mm:ss'));
+    end
+    tElapsed = toc(startTic);
+    if tElapsed >= countdownSecs
         obj.h.StatusCountdownLabel.Text = "-0:00";
         stop(obj.d.interTrialTimer);
         return;
-    elseif ~strcmpi(obj.Status, 'paused')
-       secsLeft = secsLeft - 1;
     end
-    if ~strcmpi(obj.Status, 'paused')
+    if ~strcmpi(obj.status, 'paused')
         % update GUI
-        minsLeft = floor(secsLeft / 60);
-        displaySecsLeft = secsLeft - minsLeft*60;
-        obj.h.StatusCountdownLabel.Text = sprintf("-%d:%2d", minsLeft, displaySecsLeft);
+        obj.h.StatusCountdownLabel.Text = sprintf("-%s", string(duration(seconds(countdownSecs - tElapsed), 'Format', 'mm:ss')));
     end
 end
 

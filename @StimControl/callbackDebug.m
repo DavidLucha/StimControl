@@ -1,6 +1,13 @@
 function callbackDebug(obj, src, event)    
 keyboard;
-% runTrial(obj);
+% da = obj.d.Available{1};
+% da = da.SessionHandle;
+% for i = 1:20
+%     da.write([1 1 1 1]);
+%     pause(0.5);
+%     da.write([0 0 0 0]);
+% end
+% % runTrial(obj);
 disp("DEBUG");
 keyboard;
 end

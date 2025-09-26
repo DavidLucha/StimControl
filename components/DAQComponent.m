@@ -1,4 +1,4 @@
-    classdef (HandleCompatible) DAQComponent < HardwareComponent
+classdef (HandleCompatible) DAQComponent < HardwareComponent
 % Generic wrapper class for DAQ objects
 % https://au.mathworks.com/help/daq/daq.interfaces.dataacquisition.html
 % https://au.mathworks.com/help/daq/daq.interfaces.dataacquisition.write.html
@@ -11,12 +11,14 @@ properties (Access = protected)
     SessionInfo = struct();
     ChannelMap = struct();
     OutChanIdxes = [];
+    InChanIdxes = [];
     HandleClass = 'daq.interfaces.DataAcquisition';
     TrackedChannels = {};
     SaveFID = [];
     PreviewData = [];
     PreviewTimeAxis = [];
     tPrePost = [];
+    dataLink = [];
 end
 
 properties(Access = private)
@@ -96,20 +98,14 @@ function StartTrial(obj)
         end
     else
         % run stimulation on DAQ clock
-        nScans = obj.SessionHandle.NumScansQueued;
-        start(obj.SessionHandle, "NumScans", nScans);               % start data acquisition
-        try
-            wait(obj.SessionHandle,obj.timeoutWait)       % wait for data acquisition
-        catch me
-            warning(me.identifier,'%s',...      % rethrow timeout error as warning
-                me.message); 
-        end
+        start(obj.SessionHandle);               % start data acquisition
+        % try
+        %     wait(obj.SessionHandle,obj.timeoutWait)       % wait for data acquisition
+        % catch me
+        %     warning(me.identifier,'%s',...      % rethrow timeout error as warning
+        %         me.message); 
+        % end
     end
-    % finished - close file
-    if ~isempty(obj.SavePath) || length(obj.SavePath) ~= 0
-        fclose(obj.SaveFID);
-    end
-
 end
 
 % Stop device
@@ -121,13 +117,12 @@ function Stop(obj)
         stop(obj.TriggerTimer);
         delete(obj.TriggerTimer);
     end
-    if ~isempty(obj.SaveFID)
-        try
-            fclose(obj.SaveFID);
-        catch
-            %file already closed. Do nothing.
-        end
+    try
+        fclose(obj.SaveFID);
+    catch
+        %file already closed. Do nothing.
     end
+    flush(obj.SessionHandle);
 end
 
 % Change device parameters TODO ALL OF THESE REQUIRE A RESTART I THINK
@@ -223,6 +218,7 @@ function StartPreview(obj)
         'DisplayLabels', displayLabels, ...
         'Layout', obj.PreviewPlot.Layout, ...
         'Position', obj.PreviewPlot.Position);
+    % obj.dataLink = linkdata(obj.StackedPreview); %todo deal with this when causes bugs later :)
     obj.PreviewPlot.Visible = 'off';
 end
 
@@ -244,12 +240,9 @@ function LoadTrial(obj, out)
     % Loads a trial from a matrix of size c x s where c is the number of
     % output channels and s is the number of samples in the trial.
     
-    % obj.PreviewData = out;
     % release session (in case the previous run was incomplete)
-    if obj.SessionHandle.Running
-        obj.SessionHandle.stop
-    end
     flush(obj.SessionHandle);
+    stop(obj.SessionHandle);
     if obj.SessionHandle.Rate == 0 && any(contains({obj.SessionHandle.Channels.Type}, 'Output'))
         % clocked sampling not supported - timer required for outputs.
         % TODO this might not strictly be true - might be possible to
@@ -258,7 +251,7 @@ function LoadTrial(obj, out)
 
     elseif any(contains({obj.SessionHandle.Channels.Type}, 'Output'))
         % normal DAQ things hell yeah
-        preload(obj.SessionHandle, out);
+        preload(obj.SessionHandle, out); % (1:1000,:) TODO remove the indexing - limiting numscans for debug purposes.
     end
 
     if ~isempty(obj.PreviewPlot) % show preview data
@@ -307,7 +300,7 @@ function LoadTrialFromParams(obj, componentTrialData, genericTrialData)
         elseif regexpi(fieldName, '^((Ana)|(Vib)|(Piezo))[A-z]*')
             % Analog 
             continue
-            stim = obj.GenerateAnalogStim('PWM', stimLength, componentTrialData.(fieldName));
+            % stim = obj.GenerateAnalogStim('PWM', stimLength, componentTrialData.(fieldName));
 
         elseif regexpi(fieldName, '^(Dig)[A-z]*')
             % Arbitrary digital 
@@ -315,6 +308,7 @@ function LoadTrialFromParams(obj, componentTrialData, genericTrialData)
 
         elseif regexpi(fieldName, '^((PWM)|(LED))[A-z]*')
             % PWM 
+            % TODO https://au.mathworks.com/help/daq/generate-pulse-width-modulated-signals-using-ni-devices.html
             stim = obj.GenerateDigitalStim('pwm', stimLength, componentTrialData.(fieldName));
 
         elseif regexpi(fieldName, '^Piezo[A-z]*')
@@ -519,12 +513,14 @@ function obj = CreateChannels(obj, filename, protocolIDs)
                 switch ioType
                     case 'input'
                         [ch, idx] = addinput(obj.SessionHandle,deviceID,portNum,signalType);
+                        obj.InChanIdxes(end+1) = idx;
                     case 'output'
                         [ch, idx] = addoutput(obj.SessionHandle,deviceID,portNum,signalType);
                         obj.OutChanIdxes(end+1) = idx;
                     case 'bidirectional'
                         [ch, idx] = addbidirectional(obj.SessionHandle,deviceID,portNum,signalType);
                         obj.OutChanIdxes(end+1) = idx;
+                        obj.InChanIdxes(end+1) = idx;
                 end
                 ch.Name = channelName;
                 if ~isempty(terminalConfig) && ~contains(class(ch), 'Digital')
@@ -629,45 +625,50 @@ end
 
 
 function plotData(obj, ~,event)
-    data = read(event.Source);
     % manage persistent variables
-    persistent nTherm idTherm idxData
-    if isempty(nTherm)
-        nTherm = obj.nThermodes;
-    end
-    
+    persistent idxData
+    persistent emptyCount
     if isempty(idxData)
-        idxData = 1:(4*nTherm);
+        idxData = 1;
     end
-    if isempty(idTherm)
-        idTherm = arrayfun(@(x) {['Thermode' char(64+x)]},1:nTherm);
-    end
+
+    data = read(event.Source);
+    % check data exists.
     
-    % build indices for plotting
-    a   = event.Source.NotifyWhenDataAvailableExceeds;
-    b   = event.Source.ScansAcquired;
-    idx = (1:a)+(b-a);
-    
-    % scale data from thermodes
-    dat = event.Data;
-    % dat(:,idxData(1:2)) = dat(:,idxData(1:2)) * 17.0898 - 5.0176;
-    dat(:,idxData(1:2)) = dat(:,idxData(1:2)) * 12  - 2; % PB 20241219
-    dat(:,idxData(3:4)) = (dat(:,idxData(3:4))*10 + 32) ;
-    ylim([12 50])
-    
-    % plot data
-    for ii = 1:5
-        for jj = 1:nTherm
-            obj.h.(idTherm{jj}).plot(ii).YData(idx) = dat(:,ii+(jj-1)*5);
+    % scale data from thermodes TODO
+    % dat = event.Data;
+    % % dat(:,idxData(1:2)) = dat(:,idxData(1:2)) * 17.0898 - 5.0176;
+    % dat(:,idxData(1:2)) = dat(:,idxData(1:2)) * 12  - 2; % PB 20241219
+    % dat(:,idxData(3:4)) = (dat(:,idxData(3:4))*10 + 32) ;
+    % ylim([12 50])
+    if ~isempty(data)
+        obj.PreviewData(idxData:data.NumScans+idxData-1, obj.InChanIdxes) = data.Data;
+        obj.StackedPreview.YData(idxData:data.NumScans+idxData-1, obj.InChanIdxes) = data.Data;
+        fwrite(obj.SaveFID,[data.Timestamps-obj.tPrePost(1),obj.PreviewData(idxData:data.NumScans,:)]','double');
+        idxData = idxData + data.NumScans;
+        emptyCount = 0;
+    else
+        if isempty(emptyCount)
+            emptyCount = 1;
+        else
+            emptyCount = emptyCount + 1;
+        end
+        if emptyCount > 5
+            % 5 empty packets in a row
+            fprintf("5 empty packets received in a row for DAQComponent %s. Stopping Acquisition.\n", obj.ComponentID);
+            idxData = 1;
+            obj.Stop();
+            emptyCount = 0;
         end
     end
-    
-    % save to disk (optional)
-    if output
-        fwrite(fid1,[event.TimeStamps-tPre,dat,out(idx,:)]','double');
+    if obj.SessionHandle.NumScansQueued == 0 && (isempty(obj.TriggerTimer) ...
+        || ~isvalid(obj.TriggerTimer))
+        disp("finished!");
+        idxData = 1;
+        obj.Stop();
+        emptyCount = 0;
     end
 end
 
-%TODO!! ENDS HERE
 end
 end

@@ -39,4 +39,7 @@ for i = 1:length(ks) %TODO PARALLELISE?
     component.LoadTrialFromParams(componentTrialData, genericTrialData);
 end
 
+if src ~= obj.h.StartStopBtn
+    obj.status = 'ready'; % prevent softlocks
+end
 end
