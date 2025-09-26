@@ -21,12 +21,12 @@ function runTrial(obj, src, event)
         component.SavePrefix = savePrefix;
     end
 
-    nTasks = sum(obj.d.Active);
-    activeComponents = obj.activeComponents;
-    for ci = 1:sum(nTasks)
-        component = activeComponents{ci};
-        component.StartTrial;
-    end
+    % nTasks = sum(obj.d.Active);
+    % activeComponents = obj.activeComponents;
+    % for ci = 1:sum(nTasks)
+    %     component = activeComponents{ci};
+    %     component.StartTrial;
+    % end
     obj.trialIdx = obj.trialIdx + 1;
     % disp("STARTED")
     tPre = [obj.p.tPre];
@@ -57,16 +57,22 @@ function trialRun(timer, event, obj)
     persistent experimentStartSecs;
     persistent experimentTotalSecs;
     if isempty(trialSecs) || startSec == 0
+        % initialise variables
         totalTimeLabel = strip(split(obj.h.trialTimeEstimate.Text, '/'));
         trialSecs = seconds(duration(totalTimeLabel{2}, 'InputFormat', 'mm:ss'));
-        startSec = tic;
         experimentTimeLabel = strip(split(obj.h.protocolTimeEstimate.Text, '/'));
         experimentTotalSecs = seconds(duration(experimentTimeLabel{2}, 'InputFormat', 'mm:ss'));
         experimentStartSecs = seconds(duration(experimentTimeLabel{1}, 'InputFormat', 'mm:ss'));
+        % start trial
+        for ci = 1:sum(obj.d.Active)
+            component = obj.activeComponents{ci};
+            component.StartTrial;
+        end
+        startSec = tic;
     end
     if ~any(cellfun(@(c) strcmpi(c.GetStatus(), 'running'), obj.activeComponents))
         % all components finished
-        obj.state = 'inter-trial';
+        obj.status = 'inter-trial';
         stop(obj.d.executionTimer)
         startSec = 0;
     else

@@ -43,6 +43,8 @@ catch e
     obj.status = 'error';
     rethrow(e);
 end
+% experiment completed!
+updateInteractivity(obj, 'on');
 end
 
 function runExperiment(obj, src, event)

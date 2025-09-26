@@ -642,9 +642,15 @@ function plotData(obj, ~,event)
     % dat(:,idxData(3:4)) = (dat(:,idxData(3:4))*10 + 32) ;
     % ylim([12 50])
     if ~isempty(data)
-        obj.PreviewData(idxData:data.NumScans+idxData-1, obj.InChanIdxes) = data.Data;
-        obj.StackedPreview.YData(idxData:data.NumScans+idxData-1, obj.InChanIdxes) = data.Data;
-        fwrite(obj.SaveFID,[data.Timestamps-obj.tPrePost(1),obj.PreviewData(idxData:data.NumScans,:)]','double');
+        targetIdx = idxData:data.NumScans+idxData-1;
+        obj.PreviewData(targetIdx, obj.InChanIdxes) = data.Data;
+        obj.StackedPreview.YData(targetIdx, obj.InChanIdxes) = data.Data;
+        try
+            fwrite(obj.SaveFID,[data.Timestamps-obj.tPrePost(1),obj.PreviewData(targetIdx)'],'double');
+        catch e
+            keyboard;
+            rethrow(e);
+        end
         idxData = idxData + data.NumScans;
         emptyCount = 0;
     else
@@ -653,9 +659,9 @@ function plotData(obj, ~,event)
         else
             emptyCount = emptyCount + 1;
         end
-        if emptyCount > 5
+        if emptyCount > 100
             % 5 empty packets in a row
-            fprintf("5 empty packets received in a row for DAQComponent %s. Stopping Acquisition.\n", obj.ComponentID);
+            % fprintf("100 empty packets received in a row for DAQComponent %s. Stopping Acquisition.\n", obj.ComponentID);
             idxData = 1;
             obj.Stop();
             emptyCount = 0;
@@ -663,7 +669,7 @@ function plotData(obj, ~,event)
     end
     if obj.SessionHandle.NumScansQueued == 0 && (isempty(obj.TriggerTimer) ...
         || ~isvalid(obj.TriggerTimer))
-        disp("finished!");
+        % disp("finished!");
         idxData = 1;
         obj.Stop();
         emptyCount = 0;

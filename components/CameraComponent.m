@@ -401,7 +401,7 @@ end
 function status = GetSessionStatus(obj)
     if isrunning(obj.SessionHandle)
         status = 'ready';
-        if toc(obj.LastAcquisition) < seconds(1)
+        if ~isempty(obj.LastAcquisition) && toc(obj.LastAcquisition) < seconds(1)
             status = 'running';
         end
     elseif ~isempty(obj.Status)

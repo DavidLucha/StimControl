@@ -131,7 +131,7 @@ When working with a ComponentProperty that takes a vector as its value (e.g. cam
 ### StimControl QOL
 - [x] for loadprotocol etc. - only do it if not already assigned or "select new" has been pressed
 - [ ] make it so you only have to click the map once (sidequest - why does it automatically minimise when you click the component map??)
-- [ ] add loading indicators
+- [ ] DENOTE TRIGGERED DEVICES AND START *ALL* OF THOSE FIRST
 - [ ] 'AlternativesOk' in HardwareComponent for device searching vs strict init behaviour
 - [ ] make componentconfig automatically pop up when config table is clicked, no need for "edit component config" to see config
 - [ ] can't currently see protocol previews without an attached session handle? (DAQ relevant) 
@@ -171,6 +171,8 @@ When working with a ComponentProperty that takes a vector as its value (e.g. cam
 - [ ] move ComponentID to ComponentProperties with generator function
 - [ ] switch preview build to single createpanelpreview function
 - [ ] add [progress bar](https://au.mathworks.com/help/matlab/ref/uiprogressdlg.html) to loading screens?
+- [ ] put runTrial into ONE TIMER with a startfcn
+- [ ] go through all the TODOs and get rid of commented code
 
 ## A Non-Matlab User's Guide To Matlab
 Consider this like that one counter:
