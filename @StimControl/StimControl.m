@@ -23,6 +23,8 @@ properties %(Access = private)
     tLastStatusChange = 0;  % for timers
     tOffset = 0;            % for pausing
     taskPool    = [];
+    f           = []            % state machine flags
+
 end
 
 properties (Dependent)
@@ -63,6 +65,15 @@ methods
             mkdir(obj.path.dirData)
         end
 
+        %% Reset state machine flags
+        obj.f.stopTrial = false;
+        obj.f.startTrial = false;
+        obj.f.pause = false;
+        obj.f.resume = false;
+        obj.f.runningExperiment = false;
+        obj.f.trialLoaded = false;
+        obj.f.trialFinished = false;
+
         %% Find available hardware
         disp("Initialising Available Hardware...")
         obj = obj.findAvailableHardware();
@@ -71,11 +82,11 @@ methods
         disp("Creating figure...")
         createFigure(obj)
         
-        %% battery timer
+        %% state machine timer
         obj.t = timer(...
             'StartDelay',       0, ...
-            'Period',           1, ...
-            'ExecutionMode',    'fixedRate', ...
+            'Period',           0.25, ...
+            'ExecutionMode',    'fixedDelay', ...
             'StartFcn',         @obj.callbackTimer, ...
             'TimerFcn',         @obj.callbackTimer);
         start(obj.t)
@@ -286,7 +297,9 @@ methods
     function set.status(obj, val)
         % supported values: 
         % NOT INITIALISED / READY / RUNNING / INTER-TRIAL / PAUSED / ERROR
-        % / LOADING
+        % / STOPPING
+        obj.h.loadingLabel.Visible = 'off';
+        obj.h.statusLabel.Visible = 'on';
         obj.tLastStatusChange = tic;
         val = lower(val);
         if strcmpi(val, 'not initialised')
@@ -337,10 +350,29 @@ methods
             obj.isRunning = true;
             obj.isPaused = true;
 
-        elseif strcmpi(val, 'loading')
-            obj.h.statusLabel.Text = 'Loading';
-            obj.h.statusLamp.Color = '#FFFF00';
+        elseif strcmpi(val, 'stopping')
+            obj.h.statusLabel.Text = 'Stopping';
+            obj.h.statusLamp.Color = '#A80000';
+            obj.h.StartStopBtn.Enable = 'off';
+            obj.h.StartStopBtn.Text = 'START';
+            obj.h.pauseBtn.Enable = 'off';
+            obj.h.pauseBtn.Text = 'PAUSE';
+
+        else
+            error("Invalid status. Implement status here or it won't work.")
         end
+    end
+
+    function indicateLoading(obj, text)
+
+        obj.h.statusLabel.Visible = 'off';
+        obj.h.loadingLabel.Visible = 'on';
+        if ~isempty(text)
+            obj.h.loadingLabel.Text = text;
+        else
+            obj.h.loadingLabel.Text = 'Loading...';
+        end
+        obj.h.statusLamp.Color = '#FFFF00';
     end
 
     function val = get.status(obj)
@@ -353,6 +385,7 @@ methods
     
     function set.trialNum(obj, value)
         nTrials = length(obj.p);
+        totalNTrials = sum([obj.p.nRepetitions]) * obj.g.nProtRep;
         validateattributes(value,{'numeric'},...
             {'scalar','integer','real','nonnegative','<=',nTrials});
 
@@ -370,7 +403,7 @@ methods
         trialMins = floor(tTrial / 60);
         trialSecs = ceil(tTrial - (trialMins * 60));
         obj.h.StatusCountdownLabel.Text = sprintf('-%d:%d', trialMins, trialSecs);
-        obj.h.numTrialsElapsedLabel.Text = sprintf('Trial %d / %d', obj.trialIdx, length(obj.p));
+        obj.h.numTrialsElapsedLabel.Text = sprintf('Trial %d / %d', obj.trialIdx, totalNTrials);
         obj.h.trialTimeEstimate.Text = sprintf('00:00 / %d:%d', trialMins, trialSecs);
         obj.h.trialNumDisplay.Value = value;   
         obj.h.totalTrialsLabel.Text = sprintf('/ %d', nTrials);

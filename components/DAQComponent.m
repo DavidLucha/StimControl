@@ -17,8 +17,9 @@ properties (Access = protected)
     SaveFID = [];
     PreviewData = [];
     PreviewTimeAxis = [];
+    tiledLayout = [];
     tPrePost = [];
-    dataLink = [];
+    idxData;
 end
 
 properties(Access = private)
@@ -83,9 +84,10 @@ end
 
 % Start device
 function StartTrial(obj)
+    obj.idxData = 1;
     % Starts device with a preloaded session. 
     if ~isempty(obj.SavePath) || length(obj.SavePath) ~= 0
-        obj.SaveFID = fopen(strcat(obj.SavePath, filesep, obj.SavePrefix), 'w');
+        % obj.SaveFID = fopen(strcat(obj.SavePath, filesep, obj.SavePrefix), 'w');
     end
     if ~isempty(obj.TriggerTimer) && isvalid(obj.TriggerTimer)
         % run stimulation on matlab timer
@@ -156,7 +158,14 @@ end
 
 function SaveAuxiliaryConfig(obj, filepath)
     % Get channel parameters for saving. DAQ-specific.
+    % [s, out] = system('vol');
+    %     out = strsplit(out, '\n');
+    %     out = out{2}(end-8:end);
+    %     if strcmpi(out, '48AC-D74C')
+    %         filename = [out, '_', obj.ComponentID];
     channels = obj.SessionHandle.Channels;
+    % channelData = {'portNum', 'channelName', 'ioType', 'signalType', 'TerminalConfig', 'Range', 'ProtType',  'ProtFunc', 'ProtID'};
+
     channelData = {'deviceID' 'portNum' 'channelName' 'ioType' ...
         'signalType' 'TerminalConfig' 'Range'};
     nChans = size(channels);
@@ -214,6 +223,16 @@ function StartPreview(obj)
     comb = {names{:}; ids{:}}';
     fmt = ['%s' newline '%s'];
     displayLabels = compose(fmt, string(comb));
+    % obj.charts = gobjects(length(displayLabels), 1);    
+    % for i = 1:length(names)
+    %     plt = plot(obj.PreviewTimeAxis, obj.PreviewData(:,i));
+    %     % set(plt, 'XDataSource', obj.PreviewTimeAxis);
+    %     % set(plt, 'YDataSource', obj.PreviewData(:,i));
+    %     % plt.XDataSource = obj.PreviewTimeAxis;
+    %     % plt.YDataSource = obj.PreviewData(:,i);
+    %     plt.title = displayLabels(i);
+    %     obj.charts{i} = plt;
+    % end
     obj.StackedPreview = stackedplot(obj.PreviewPlot.Parent, obj.PreviewTimeAxis, obj.PreviewData, ...
         'DisplayLabels', displayLabels, ...
         'Layout', obj.PreviewPlot.Layout, ...
@@ -241,8 +260,8 @@ function LoadTrial(obj, out)
     % output channels and s is the number of samples in the trial.
     
     % release session (in case the previous run was incomplete)
-    flush(obj.SessionHandle);
     stop(obj.SessionHandle);
+    flush(obj.SessionHandle);
     if obj.SessionHandle.Rate == 0 && any(contains({obj.SessionHandle.Channels.Type}, 'Output'))
         % clocked sampling not supported - timer required for outputs.
         % TODO this might not strictly be true - might be possible to
@@ -280,7 +299,10 @@ function LoadTrialFromParams(obj, componentTrialData, genericTrialData)
     obj.timeoutWait = tTotal;
 
     % Add Listener 
-    obj.SessionHandle.ScansAvailableFcn = @obj.plotData;
+    if ~obj.SessionHandle.Running
+        obj.SessionHandle.ScansAvailableFcn = @obj.plotData;
+        % obj.SessionHandle.NotifyWhenDataAvailableExceeds=1000;
+    end
 
     fds = fields(componentTrialData);
     timeAxis = linspace(1/rate,tTotal,tTotal*rate)-tPre; %todo this falls apart if the rate !=1000? - need fixed?
@@ -626,10 +648,11 @@ end
 
 function plotData(obj, ~,event)
     % manage persistent variables
-    persistent idxData
     persistent emptyCount
-    if isempty(idxData)
-        idxData = 1;
+    if obj.idxData > size(obj.StackedPreview.YData)
+        % cut off the end of the data
+        disp("we have too much data??");
+        return
     end
 
     data = read(event.Source);
@@ -642,16 +665,21 @@ function plotData(obj, ~,event)
     % dat(:,idxData(3:4)) = (dat(:,idxData(3:4))*10 + 32) ;
     % ylim([12 50])
     if ~isempty(data)
-        targetIdx = idxData:data.NumScans+idxData-1;
+        targetIdx = obj.idxData:data.NumScans+obj.idxData-1;
         obj.PreviewData(targetIdx, obj.InChanIdxes) = data.Data;
-        obj.StackedPreview.YData(targetIdx, obj.InChanIdxes) = data.Data;
+        warning('off');
+        obj.StackedPreview.YData(targetIdx, obj.InChanIdxes) = data.Data; %todo fix this but I'm going to have to fix it by changing the plot function
+        warning('on');
         try
-            fwrite(obj.SaveFID,[data.Timestamps-obj.tPrePost(1),obj.PreviewData(targetIdx)'],'double');
+            writematrix([data.Timestamps-obj.tPrePost(1),obj.PreviewData(targetIdx)'], ...
+            strcat(obj.SavePath, filesep, obj.SavePrefix, '.csv'), ...
+            'WriteMode', 'append');
+            % fwrite(obj.SaveFID,[data.Timestamps-obj.tPrePost(1),obj.PreviewData(targetIdx)'],'double');
         catch e
             keyboard;
             rethrow(e);
         end
-        idxData = idxData + data.NumScans;
+        obj.idxData = obj.idxData + data.NumScans;
         emptyCount = 0;
     else
         if isempty(emptyCount)
@@ -659,20 +687,6 @@ function plotData(obj, ~,event)
         else
             emptyCount = emptyCount + 1;
         end
-        if emptyCount > 100
-            % 5 empty packets in a row
-            % fprintf("100 empty packets received in a row for DAQComponent %s. Stopping Acquisition.\n", obj.ComponentID);
-            idxData = 1;
-            obj.Stop();
-            emptyCount = 0;
-        end
-    end
-    if obj.SessionHandle.NumScansQueued == 0 && (isempty(obj.TriggerTimer) ...
-        || ~isvalid(obj.TriggerTimer))
-        % disp("finished!");
-        idxData = 1;
-        obj.Stop();
-        emptyCount = 0;
     end
 end
 

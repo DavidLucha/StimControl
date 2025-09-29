@@ -142,6 +142,7 @@ When working with a ComponentProperty that takes a vector as its value (e.g. cam
 
 ### StimControl config
 - [ ] rejig the stimulus files to allow for function-style definitions. The mapping is driving me bonkers.
+- [ ] also rejig daq channel mapping: see 48AC-D74C_Dev1-ni-PCIe-6323.csv in config, and the associated logic (computer ID + DAQ ID) in DAQComponentProperties for automatic mapping per computer. Look into enabling / disabling specific hardware per session
 - [ ] add ability to repeat arbitrary stims - maybe within the .astim?
 - [ ] make more robust to mismatches between hardware and software labels
 - [ ] persistent text file(?) mapping computer IDs with protocol / param / mapping files so you only have to select everything once per PC or if something changes

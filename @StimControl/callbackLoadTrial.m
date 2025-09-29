@@ -42,4 +42,5 @@ end
 if src ~= obj.h.StartStopBtn
     obj.status = 'ready'; % prevent softlocks
 end
+obj.f.trialLoaded = true;
 end

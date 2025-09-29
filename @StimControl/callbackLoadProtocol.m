@@ -3,7 +3,7 @@ function callbackLoadProtocol(obj, src, event)
 % and updates GUI to allow trial start.
 % eventually this will be more intelligent and able to handle ambiguity, but for now
 % the mapping files need to be perfectly aligned to the protocol.
-obj.status = 'loading';
+obj.indicateLoading('Loading protocol');
 obj.updateDateTime; % update the datetime for component savepaths
 
 if src ~= obj.h.protocolSelectDropDown
@@ -150,7 +150,7 @@ obj.h.protocolTimeEstimate.Text = sprintf('0:00 / %d:%d', protocolTimeMins, prot
 obj.h.trialInformationScroller.Value = '';
 obj.h.trialInformationScroller.FontColor = 'black';
 
-obj.updateDateTime;
+obj.updateDateTime; 
 
 %% Load first trial
 obj.callbackLoadTrial(src, event);

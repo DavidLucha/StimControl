@@ -9,7 +9,7 @@ properties (Access = public)
     SessionHandle
     SavePath
     SavePrefix
-    Required
+    Required %todo remove
     Abstract
     ConfigStruct
     PreviewPlot = []
@@ -198,7 +198,8 @@ methods (Abstract, Access=public)
 %                                   settings
 InitialiseSession(obj, varargin)
 
-% Start device
+% Start device. For synchronisation reasons, should only be used for
+% self-triggered devices and 
 StartTrial(obj)
 
 % Stop device
@@ -212,7 +213,6 @@ StartPreview(obj)
 
 % Dynamic visualisation of the object output
 StopPreview(obj)
-
 
 % Print device information
 PrintInfo(obj)

@@ -131,7 +131,7 @@ function StartTrial(obj)
     if ~isrunning(obj.SessionHandle)
         obj.Status = 'error';
     else
-        obj.Status = 'ok';
+        obj.Status = 'running';
     end
 end
 
@@ -291,6 +291,21 @@ function GetInspector(obj)
 end
 
 function LoadTrialFromParams(obj, componentTrialData, genericTrialData)
+    if strcmpi(obj.ConfigStruct.TriggerMode, 'hardware') || ...
+        strcmpi(obj.ConfigStruct.TriggerMode, 'manual')
+        if isrunning(obj.SessionHandle)
+            stop(obj.SessionHandle);
+        end
+        if ~isrunning(obj.SessionHandle)
+            start(obj.SessionHandle);
+        end
+        if ~isrunning(obj.SessionHandle)
+            error("failed to start CameraComponent %s", obj.ComponentID);
+        end
+    end
+    %TODO check behaviour of this in rolling acquisition mode - do you
+    %start then wait for trigger?
+    % if obj.SessionHandle.
     % TODO restart camera to reset framecount?
     % check triggermode and change if needed
     % detect number of triggers needed / framerate / etc.
@@ -349,8 +364,9 @@ function componentID = GetComponentID(obj)
 end
 
 function ReceiveFrame(obj, src, vidObj)
-    if ~exist(strcat(obj.SavePath, filesep, obj.ComponentID, obj.SavePrefix), 'dir')
-        mkdir(obj.SavePath, obj.SavePrefix)
+    filepath = strcat(obj.SavePath, filesep, obj.SavePrefix, '_', obj.ComponentID);
+    if ~exist(filepath, 'dir')
+        mkdir(filepath);
     end
     try
         imgs = getdata(src,src.FramesAvailable); 
@@ -358,7 +374,7 @@ function ReceiveFrame(obj, src, vidObj)
         numImgs = size(imgs);
         numImgs = numImgs(4);
         for i = 1:numImgs
-            imname = strcat(obj.SavePath, obj.SavePrefix, filesep, string(obj.FrameCount), '_', string(datetime(datetime, "Format", 'yyyyMMdd_HHmmss.SSS')), ".TIFF");
+            imname = strcat(filepath, filesep, string(obj.FrameCount), '_', string(datetime(datetime, "Format", 'yyyyMMdd_HHmmss.SSS')), ".TIFF");
             imwrite(imgs(:,:,:,i),imname);
             obj.FrameCount = obj.FrameCount + 1;
         end
@@ -393,15 +409,15 @@ function UpdateTriggerMode(obj)
             % src.TriggerActivation = "none";
     end
     triggerconfig(obj.SessionHandle, obj.ConfigStruct.TriggerMode);
-    
 end
 
 % Gets current device status
 % Options: ready / running / error
 function status = GetSessionStatus(obj)
     if isrunning(obj.SessionHandle)
-        status = 'ready';
-        if ~isempty(obj.LastAcquisition) && toc(obj.LastAcquisition) < seconds(1)
+        status = 'awaiting trigger';
+        if strcmpi(obj.ConfigStruct.TriggerMode, 'immediate') || ...
+            (~isempty(obj.LastAcquisition) && toc(obj.LastAcquisition) < seconds(1))
             status = 'running';
         end
     elseif ~isempty(obj.Status)
@@ -416,7 +432,8 @@ function img = GetCurrentPreviewDisplay(obj)
 end
 
 function SoftwareTrigger(obj, ~, ~)
-%%TODO
+    % if 
+    trigger(obj.SessionHandle);
 end
 
 end

@@ -70,7 +70,7 @@ cam  = struct(...           % cameras
     'enable',               1, ...
     'freq',                 20, ...
     'trig',                 1); % 1/2/3 for hardware/software/rolling
-general = struct(...        % timing / repetitions
+p = struct(...        % timing / repetitions
     'Comments',             '',...
     'tPre',                 1000,...
     'tPost',                2000,... % NOTE tPost is how long to record post start of stimulus
@@ -79,7 +79,6 @@ arb = struct( ...           % arbitrary outputs
     'type',                 'analog',... %analog/digital
     'filename',             '', ...
     'data',                 []);
-p = struct();
 
 %% Count and initialise with names
 %TODO maybe only do this if nTherm nAna nDig nPwm nCam and nArb are
