@@ -195,6 +195,7 @@ function obj = SetParams(obj, paramsStruct)
     paramFields = fields(paramsStruct);
     updateTrigger = false;
     updateBinning = false;
+    previewPaused = false;
     % check if device needs to be restarted
     for i = 1:length(paramFields)
         param = paramFields{i};
