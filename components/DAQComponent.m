@@ -101,12 +101,6 @@ function StartTrial(obj)
     else
         % run stimulation on DAQ clock
         start(obj.SessionHandle);               % start data acquisition
-        % try
-        %     wait(obj.SessionHandle,obj.timeoutWait)       % wait for data acquisition
-        % catch me
-        %     warning(me.identifier,'%s',...      % rethrow timeout error as warning
-        %         me.message); 
-        % end
     end
 end
 
