@@ -166,6 +166,7 @@ When working with a ComponentProperty that takes a vector as its value (e.g. cam
 - [x] get session loading working
 - [x] FIX SAVING - currently only coming in two columns.
 - [ ] add parametrised analog outputs - ramp, noise, sine
+- [ ] for arbitrary outputs, put some check that rates line up
 - [ ] Clean up SaveComponentConfig - you don't need to search for the daq, you have all the params already. Just return the config file.
 - [ ] Live preview! Look into data linking below
 - [ ] add config for primary vs secondary (hardware-triggered) daqs?
