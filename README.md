@@ -127,6 +127,7 @@ When working with a ComponentProperty that takes a vector as its value (e.g. cam
 - [ ] PROTOCOL FILES: allow a single identifier for multiple types of output (a syntax for function definitions) -currently surmountable using arbitrary files so no pressure (see StimControl QOL)
 - [ ] put something in protocolmap for "trigger device" so you don't have to trigger them all one after another?
 - [ ] Choose active hardware at start of session, not start of protocol. Pick it ONCE
+- [ ] refine stopping criteria - make it more precise when recordings end, make the visual timers more reliable
 
 ### StimControl QOL
 - [x] for loadprotocol etc. - only do it if not already assigned or "select new" has been pressed
@@ -161,12 +162,13 @@ When working with a ComponentProperty that takes a vector as its value (e.g. cam
 - [ ] set all HardwareComponents up so that ConfigStruct is initialised to reflect current hardware config if it exists. This will involve not setting ComponentConfig until component is initialised or config is provided, and then reading config struct 
 
 ### DAQ
-- [ ] get session loading working
+- [x] get session loading working
 - [ ] TEST SAVING
 - [ ] add parametrised analog outputs - ramp, noise, sine
 - [ ] Clean up SaveComponentConfig - you don't need to search for the daq, you have all the params already. Just return the config file.
 - [ ] Live preview! Look into data linking below
 - [ ] add config for primary vs secondary (hardware-triggered) daqs?
+- [ ] configure which lines you want to see the preview for and which you don't.
 
 ### Code Cleanup
 - [ ] move ComponentID to ComponentProperties with generator function

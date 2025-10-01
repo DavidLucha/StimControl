@@ -11,6 +11,9 @@ properties (Access = protected)
     LastAcquisition
     HandleClass = ''
     FrameCount = 1;
+    recordingTime;
+    selfStop;
+    startTic;
 end
 
 methods(Static, Access=public)
@@ -122,12 +125,10 @@ function StartTrial(obj)
         return
     end
     if ~isrunning(obj.SessionHandle)
+        obj.startTic = tic;
         start(obj.SessionHandle);
     end
     obj.FrameCount = 1;
-    % if strcmpi(obj.SessionHandle.TriggerMode,'immediate')
-    %     trigger(obj.SessionHandle);
-    % end
     if ~isrunning(obj.SessionHandle)
         obj.Status = 'error';
     else
@@ -303,6 +304,8 @@ function LoadTrialFromParams(obj, componentTrialData, genericTrialData)
         if ~isrunning(obj.SessionHandle)
             error("failed to start CameraComponent %s", obj.ComponentID);
         end
+    else %immediate
+        obj.recordingTime = genericTrialData.tPre + genericTrialData.tPost;
     end
     %TODO check behaviour of this in rolling acquisition mode - do you
     %start then wait for trigger?
@@ -383,10 +386,18 @@ function ReceiveFrame(obj, src, vidObj)
         disp("Encountered an error imaging on CameraComponent %s", obj.ComponentID)
         dbstack
         disp(exception.message)
+        keyboard
+    end
+    if obj.selfStop
+        if toc(obj.startTic) > seconds(obj.recordingTime)
+            obj.Stop();
+        end
     end
 end
 
 function UpdateTriggerMode(obj)
+    % Updates the camera's triggermode
+    % TODO currently immediate mode requires a software start.
     src = getselectedsource(obj.SessionHandle);
     switch obj.ConfigStruct.TriggerMode
         case "hardware"
@@ -397,17 +408,20 @@ function UpdateTriggerMode(obj)
             src.TriggerMode = "On";
             src.TriggerSource = obj.ConfigStruct.TriggerLine;
             src.TriggerActivation = obj.ConfigStruct.TriggerActivation;
+            obj.selfStop = false;
         case "manual"
             src.TriggerSource = "Software";
             src.TriggerMode = "Off";
             obj.SessionHandle.FramesPerTrigger = str2double(obj.ConfigStruct.FramesPerTrigger);
             src.TriggerSelector = obj.ConfigStruct.TriggerSelector;
             % src.TriggerActivation = "none";
+            obj.selfStop = false;
         case "immediate"
             src.LineSelector = obj.ConfigStruct.OutputLine;
             src.LineMode = "Output";
             src.TriggerMode = "Off";
             % src.TriggerActivation = "none";
+            obj.selfStop = true;
     end
     triggerconfig(obj.SessionHandle, obj.ConfigStruct.TriggerMode);
 end
