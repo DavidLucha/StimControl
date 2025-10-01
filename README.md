@@ -138,8 +138,9 @@ When working with a ComponentProperty that takes a vector as its value (e.g. cam
 - [ ] can't currently see protocol previews without an attached session handle? (DAQ relevant) 
 - [ ] some way of ensuring a session is preloaded before allowing 'start' - if you stop then start without changing the trial number it causes crashes atm
 - [ ] error handling during run that doesn't require an app restart
-- [ ] python socketing - make it easy to add functionality with python
+- [ ] (LOW PRIO) python socketing - make it easy to add functionality with python
 - [ ] check timers for busymode - should be queue for the important ones, NOT DROP
+- [ ] draggable / rescalable preview UI
 
 ### StimControl config
 - [ ] rejig the stimulus files to allow for function-style definitions. The mapping is driving me bonkers.
@@ -163,7 +164,7 @@ When working with a ComponentProperty that takes a vector as its value (e.g. cam
 
 ### DAQ
 - [x] get session loading working
-- [ ] TEST SAVING
+- [x] FIX SAVING - currently only coming in two columns.
 - [ ] add parametrised analog outputs - ramp, noise, sine
 - [ ] Clean up SaveComponentConfig - you don't need to search for the daq, you have all the params already. Just return the config file.
 - [ ] Live preview! Look into data linking below
