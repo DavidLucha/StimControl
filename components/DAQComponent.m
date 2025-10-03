@@ -12,7 +12,6 @@ properties (Access = protected)
     ChannelMap = struct();
     OutChanIdxes = [];
     InChanIdxes = [];
-    HandleClass = 'daq.interfaces.DataAcquisition';
     TrackedChannels = {};
     SaveFID = [];
     PreviewData = [];

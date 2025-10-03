@@ -18,11 +18,11 @@ properties (Access = public)
     TriggerTimer = [];
 end
 
-properties (Abstract, Access = protected)
-    HandleClass
-end
-
 methods(Access=public)
+
+function Debug(obj)
+    keyboard;
+end
 
 function p = GetBaseParser(obj)
     % All device constructors can take the following arguments:
@@ -185,6 +185,9 @@ end
 methods(Static, Abstract, Access=public)
     % Complete reset. Clear device and all handles of device type.
     Clear()
+
+    % Finds all available hardware components of the given type.
+    % FindAll()
 end
 
 methods (Abstract, Access=public)

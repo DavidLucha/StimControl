@@ -9,7 +9,6 @@ end
 properties (Access = protected)
     Status
     LastAcquisition
-    HandleClass = ''
     FrameCount = 1;
     recordingTime;
     selfStop;
