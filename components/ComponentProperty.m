@@ -9,13 +9,14 @@ properties (SetAccess=private, GetAccess=public)
     dynamic
     required
     note
+    editable
     cat
 end
 
 methods (Access=public)
     function obj = ComponentProperty(varargin)
         p = inputParser();
-        addParameter(p, 'default', [], @(x) true);
+        addParameter(p,'default', [], @(x) true);
         addParameter(p,'allowable',  {}, @(x) obj.CategoricalCompatible(x));
         addParameter(p,'validatefcn', @(val)true, @(x) isa(x,'function_handle'));
         addParameter(p,'dependencies', @(propStruct) true, @(x) isa(x,'function_handle'));
@@ -23,6 +24,7 @@ methods (Access=public)
         addParameter(p,'dynamic',  false, @islogical);
         addParameter(p,'required',  @(propStruct) true, @islogical);
         addParameter(p,'note',  "", @(x) isstring(x) || ischar(x));
+        addParameter(p,'editable', true, @islogical);
         
         p.parse(varargin{:});
         res = p.Results;
@@ -35,6 +37,7 @@ methods (Access=public)
         obj.dynamic = res.dynamic;
         obj.required = res.required;
         obj.note = res.note;
+        obj.editable = res.editable;
     end
 end
 

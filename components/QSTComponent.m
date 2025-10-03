@@ -5,7 +5,7 @@ classdef (HandleCompatible) QSTComponent < HardwareComponent
 %             obj.h.(['Thermode' char(64+ii)]).battery.Value = obj.s(ii).battery;
 %         end
 
-% NOTE: I'm doing a bit of versioning nonsense for SOME future-proofing. 
+% NOTE: I'm doing a bit of versioning nonsense for future-proofing. 
 % The library that will soon be deprecated is serial, to be replaced with serialport.
 % serialport is only half implemented in the version of MATLAB I'm coding in (2023b)
 % so some of the updated functions are untested.
@@ -58,7 +58,6 @@ function obj = InitialiseSession(obj, params)
     obj.query('Ose'); % activate external triggering (required with newer QST devices). added 2024.10.30
     obj.query('Om550'); % enable 55deg stim. added 2025.05.08
 
-
 end
 
 
@@ -79,7 +78,7 @@ end
 
 % Change device parameters
 function SetParams(obj, varargin)
-
+    error("SetParams not implemented for QSTComponent");
 end
 
 % Dynamic visualisation of the object output
@@ -99,7 +98,8 @@ end
 
 % Preload a single trial
 function LoadTrialFromParams(obj, componentTrialData, genericTrialData)
-
+    obj.trialData = componentTrialData;
+    preloadSingleStim(obj)
 end
 end
 
@@ -108,7 +108,74 @@ methods(Access=protected)
 % gets current device status
 % Options: ready / running / error
 function status = GetSessionStatus(obj)
+    b = obj.battery;
 
+%     Serial Port Object : Serial-COM5
+
+%    Communication Settings 
+%       Port:               COM5
+%       BaudRate:           115200
+%       Terminator:         'CR'
+
+%    Communication State 
+%       Status:             open
+%       RecordStatus:       off
+
+%    Read/Write State  
+%       TransferStatus:     idle
+%       BytesAvailable:     4096
+%       ValuesReceived:     1497
+%       ValuesSent:         21
+end
+
+function preloadSingleStim(obj, stimStruct)
+    %QSTControl p2Serial
+    for ii = 1:length(obj.s)
+        idTherm = sprintf('Thermode%s',64+ii);
+        if ~isfield(p,idTherm)
+            continue
+        end
+        
+        % build command stack
+        stack = {};
+        for param = fieldnames(p.(idTherm))'
+            val = p.(idTherm).(param{:});
+            switch param{:}
+                case 'NeutralTemp'
+                    cmd = sprintf('N%03d',round(val*10));
+                case 'SurfaceSelect'
+                    cmd = sprintf('S%d%d%d%d%d',val>0);
+                case 'SetpointTemp'
+                    cmd = helper('C%d%03d',round(val*10));
+                case 'PacingRate'
+                    cmd = helper('V%d%04d',round(val*10));
+                case 'ReturnSpeed'
+                    cmd = helper('R%d%04d',round(val*10));
+                case 'dStimulus'
+                    cmd = helper('D%d%05d',round(val));
+                case 'nTrigger'
+                    cmd = sprintf('T%03d',round(val));
+                case 'integralTerm'
+                    cmd = sprintf('I%d',round(val));
+            end
+            stack = [stack cmd]; %#ok<AGROW>
+        end
+        
+        % send command stack to thermode
+        tmp = [stack; repmat({' '},size(stack))];
+        obj.s(ii).query([tmp{:}]);
+    end
+
+        function out = helper(format,val)
+            if all(val==val(1))
+                out = sprintf(format,0,val(1));
+            else
+                out = cell(1,sum(~isnan(val)));
+                for idx = find(~isnan(val))
+                    out{idx} = sprintf(format,idx,val(idx));
+                end
+            end
+    end
 end
 
 function componentID = GetComponentID(obj)
@@ -268,3 +335,141 @@ methods(Static, Access=public)
     end
 end
 end
+
+% serial Construct serial port object.
+ 
+%     serial will be removed in a future release. Use serialport instead.
+ 
+%     S = serial('PORT') constructs a serial port object associated with
+%     port, PORT. If PORT does not exist or is in use you will not be able
+%     to connect the serial port object to the device.
+ 
+%     In order to communicate with the device, the object must be connected
+%     to the serial port with the FOPEN function.
+ 
+%     When the serial port object is constructed, the object's Status property
+%     is closed. Once the object is connected to the serial port with the
+%     FOPEN function, the Status property is configured to open. Only one serial
+%     port object may be connected to a serial port at a time.
+ 
+%     S = serial('PORT','P1',V1,'P2',V2,...) constructs a serial port object
+%     associated with port, PORT, and with the specified property values. If
+%     an invalid property name or property value is specified the object will
+%     not be created.
+ 
+%     Note that the property value pairs can be in any format supported by
+%     the SET function, i.e., param-value string pairs, structures, and
+%     param-value cell array pairs.
+ 
+%   serial Functions
+%   serial object construction.
+%     serial        - Construct serial port object.
+ 
+%   Getting and setting parameters.
+%     get           - Get value of serial port object property.
+%     set           - Set value of serial port object property.
+ 
+%   State change.
+%     fopen         - Connect object to device.
+%     fclose        - Disconnect object from device.
+%     record        - Record data from serial port session.
+ 
+%   Read and write functions.
+%     fprintf       - Write text to device.
+%     fgetl         - Read one line of text from device, discard terminator.
+%     fgets         - Read one line of text from device, keep terminator.
+%     fread         - Read binary data from device.
+%     fscanf        - Read data from device and format as text.
+%     fwrite        - Write binary data to device.
+%     readasync     - Read data asynchronously from device.
+ 
+%   serial port functions.
+%     serialbreak   - Send break to device.
+ 
+%   General.
+%     delete        - Remove serial port object from memory.
+%     inspect       - Open inspector and inspect instrument object properties.
+%     instrcallback - Display event information for the event.
+%     instrfind     - Find serial port objects with specified property values.
+%     instrfindall  - Find all instrument objects regardless of ObjectVisibility.
+%     isvalid       - True for serial port objects that can be connected to
+%                     device.
+%     stopasync     - Stop asynchronous read and write operation.
+ 
+%   serial Properties
+%     BaudRate                  - Specify rate at which data bits are transmitted.
+%     BreakInterruptFcn         - Callback function executed when break interrupt
+%                                 occurs.
+%     ByteOrder                 - Byte order of the device.
+%     BytesAvailable            - Specifies number of bytes available to be read.
+%     BytesAvailableFcn         - Callback function executed when specified number
+%                                 of bytes are available.
+%     BytesAvailableFcnCount    - Number of bytes to be available before
+%                                 executing BytesAvailableFcn.
+%     BytesAvailableFcnMode     - Specifies whether the BytesAvailableFcn is
+%                                 based on the number of bytes or terminator
+%                                 being reached.
+%     BytesToOutput             - Number of bytes currently waiting to be sent.
+%     DataBits                  - Number of data bits that are transmitted.
+%     DataTerminalReady         - State of the DataTerminalReady pin.
+%     ErrorFcn                  - Callback function executed when an error occurs.
+%     FlowControl               - Specify the data flow control method to use.
+%     InputBufferSize           - Total size of the input buffer.
+%     Name                      - Descriptive name of the serial port object.
+%     ObjectVisibility          - Control access to an object by command-line users and
+%                                 GUIs.
+%     OutputBufferSize          - Total size of the output buffer.
+%     OutputEmptyFcn            - Callback function executed when output buffer is
+%                                 empty.
+%     Parity                    - Error detection mechanism.
+%     PinStatus                 - State of hardware pins.
+%     PinStatusFcn              - Callback function executed when pin in the
+%                                 PinStatus structure changes value.
+%     Port                      - Description of a hardware port.
+%     ReadAsyncMode             - Specify whether an asynchronous read operation
+%                                 is continuous or manual.
+%     RecordDetail              - Amount of information recorded to disk.
+%     RecordMode                - Specify whether data is saved to one disk file
+%                                 or to multiple disk files.
+%     RecordName                - Name of disk file to which data sent and
+%                                 received is recorded.
+%     RecordStatus              - Indicates if data is being written to disk.
+%     RequestToSend             - State of the RequestToSend pin.
+%     Status                    - Indicates if the serial port object is connected
+%                                 to serial port.
+%     StopBits                  - Number of bits transmitted to indicate the end
+%                                 of data transmission.
+%     Tag                       - Label for object.
+%     Terminator                - Character used to terminate commands sent to
+%                                 serial port.
+%     Timeout                   - Seconds to wait to receive data.
+%     TimerFcn                  - Callback function executed when a timer event
+%                                 occurs.
+%     TimerPeriod               - Time in seconds between timer events.
+%     TransferStatus            - Indicate the asynchronous read or write
+%                                 operations that are in progress.
+%     Type                      - Object type.
+%     UserData                  - User data for object.
+%     ValuesReceived            - Number of values read from the device.
+%     ValuesSent                - Number of values written to device.
+ 
+%     Example:
+%         % To construct a serial port object:
+%           s1 = serial('COM1');
+%           s2 = serial('COM2', 'BaudRate', 1200);
+ 
+%         % To connect the serial port object to the serial port:
+%           fopen(s1)
+%           fopen(s2)
+ 
+%         % To query the device.
+%           fprintf(s1, '*IDN?');
+%           idn = fscanf(s1);
+ 
+%         % To disconnect the serial port object from the serial port.
+%           fclose(s1);
+%           fclose(s2);
+ 
+%     See also serial/fopen.
+
+%     Documentation for serial

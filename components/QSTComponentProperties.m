@@ -26,7 +26,7 @@ Data = struct( ...
     %     'default', DAQComponentProperties.GetDefaultChannelConfig))
 end
 methods (Static, Access=private)
-function out = GetAvailablePorts(obj)
+function out = GetAvailablePorts()
     if isMATLABReleaseOlderThan('R2024b')
         out = cellstr(seriallist);
     else

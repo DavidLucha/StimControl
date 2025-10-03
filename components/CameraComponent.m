@@ -3,7 +3,7 @@ classdef (HandleCompatible) CameraComponent < HardwareComponent
 % https://au.mathworks.com/help/imaq/videoinput.html
 % https://au.mathworks.com/help/parallel-computing/quick-start-parallel-computing-in-matlab.html
 properties (Constant, Access = public)
-    ComponentProperties = CameraComponentProperties.Data
+    ComponentProperties = CameraComponentProperties
 end
 
 properties (Access = protected)
@@ -301,7 +301,7 @@ function LoadTrialFromParams(obj, componentTrialData, genericTrialData)
             start(obj.SessionHandle);
         end
         if ~isrunning(obj.SessionHandle)
-            error("failed to start CameraComponent %s", obj.ComponentID);
+            error("failed to start CameraComponent %s", obj.ConfigStruct.ComponentID);
         end
     else %immediate
         obj.recordingTime = genericTrialData.tPre + genericTrialData.tPost;
@@ -360,6 +360,13 @@ function name = GetCameraName(obj, adaptorName)
 end
  
 function componentID = GetComponentID(obj)
+    if ~isempty(obj.SessionHandle)
+        % if obj.SessionHandle.Adaptor{'gentl', 'gige'}
+        %     src = obj.SessionHandle.Source;
+        %     src.DeviceVendorName;
+        %     src.DeviceModelName;
+        % end
+    end
     componentID = convertStringsToChars([obj.ConfigStruct.Adaptor '-' obj.ConfigStruct.ID]); %TODO IS THIS UNIQUE ENOUGH
     if iscell(componentID)
         componentID = [componentID{:}];
@@ -367,7 +374,7 @@ function componentID = GetComponentID(obj)
 end
 
 function ReceiveFrame(obj, src, vidObj)
-    filepath = strcat(obj.SavePath, filesep, obj.SavePrefix, '_', obj.ComponentID);
+    filepath = strcat(obj.SavePath, filesep, obj.SavePrefix, '_', obj.ConfigStruct.ComponentID);
     if ~exist(filepath, 'dir')
         mkdir(filepath);
     end
@@ -382,7 +389,7 @@ function ReceiveFrame(obj, src, vidObj)
             obj.FrameCount = obj.FrameCount + 1;
         end
     catch exception
-        disp("Encountered an error imaging on CameraComponent %s", obj.ComponentID)
+        disp("Encountered an error imaging on CameraComponent %s", obj.ConfigStruct.ComponentID)
         dbstack
         disp(exception.message)
         keyboard

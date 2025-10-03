@@ -14,6 +14,7 @@ properties (Access = public)
     ConfigStruct
     PreviewPlot = []
     Previewing = false
+    statusPanel = [];
     ComponentID
     TriggerTimer = [];
 end
@@ -110,6 +111,7 @@ end
 function status = GetStatus(obj)
 % Gets current device status
 % Options: abstract / empty / ready / running / error /  / loading
+%TODO MAKE A DEPENDENT VARIABLE?
     if obj.Abstract
         status = 'abstract';
     elseif isempty(obj.SessionHandle)
@@ -121,6 +123,20 @@ function status = GetStatus(obj)
         status = 'unknown';
     end
 end
+
+function statusPanel = GetStatusVis(obj, parentGUIElement)
+    %TODO
+    % Creates the status visualiser for the HardwareComponent. 
+    % Assumes a smallish squareish GUI object for the parent
+    % statusPanel = uipanel(parentGUIElement);
+    % grid = uigridlayout(panel);
+end
+
+function UpdateStatusVis(obj, parentGUIElement)
+    %TODO
+    status = obj.GetStatus();
+end
+
 
 % Updates the preview to move its target plot.
 function UpdatePreview(obj, varargin)

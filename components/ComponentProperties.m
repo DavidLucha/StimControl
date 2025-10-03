@@ -1,10 +1,7 @@
 classdef (Abstract, HandleCompatible) ComponentProperties < handle
-    properties
+    properties (Abstract, Access=public)
+        % ComponentID
     end
-
-    % methods(Abstract)
-    %     out = GetComponentID(obj);
-    % end
 
     methods
         function out = isfield(fieldName, obj)
