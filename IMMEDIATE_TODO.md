@@ -1,2 +1,1 @@
-- implement QST
-- redo protocol & param files
+- Get legacy loading working on DAQ and QST.
