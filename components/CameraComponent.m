@@ -19,6 +19,27 @@ methods(Static, Access=public)
     function Clear()
         imaqreset;
     end
+
+    function components = FindAll(varargin)
+        p = inputParser();
+        addParameter(p, 'Initialise', true, @islogical);
+        p.parse(varargin{:});
+        components = {};
+        adaptors = imaqhwinfo().InstalledAdaptors;
+        for i = 1:length(adaptors)
+            adaptorDevices = imaqhwinfo(adaptors{i});
+            devices = adaptorDevices.DeviceInfo;
+            for j = 1:length(devices)
+                temp = devices(j);
+                initStruct = struct( ...
+                    'Adaptor', adaptorDevices.AdaptorName, ...
+                    'ID', temp.DeviceName);
+                 comp = CameraComponent('Initialise', p.Results.Initialise, ...
+                     'ConfigStruct', initStruct);
+                 components{end+1} = comp;
+            end
+        end
+    end
 end
 
 methods (Access = public)
@@ -435,16 +456,20 @@ end
 % Gets current device status
 % Options: ready / running / error
 function status = GetSessionStatus(obj)
+    % get current device status.
+    % STATUS:
+    %   connected       device session initialised; not ready to start trial
+    %   ready           device session initialised, trial loaded
+    %   running         currently running a trial
+    status = '';
     if isrunning(obj.SessionHandle)
-        status = 'awaiting trigger';
+        status = 'ready';
         if strcmpi(obj.ConfigStruct.TriggerMode, 'immediate') || ...
             (~isempty(obj.LastAcquisition) && toc(obj.LastAcquisition) < seconds(1))
             status = 'running';
         end
     elseif ~isempty(obj.Status)
         status = char(obj.Status);
-    else
-        status = '';
     end
 end
 

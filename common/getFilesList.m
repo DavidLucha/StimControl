@@ -14,13 +14,22 @@ fileExtension = params.fileExtension;
 filesList = [];
 allFiles = dir(baseDir);
 allFiles = allFiles(~strncmpi('.', {allFiles.name}, 1));
-if strcmpi(fileExtension, '')
-    allFiles = allFiles([allFiles.isdir]);
-elseif strcmp(fileExtension, '.')
-        allFiles = allFiles(~[allFiles.isdir]);
-elseif ~strcmpi(fileExtension, '*')
-    allFiles = dir([baseDir filesep '*' fileExtension]);
+if ~iscellstr(fileExtension)
+    if strcmpi(fileExtension, '')
+        allFiles = allFiles([allFiles.isdir]);
+    elseif strcmp(fileExtension, '.')
+            allFiles = allFiles(~[allFiles.isdir]);
+    elseif ~strcmpi(fileExtension, '*')
+        allFiles = dir([baseDir filesep '*' fileExtension]);
+    end
+else
+    idxes = zeros(1, length(allFiles));
+    for extension = fileExtension
+        idxes = idxes + contains({allFiles.name}, extension);
+    end
+    allFiles = allFiles(logical(idxes));
 end
+
 filesList{1} = '';
 for iTrials = 1:size(allFiles,1) %skip first two entries because they contain folders '.' and '..'
     if params.RemoveFileExtensions

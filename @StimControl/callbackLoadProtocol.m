@@ -14,7 +14,7 @@ end
 if strcmpi(src.Value, 'Browse...')
     warning("This will cause problems if you choose something outside the default protocol base path, " + ...
         "switch off, then switch back to it through the dropdown. Be careful!");
-    [filename, dir] = uigetfile([obj.path.protocolBase filesep '*.stim'], 'Select protocol');
+    [filename, dir] = uigetfile([obj.path.protocolBase], 'Select protocol');
     if filename == 0
         src.Value = '';
     end
@@ -28,7 +28,7 @@ if strcmpi(src.Value, 'Browse...')
                                             % on the list to fix)
 elseif ~strcmpi(src.Value, '')
     obj.experimentID = src.Value;
-    obj.path.SessionProtocolFile = [obj.path.protocolBase filesep src.Value '.stim'];
+    obj.path.SessionProtocolFile = [obj.path.protocolBase filesep src.Value];
 end
 
 if strcmpi(src.Value, '')
@@ -38,7 +38,16 @@ if strcmpi(src.Value, '')
     return
 end
 
-[p, g] = readProtocol(obj.path.SessionProtocolFile);
+if contains(obj.path.SessionProtocolFile, '.qst')
+    % legacy considerations
+    [p, g] = readParameters(obj.path.SessionProtocolFile);
+elseif contains(obj.path.SessionProtocolFile, '.stim')
+    % current format
+    [p, g] = readProtocol(obj.path.SessionProtocolFile);
+else
+    error("Unsupported file format. Supported formats: .qst, .stim");
+end
+
 obj.p = p;
 obj.g = g;
 obj.idxStim = 1;

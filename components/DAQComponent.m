@@ -32,6 +32,25 @@ methods (Access = public, Static)
         % Complete reset. Clear device.
         daqreset;
     end
+
+    function components = FindAll(varargin)
+        % Finds all available DAQ devices.
+        p = inputParser();
+        addParameter(p, 'Initialise', true, @islogical);
+        p.parse(varargin{:});
+        components = {};
+        daqs = daqlist();
+        for i = 1:height(daqs)
+            s = table2struct(daqs(i, :));
+            initStruct = struct( ...
+                'Vendor', s.VendorID, ...
+                'ID', s.DeviceID, ...
+                'Model', s.Model);
+            comp = DAQComponent('Initialise', p.Results.Initialise, ...
+                'ConfigStruct', initStruct, 'ChannelConfig', false);
+            components{end+1} = comp;
+        end
+    end
 end
 
 methods (Access = public)
@@ -583,15 +602,14 @@ function SoftwareTrigger(obj, ~, ~)
     end
 end
 
-% gets current device status.
-% Options: ready / running / error
 function status = GetSessionStatus(obj)
-    % Query device status.
-    if isempty(obj.SessionHandle)
-        status = 'not initialised';
-    elseif ~isvalid(obj.SessionHandle)
-        status = 'DAQ deleted';
-    elseif obj.SessionHandle.Running
+    % get current device status.
+    % STATUS:
+    %   connected       device session initialised; not ready to start trial
+    %   ready           device session initialised, trial loaded
+    %   running         currently running a trial
+    status = '';
+    if obj.SessionHandle.Running
         status = 'running'; % DAQ running
     elseif ~isempty(obj.TriggerTimer) && isvalid(obj.TriggerTimer) && obj.TriggerTimer.Running
         status = 'running'; % Software triggered timer running
@@ -599,8 +617,8 @@ function status = GetSessionStatus(obj)
         status = 'ready'; % ready for DAQ triggered run
     elseif ~isempty(obj.PreviewData)
         status = 'ready'; % ready for software triggered run
-    else
-        status = 'no data loaded';
+    elseif ~isempty(obj.SessionHandle) && isvalid(obj.SessionHandle)
+        status = 'connected';
     end
 end
 

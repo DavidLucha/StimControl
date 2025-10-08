@@ -191,39 +191,58 @@ methods (Access = private)
         obj.d.ProtocolComponents = configureDictionary('string', 'cell');
         obj.d.ComponentProtocols = configureDictionary('string', 'cell');
         
-        % DAQs
-        daqs = daqlist();
-        for i = 1:height(daqs)
-            s = table2struct(daqs(i, :));
-            initStruct = struct( ...
-                'Vendor', s.VendorID, ...
-                'ID', s.DeviceID, ...
-                'Model', s.Model);
-            comp = DAQComponent('Initialise', true, 'ConfigStruct', initStruct, 'ChannelConfig', false);
+        tmpPlur = ["", "s"];
+        pluralStr = @(input) tmpPlur(double(length(input)~=1)+1);
+        daqs = DAQComponent.FindAll();
+        fprintf("\t Found %d DAQ%s\n", length(daqs), pluralStr(daqs));
+        cameras = CameraComponent.FindAll();
+        fprintf("\t Found %d camera%s\n", length(cameras), pluralStr(cameras));
+        serials = QSTComponent.FindAll();
+        fprintf("\t found %d serial device%s\n", length(serials), pluralStr(serials));
+        
+        components = [daqs cameras serials];
+
+        for comp = components
+            comp = comp{:};
             obj.d.IDComponentMap(comp.ComponentID) = {comp};
             obj.d.IDidxMap(comp.ComponentID) = length(obj.d.Available) + 1;
             obj.d.Available{end+1} = comp;
             obj.d.Active(end+1) = true;
         end
-    
-        % Cameras
-        %TODO FIX/SUPPRESS WARNING HERE FOR GIGE
-        adaptors = imaqhwinfo().InstalledAdaptors;
-        for i = 1:length(adaptors)
-            adaptorDevices = imaqhwinfo(adaptors{i});
-            devices = adaptorDevices.DeviceInfo;
-            for j = 1:length(devices)
-                temp = devices(j);
-                initStruct = struct( ...
-                    'Adaptor', adaptorDevices.AdaptorName, ...
-                    'ID', temp.DeviceName);
-                 comp = CameraComponent('Initialise', true, 'ConfigStruct', initStruct);
-                 obj.d.IDComponentMap(comp.ComponentID) = {comp};
-                 obj.d.IDidxMap(comp.ComponentID) = length(obj.d.Available) + 1;
-                 obj.d.Available{end+1} = comp;
-                 obj.d.Active(end+1) = true;
-            end
-        end
+
+        % % DAQs
+        % daqs = daqlist();
+        % for i = 1:height(daqs)
+        %     s = table2struct(daqs(i, :));
+        %     initStruct = struct( ...
+        %         'Vendor', s.VendorID, ...
+        %         'ID', s.DeviceID, ...
+        %         'Model', s.Model);
+        %     comp = DAQComponent('Initialise', true, 'ConfigStruct', initStruct, 'ChannelConfig', false);
+        %     obj.d.IDComponentMap(comp.ComponentID) = {comp};
+        %     obj.d.IDidxMap(comp.ComponentID) = length(obj.d.Available) + 1;
+        %     obj.d.Available{end+1} = comp;
+        %     obj.d.Active(end+1) = true;
+        % end
+        % 
+        % % Cameras
+        % %TODO FIX/SUPPRESS WARNING HERE FOR GIGE
+        % adaptors = imaqhwinfo().InstalledAdaptors;
+        % for i = 1:length(adaptors)
+        %     adaptorDevices = imaqhwinfo(adaptors{i});
+        %     devices = adaptorDevices.DeviceInfo;
+        %     for j = 1:length(devices)
+        %         temp = devices(j);
+        %         initStruct = struct( ...
+        %             'Adaptor', adaptorDevices.AdaptorName, ...
+        %             'ID', temp.DeviceName);
+        %          comp = CameraComponent('Initialise', true, 'ConfigStruct', initStruct);
+        %          obj.d.IDComponentMap(comp.ComponentID) = {comp};
+        %          obj.d.IDidxMap(comp.ComponentID) = length(obj.d.Available) + 1;
+        %          obj.d.Available{end+1} = comp;
+        %          obj.d.Active(end+1) = true;
+        %     end
+        % end
     end
 
     function StartPreviews(obj)
@@ -282,7 +301,8 @@ methods
     end
 
     function out = get.experimentID(obj)
-        out = obj.h.protocolSelectDropDown.Value;
+        tmp = strsplit(obj.h.protocolSelectDropDown.Value, '.');
+        out = tmp{2};
     end
 
     function set.animalID(obj, val)

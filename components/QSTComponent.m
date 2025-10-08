@@ -45,13 +45,13 @@ function obj = InitialiseSession(obj, params)
     end
 
     %check port is available
-    if ~ismember(obj.ConfigStruct.Port, obj.FindPorts)
+    if ~ismember(obj.ConfigStruct.Port, QSTComponent.FindPorts)
         warning('Serial port "%s" is not available',port)
         return
     end
 
     % close and delete all serial port objects on the target port
-    obj.ClearPort(obj.ConfigStruct.Port);
+    QSTComponent.ClearPort(obj.ConfigStruct.Port);
 
     % start the connection with the target port.
     obj = obj.OpenSerialConnection();
@@ -106,26 +106,30 @@ end
 methods(Access=protected)
 
 % gets current device status
-% Options: ready / running / error
+% Options: connected / ready / running / error
 function status = GetSessionStatus(obj)
+    % get current device status.
+    % STATUS:
+    %   connected       device session initialised; not ready to start trial
+    %   ready           device session initialised, trial loaded
+    %   running         currently running a trial
+
+    %TODO check the strings for this are consistent with the
+    % strings for everything else. Not tested for serialport devices.
     b = obj.battery;
-
-%     Serial Port Object : Serial-COM5
-
-%    Communication Settings 
-%       Port:               COM5
-%       BaudRate:           115200
-%       Terminator:         'CR'
-
-%    Communication State 
-%       Status:             open
-%       RecordStatus:       off
-
-%    Read/Write State  
-%       TransferStatus:     idle
-%       BytesAvailable:     4096
-%       ValuesReceived:     1497
-%       ValuesSent:         21
+    status = '';
+    if ~obj.isConnected
+        status = "not connected";
+    elseif ~strcmpi(obj.SessionHandle.TransferStatus, 'idle')
+        status = 'running';
+    else
+        if strcmpi(obj.SessionHandle.Status, 'open')
+            status = 'connected';
+            %TODO how to check if it has loaded data for 'ready'
+        else
+            status = 'unknown';
+        end
+    end
 end
 
 function preloadSingleStim(obj, stimStruct)
@@ -179,7 +183,8 @@ function preloadSingleStim(obj, stimStruct)
 end
 
 function componentID = GetComponentID(obj)
-    componentID = strcat(obj.ConfigStruct.Port, '-', obj.ConfigStruct.Tag);
+    componentID = convertStringsToChars([obj.ConfigStruct.Port '-' obj.ConfigStruct.Tag]);
+    componentID = [componentID{:}];
 end
 
 function SoftwareTrigger(obj, ~, ~)
@@ -283,26 +288,9 @@ function help(obj)
     disp(obj.query('H',.14))
 end
 
-function ClearPort(obj, port)
-    % clear any existing session on the target port.
-    if isMATLABReleaseOlderThan('R2024a')
-        tmp = instrfind('port', port);
-    else
-        tmp = serialportfind(Port=port);
-    end
-    if ~isempty(tmp)
-        fclose(tmp);
-        delete(tmp);
-    end
-end
-
-function out = FindPorts(obj)
-    % Find all a computer's available ports.
-    if isMATLABReleaseOlderThan('R2024a')
-        out = seriallist;
-    else
-        out = serialportlist('available'); % untested. 'available' arg may be unnecessary + limiting
-    end
+function response = isConnected(obj)
+    varargout = obj.query('H', 1);
+    response = ~isempty(varargout);
 end
 
 function obj = OpenSerialConnection(obj)
@@ -327,11 +315,58 @@ end
 methods(Static, Access=public)
     % Complete reset. Clear device and all handles of device type.
     function Clear()
-
+        
     end
 
-    function qstObjects = FindAll()
-        
+    function components = FindAll(varargin)
+        p = inputParser();
+        addParameter(p, 'Initialise', true, @islogical);
+        p.parse(varargin{:});
+        components = {};
+        for port = QSTComponent.FindPorts
+            initStruct = struct( ...
+                'Port', port);
+            comp = QSTComponent('Initialise', p.Results.Initialise, ...
+                'ConfigStruct', initStruct);
+            if comp.isConnected
+                components{end+1} = comp;
+            else
+                QSTComponent.ClearPort(port);
+            end
+            % for i = 1:2
+            %     % sometimes the port takes a second to initialise 
+            %     % - ping twice to avoid missing available ports.
+            %     if comp.isConnected
+            %         components{end+1} = comp;
+            %         break
+            %     end
+            % end
+            % if ~comp.isConnected
+            %     QSTComponent.ClearPort(port);
+            % end
+        end
+    end
+
+    function out = FindPorts()
+        % Find all a computer's available ports.
+        if isMATLABReleaseOlderThan('R2020a')
+            out = seriallist;
+        else
+            out = serialportlist;
+        end
+    end
+
+    function ClearPort(port)
+        % clear any existing session on the target port.
+        if isMATLABReleaseOlderThan('R2024a')
+            tmp = instrfind('port', port);
+        else
+            tmp = serialportfind(Port=port);
+        end
+        if ~isempty(tmp)
+            fclose(tmp);
+            delete(tmp);
+        end
     end
 end
 end

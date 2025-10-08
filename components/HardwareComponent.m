@@ -109,18 +109,26 @@ function configStruct = GetConfigStruct(obj, varargin)
 end
 
 function status = GetStatus(obj)
-% Gets current device status
-% Options: abstract / empty / ready / running / error /  / loading
-%TODO MAKE A DEPENDENT VARIABLE?
+% Gets current device status. 
+% Possible statuses:
+%   abstract        not associated with a device
+%   not connected   device session not initialised
+%   connected       device session initialised; not ready to start trial
+%   ready           device session initialised, trial loaded
+%   running         currently running a trial
+%   error           error encountered.
     if obj.Abstract
         status = 'abstract';
-    elseif isempty(obj.SessionHandle)
-        status = 'not initialised';
+    elseif isempty(obj.SessionHandle) || ~isvalid(obj.SessionHandle)
+        status = 'not connected';
     else
         status = obj.GetSessionStatus();
     end
     if isempty(status)
         status = 'unknown';
+        %DEBUG: you should never get here.
+        dbstack
+        keyboard;
     end
 end
 
@@ -203,7 +211,7 @@ methods(Static, Abstract, Access=public)
     Clear()
 
     % Finds all available hardware components of the given type.
-    % FindAll()
+    components = FindAll(varargin)
 end
 
 methods (Abstract, Access=public)

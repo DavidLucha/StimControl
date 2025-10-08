@@ -1,6 +1,6 @@
 ﻿ProtocolName,ComponentID,
-ThermodeA,Dev1-ni-PCIe-6323,
-ThermodeB,Dev1-ni-PCIe-6323,
+ThermodeA,Dev1-ni-PCIe-6323,COM5
+ThermodeB,Dev1-ni-PCIe-6323,COM5
 PWM,Dev1-ni-PCIe-6323,
 ArbitraryA,Dev1-ni-PCIe-6323,
 Ana,Dev1-ni-PCIe-6323,
