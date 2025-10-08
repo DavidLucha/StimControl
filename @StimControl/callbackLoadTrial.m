@@ -23,20 +23,17 @@ end
 
 trialData = obj.p(obj.trialNum);
 genericTrialData = struct( ...
-    'tPre', trialData.tPre, ...
-    'tPost', trialData.tPost, ...
-    'nRepetitions', trialData.nRepetitions);
-ks = keys(obj.d.ComponentProtocols);
-for i = 1:length(ks) %TODO PARALLELISE?
-    componentID = ks{i};
-    component = obj.d.IDComponentMap{componentID};
-    protocolNames = obj.d.ComponentProtocols(componentID);
-    componentTrialData = struct();
-    for f = 1:length(protocolNames{:})
-        name = protocolNames{:}{f};
-        componentTrialData.(name) = trialData.(name);
+    'tPre', trialData(obj.trialIdx).tPre, ...
+    'tPost', trialData(obj.trialIdx).tPost, ...
+    'nRepetitions', trialData(obj.trialIdx).nRepetitions);
+fs = fields(trialData(obj.trialIdx));
+for fIdx = 1:length(fs)
+    f = fs{fIdx};
+    if any(strcmpi({'tPre', 'tPost', 'nRepetitions', 'Comments'}, f))
+        continue
     end
-    component.LoadTrialFromParams(componentTrialData, genericTrialData);
+    component = obj.d.ProtocolIDMap{f};
+    component.LoadTrialFromParams(trialData(obj.trialIdx).(f), genericTrialData);
 end
 
 if src ~= obj.h.StartStopBtn

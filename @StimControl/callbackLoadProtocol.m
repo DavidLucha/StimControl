@@ -108,14 +108,15 @@ if contains(obj.path.SessionProtocolFile, '.qst')
                     if ~isfield(protocols, devID)
                         [protocols(:).(devID)] = deal([]);
                     end
-                    if ~isfield([protocols.(devID)], stimID)
-                        %% TODO HUGE TODO YOU HAVE TO DO THIS
-                        protocols.(devID).(stimID) = [];
-                    end
-                    if isempty(param)
-                        protocols.(devID).(stimID) = {val};
-                    else
-                        protocols.(devID).(stimID).(param) = {val};
+                    for i = 1:numel(protocols)
+                        if ~isfield(protocols(i).(devID), stimID)
+                            protocols(i).(devID).(stimID) = [];
+                        end
+                        if isempty(param)
+                            protocols(i).(devID).(stimID) = val{i};
+                        else
+                            protocols(i).(devID).(stimID).(param) = val{i};
+                        end
                     end
                 end
             end
@@ -131,7 +132,7 @@ end
 obj.h.trialInformationScroller.Value = '';
 
 %% calculate estimated time + rest time
-protocolTotalTimeSecs = ((obj.g.dPause(1) + ((sum([obj.p.tPre{:}]) + sum([obj.p.tPost{:}]))/1000))*obj.g.nProtRep) - obj.g.dPause(1);
+protocolTotalTimeSecs = ((obj.g.dPause(1) + ((sum([obj.p.tPre]) + sum([obj.p.tPost]))/1000))*obj.g.nProtRep) - obj.g.dPause(1);
 protocolTimeMins = floor(protocolTotalTimeSecs/60);
 protocolTimeSecs = ceil(protocolTotalTimeSecs - (60*protocolTimeMins));
 obj.h.protocolTimeEstimate.Text = sprintf('0:00 / %d:%d', protocolTimeMins, protocolTimeSecs);
