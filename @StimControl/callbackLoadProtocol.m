@@ -56,77 +56,77 @@ obj.trialNum = 1;
 % TODO figure out if mapping stage is necessary and don't ask if not
 % TODO this is mostly for debugging anyway. Get rid of it when you're done
 % here.
-% if ~isfield(obj.path, 'ComponentMapFile') ||  isempty(obj.path.ComponentMapFile) %TODO OR CHANGED
-%     [filename, dir] = uigetfile([obj.path.componentMaps filesep '*.csv'], 'Select Stimulus Map');
-%     if filename == 0
-%         return
-%     end
-%     obj.path.ComponentMapFile = [dir filename];
-% end
+if ~isfield(obj.path, 'ComponentMapFile') ||  isempty(obj.path.ComponentMapFile) %TODO OR CHANGED
+    [filename, dir] = uigetfile([obj.path.componentMaps filesep '*.csv'], 'Select Stimulus Map');
+    if filename == 0
+        return
+    end
+    obj.path.ComponentMapFile = [dir filename];
+end
 
-% tab = readtable(obj.path.ComponentMapFile);
+tab = readtable(obj.path.ComponentMapFile, 'ReadRowNames', true);
+% TODO REMOVE ROWS FOR NON-INITIALISED HARDWARE
 
-% reset previous if value changed
-% obj.d.ComponentProtocols = configureDictionary('string', 'cell');
-% obj.d.ProtocolComponents = configureDictionary('string', 'cell');
+if contains(obj.path.SessionProtocolFile, '.qst')
+    df = p;
+    for f = {'Comments', 'tPre', 'tPost', 'nRepetitions'}
+        df = rmfield(df, f{:});
+    end
+    % create sub-maps for individual protocols as needed
+    protocols = [];
+    fs = fields(df);
+    for fIdx = 1:length(fs)
+        val = {p.(fs{fIdx})};
+        stimTokens = regexp(fs{fIdx}, "^([a-z]+)([A-Z][a-z]+)*([A-Z]?$)", "tokens", "once");
+        param = stimTokens{2};
+        stimID = [stimTokens{1} stimTokens{3}]; %add prefix (ThermodeA) if needed
+        if ~ismember(stimID, tab.Properties.RowNames)
+            error("unmapped ID: %s", stimID);
+        else
+            deviceNames = tab{stimID, :};
+            deviceNames = strsplit(deviceNames{:}, ' ');
+            % add protocols to each device
+            for iDev = 1:length(deviceNames)
+                % extract information
+                deviceLabel = strsplit(deviceNames{iDev}, '-');
+                devType = deviceLabel{1};
+                devID = deviceLabel{2};
+
+                % check mapped device exists & is valid for protocol.
+                if ~isKey(obj.d.ProtocolIDMap, devID)
+                    error("No hardware assigned to Protocol ID %s. Please set an appropriate component's Protocol ID in the setup tab.", devID);
+                end
+                targetDevice = obj.d.ProtocolIDMap(devID);
+                if ~contains(class(targetDevice{:}), devType)
+                    error("Incorrect hardware type assigned to protocol ID %s. Class should be %sComponent but is %s.", devID, devType, class(obj.d.ProtocolIDMap.devID));                   
+                end
+
+                % fill out data structure
+                if ~isfield(protocols, devID)
+                    protocols.(devID) = [];
+                end
+                if ~isfield(protocols.(devID), stimID)
+                    protocols.(devID).(stimID) = [];
+                end
+                if isempty(param)
+                    protocols.(devID).(stimID) = val;
+                else
+                    protocols.(devID).(stimID).(param) = val;
+                end
+            end
+        end
+    end
+    obj.p = protocols;
+    for f = {'Comments', 'tPre', 'tPost', 'nRepetitions'}
+        obj.p.(f{:}) = p.(f{:});
+    end
+elseif  contains(obj.path.SessionProtocolFile, '.stim')
+    %TODO
+end
+
 
 % refresh information scroller
 obj.h.trialInformationScroller.Value = '';
-
-% for lineNum = 1:height(tab)
-%     if ~any(contains(fields(p), tab{lineNum, 1}))
-%         % ignore rows without associated protocol labels
-%         continue
-%     end
-%     % fill out assigned ProtocolComponents
-%     targetComponentIDs = tab{lineNum,2:end};
-%     components = {};
-%     for i = 1:length(targetComponentIDs)
-%         if isempty(targetComponentIDs{i})
-%             continue
-%         end
-%         componentID = targetComponentIDs{i};
-%         component = obj.d.IDComponentMap{componentID};
-%         components{end+1} = component;
-%         if isempty(obj.d.ComponentProtocols) || ~isKey(obj.d.ComponentProtocols, componentID)
-%             obj.d.ComponentProtocols(componentID) = {cellstr(tab{lineNum,1}{:})};
-%         else
-%             tmp = obj.d.ComponentProtocols{componentID};
-%             tmp{end+1} = tab{lineNum,1}{:};
-%             obj.d.ComponentProtocols{componentID} = tmp;
-%         end
-%         idx = obj.d.IDidxMap(componentID);
-%         if ~obj.d.Active(idx)
-%             % mark components as active
-%             obj.h.AvailableHardwareTable.Data(idx,'Enable') = {true};
-%             obj.d.Active(idx) = true;
-%         end
-%         if isempty(component.SessionHandle)
-%             % initialise session if not already initialised
-%             if isa(component, DAQComponent)
-%                 component.InitialiseSession('ChannelConfig', false);
-%             else
-%                 component.InitialiseSession();
-%             end
-%             % component.StartPreview();
-%         end
-%     end
-%     obj.d.ProtocolComponents(tab{lineNum,1}{:}) = {components};
-% end
-% % TODO THROW ERROR IF ALL PARTS OF PROTOCOL AREN'T SUFFICIENTLY MAPPED
-
-% ks = keys(obj.d.ComponentProtocols);
-% for i = 1:length(ks)
-%     % do protocol-specific initialisation per device
-%     k = ks{i};
-%     component = obj.d.IDComponentMap{k};
-%     if isa(component, 'DAQComponent')
-%         % TODO CAMERA INPUT VS OUTPUT CHANNEL TYPE SWITCHER
-%         % TODO detect if channel already exists? maybe remove all old
-%         % channels
-%         component.CreateChannels([], obj.d.ComponentProtocols{k});
-%     end
-% end
 
 %% calculate estimated time + rest time
 protocolTotalTimeSecs = ((obj.g.dPause(1) + ((sum([obj.p.tPre]) + sum([obj.p.tPost]))/1000))*obj.g.nProtRep) - obj.g.dPause(1);

@@ -190,7 +190,7 @@ methods (Access = private)
         obj.d.Available = {};
         obj.d.Active = [];
         obj.d.IDComponentMap = configureDictionary('string', 'cell');
-        obj.d.ProtocolIDMap = configureDictionary('string', 'string');
+        obj.d.ProtocolIDMap = configureDictionary('string', 'cell');
         
         tmpPlur = ["", "s"];
         pluralStr = @(input) tmpPlur(double(length(input)~=1)+1);
@@ -198,15 +198,15 @@ methods (Access = private)
         fprintf("\t Found %d DAQ%s\n", length(daqs), pluralStr(daqs));
         cameras = CameraComponent.FindAll();
         fprintf("\t Found %d camera%s\n", length(cameras), pluralStr(cameras));
-        serials = QSTComponent.FindAll();
+        serials = SerialComponent.FindAll();
         fprintf("\t found %d serial device%s\n", length(serials), pluralStr(serials));
-        
+        %TODO PREVENT DUPLICATES IN IDS AND PROTOCOLIDS
         components = [daqs cameras serials];
 
         for comp = components
             comp = comp{:};
             obj.d.IDComponentMap(comp.ComponentID) = {comp};
-            obj.d.IDidxMap(comp.ComponentID) = length(obj.d.Available) + 1;
+            obj.d.ProtocolIDMap(comp.ConfigStruct.ProtocolID) = {comp};
             obj.d.Available{end+1} = comp;
             obj.d.Active(end+1) = true;
         end

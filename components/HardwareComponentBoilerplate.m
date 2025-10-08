@@ -19,7 +19,7 @@ end
 
 methods(Access=public)
 % Constructor that sets generic values for the class
-function obj = QSTComponent(varargin)
+function obj = SerialComponent(varargin)
     p = obj.GetBaseParser();
     parse(p, varargin{:});
     params = p.Results;

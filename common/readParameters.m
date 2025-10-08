@@ -21,7 +21,7 @@ lines = lines{1};
 lines(cellfun(@(x) strcmp(x(1),'%'),lines)) = [];
 
 %% define fieldnames for thermodes
-fnThermodes = arrayfun(@(x) sprintf('Thermode%s',64+x),...
+fnThermodes = arrayfun(@(x) sprintf('thermode%s',64+x),...
 	1:ip.Results.nThermodes,'UniformOutput',0);
 
 %% define defaults
@@ -253,7 +253,7 @@ if isstrprop(token(end),'alpha')
         error(['Faulty parameter "%s" for stimulus #%d (%s, valid ' ...
             'values for X: %s)'],token,idxStim,format,tmp)
     end
-    thermodes = {['Thermode' upper(token(end))]};
+    thermodes = {['thermode' upper(token(end))]};
 else
     thermodes = fnThermodes;
 end

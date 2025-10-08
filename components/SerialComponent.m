@@ -1,4 +1,4 @@
-classdef (HandleCompatible) QSTComponent < HardwareComponent
+classdef (HandleCompatible) SerialComponent < HardwareComponent
 % Component for the QST device
 % % poll batteries
 %         for ii=1:obj.nThermodes
@@ -16,7 +16,7 @@ classdef (HandleCompatible) QSTComponent < HardwareComponent
 % Good luck, brave soldier. - MS
 
 properties(Constant, Access = public)
-    ComponentProperties = QSTComponentProperties;
+    ComponentProperties = SerialComponentProperties;
 end
 
 properties (Access = public)
@@ -25,7 +25,7 @@ end
 
 methods(Access=public)
 % Constructor that sets generic values for the class
-function obj = QSTComponent(varargin)
+function obj = SerialComponent(varargin)
     p = obj.GetBaseParser();
     parse(p, varargin{:});
     params = p.Results;
@@ -45,13 +45,13 @@ function obj = InitialiseSession(obj, params)
     end
 
     %check port is available
-    if ~ismember(obj.ConfigStruct.Port, QSTComponent.FindPorts)
+    if ~ismember(obj.ConfigStruct.Port, SerialComponent.FindPorts)
         warning('Serial port "%s" is not available',port)
         return
     end
 
     % close and delete all serial port objects on the target port
-    QSTComponent.ClearPort(obj.ConfigStruct.Port);
+    SerialComponent.ClearPort(obj.ConfigStruct.Port);
 
     % start the connection with the target port.
     obj = obj.OpenSerialConnection();
@@ -78,7 +78,7 @@ end
 
 % Change device parameters
 function SetParams(obj, varargin)
-    error("SetParams not implemented for QSTComponent");
+    error("SetParams not implemented for SerialComponent");
 end
 
 % Dynamic visualisation of the object output
@@ -323,15 +323,15 @@ methods(Static, Access=public)
         addParameter(p, 'Initialise', true, @islogical);
         p.parse(varargin{:});
         components = {};
-        for port = QSTComponent.FindPorts
+        for port = SerialComponent.FindPorts
             initStruct = struct( ...
                 'Port', port);
-            comp = QSTComponent('Initialise', p.Results.Initialise, ...
+            comp = SerialComponent('Initialise', p.Results.Initialise, ...
                 'ConfigStruct', initStruct);
             if comp.isConnected
                 components{end+1} = comp;
             else
-                QSTComponent.ClearPort(port);
+                SerialComponent.ClearPort(port);
             end
             % for i = 1:2
             %     % sometimes the port takes a second to initialise 
@@ -342,7 +342,7 @@ methods(Static, Access=public)
             %     end
             % end
             % if ~comp.isConnected
-            %     QSTComponent.ClearPort(port);
+            %     SerialComponent.ClearPort(port);
             % end
         end
     end
