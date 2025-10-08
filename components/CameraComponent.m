@@ -468,8 +468,8 @@ function status = GetSessionStatus(obj)
             (~isempty(obj.LastAcquisition) && toc(obj.LastAcquisition) < seconds(1))
             status = 'running';
         end
-    elseif ~isempty(obj.Status)
-        status = char(obj.Status);
+    elseif ~~isempty(obj.SessionHandle) && isvalid(obj.SessionHandle)
+        status = 'connected';
     end
 end
 

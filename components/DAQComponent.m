@@ -4,7 +4,7 @@ classdef (HandleCompatible) DAQComponent < HardwareComponent
 % https://au.mathworks.com/help/daq/daq.interfaces.dataacquisition.write.html
 
 properties (Constant, Access = public)
-    ComponentProperties = DAQComponentProperties.Data;
+    ComponentProperties = DAQComponentProperties;
 end
 
 properties (Access = protected)

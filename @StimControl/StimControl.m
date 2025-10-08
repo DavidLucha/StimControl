@@ -209,40 +209,6 @@ methods (Access = private)
             obj.d.Available{end+1} = comp;
             obj.d.Active(end+1) = true;
         end
-
-        % % DAQs
-        % daqs = daqlist();
-        % for i = 1:height(daqs)
-        %     s = table2struct(daqs(i, :));
-        %     initStruct = struct( ...
-        %         'Vendor', s.VendorID, ...
-        %         'ID', s.DeviceID, ...
-        %         'Model', s.Model);
-        %     comp = DAQComponent('Initialise', true, 'ConfigStruct', initStruct, 'ChannelConfig', false);
-        %     obj.d.IDComponentMap(comp.ComponentID) = {comp};
-        %     obj.d.IDidxMap(comp.ComponentID) = length(obj.d.Available) + 1;
-        %     obj.d.Available{end+1} = comp;
-        %     obj.d.Active(end+1) = true;
-        % end
-        % 
-        % % Cameras
-        % %TODO FIX/SUPPRESS WARNING HERE FOR GIGE
-        % adaptors = imaqhwinfo().InstalledAdaptors;
-        % for i = 1:length(adaptors)
-        %     adaptorDevices = imaqhwinfo(adaptors{i});
-        %     devices = adaptorDevices.DeviceInfo;
-        %     for j = 1:length(devices)
-        %         temp = devices(j);
-        %         initStruct = struct( ...
-        %             'Adaptor', adaptorDevices.AdaptorName, ...
-        %             'ID', temp.DeviceName);
-        %          comp = CameraComponent('Initialise', true, 'ConfigStruct', initStruct);
-        %          obj.d.IDComponentMap(comp.ComponentID) = {comp};
-        %          obj.d.IDidxMap(comp.ComponentID) = length(obj.d.Available) + 1;
-        %          obj.d.Available{end+1} = comp;
-        %          obj.d.Active(end+1) = true;
-        %     end
-        % end
     end
 
     function StartPreviews(obj)

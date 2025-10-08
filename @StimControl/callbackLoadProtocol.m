@@ -73,28 +73,6 @@ obj.d.ProtocolComponents = configureDictionary('string', 'cell');
 % refresh information scroller
 obj.h.trialInformationScroller.Value = '';
 
-% for i = 1:length(fields(obj.p))
-%     %TODO MAKE THIS WORK - ACCOUNT FOR 'AnaA' and 'AnaB' in map but only
-%     %Ana in protocol. For now, this isn't supported. Just get it exactly
-%     %right.
-%     subProtocols = fields(obj.p);
-%     subProtocolName = subProtocols{i};
-%     if ~any(contains(tab.ProtocolName, subProtocolName))
-%         % many things in the table can be mapped to the same protocol target 
-%         % -e.g. 'Ana' in protocol can be mapped to multiple analog outputs ('AnaA' and 'AnaB')
-%         % but we need to make sure this is the case and it's not just missing
-%         protNameTokens = regexp(subProtocolName, '^[A-z]+[A-Z]?$', 'once', 'tokens');
-%         protNamePrefix = protNameTokens{1};
-%         if ~any(contains(tab.ProtocolName, protNamePrefix))
-%             error("No mapping provided for sub-protocol %s", subProtocolName);
-%         end
-%         for i = 1:length(tab.ProtocolName)
-%             if contains(tab.ProtocolName{i}, protNamePrefix)
-%                 % duplicate? todo from here.
-%             end
-%         end
-%     end
-% end
 
 for lineNum = 1:height(tab)
     if ~any(contains(fields(p), tab{lineNum, 1}))

@@ -16,7 +16,7 @@ classdef (HandleCompatible) QSTComponent < HardwareComponent
 % Good luck, brave soldier. - MS
 
 properties(Constant, Access = public)
-    ComponentProperties = QSTComponentProperties.Data;
+    ComponentProperties = QSTComponentProperties;
 end
 
 properties (Access = public)
