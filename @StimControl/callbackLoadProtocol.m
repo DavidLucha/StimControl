@@ -69,57 +69,59 @@ tab = readtable(obj.path.ComponentMapFile, 'ReadRowNames', true);
 
 if contains(obj.path.SessionProtocolFile, '.qst')
     df = p;
+    protocols = p;
     for f = {'Comments', 'tPre', 'tPost', 'nRepetitions'}
         df = rmfield(df, f{:});
     end
     % create sub-maps for individual protocols as needed
-    protocols = [];
-    fs = fields(df);
+    % protocols = [];
+    fs = fields(p);
     for fIdx = 1:length(fs)
-        val = {p.(fs{fIdx})};
-        stimTokens = regexp(fs{fIdx}, "^([a-z]+)([A-Z][a-z]+)*([A-Z]?$)", "tokens", "once");
-        param = stimTokens{2};
-        stimID = [stimTokens{1} stimTokens{3}]; %add prefix (ThermodeA) if needed
-        if ~ismember(stimID, tab.Properties.RowNames)
-            error("unmapped ID: %s", stimID);
-        else
-            deviceNames = tab{stimID, :};
-            deviceNames = strsplit(deviceNames{:}, ' ');
-            % add protocols to each device
-            for iDev = 1:length(deviceNames)
-                % extract information
-                deviceLabel = strsplit(deviceNames{iDev}, '-');
-                devType = deviceLabel{1};
-                devID = deviceLabel{2};
-
-                % check mapped device exists & is valid for protocol.
-                if ~isKey(obj.d.ProtocolIDMap, devID)
-                    error("No hardware assigned to Protocol ID %s. Please set an appropriate component's Protocol ID in the setup tab.", devID);
-                end
-                targetDevice = obj.d.ProtocolIDMap(devID);
-                if ~contains(class(targetDevice{:}), devType)
-                    error("Incorrect hardware type assigned to protocol ID %s. Class should be %sComponent but is %s.", devID, devType, class(obj.d.ProtocolIDMap.devID));                   
-                end
-
-                % fill out data structure
-                if ~isfield(protocols, devID)
-                    protocols.(devID) = [];
-                end
-                if ~isfield(protocols.(devID), stimID)
-                    protocols.(devID).(stimID) = [];
-                end
-                if isempty(param)
-                    protocols.(devID).(stimID) = val;
-                else
-                    protocols.(devID).(stimID).(param) = val;
+        if ~contains({'Comments', 'tPre', 'tPost', 'nRepetitions'}, fs{fIdx})
+            protocols = rmfield(protocols, fs{fIdx});
+            val = {p.(fs{fIdx})};
+            stimTokens = regexp(fs{fIdx}, "^([a-z]+)([A-Z][a-z]+)*([A-Z]?$)", "tokens", "once");
+            param = stimTokens{2};
+            stimID = [stimTokens{1} stimTokens{3}]; %add prefix (ThermodeA) if needed
+            if ~ismember(stimID, tab.Properties.RowNames)
+                error("unmapped ID: %s", stimID);
+            else
+                deviceNames = tab{stimID, :};
+                deviceNames = strsplit(deviceNames{:}, ' ');
+                % add protocols to each device
+                for iDev = 1:length(deviceNames)
+                    % extract information
+                    deviceLabel = strsplit(deviceNames{iDev}, '-');
+                    devType = deviceLabel{1};
+                    devID = deviceLabel{2};
+    
+                    % check mapped device exists & is valid for protocol.
+                    if ~isKey(obj.d.ProtocolIDMap, devID)
+                        error("No hardware assigned to Protocol ID %s. Please set an appropriate component's Protocol ID in the setup tab.", devID);
+                    end
+                    targetDevice = obj.d.ProtocolIDMap(devID);
+                    if ~contains(class(targetDevice{:}), devType)
+                        error("Incorrect hardware type assigned to protocol ID %s. Class should be %sComponent but is %s.", devID, devType, class(obj.d.ProtocolIDMap.devID));                   
+                    end
+    
+                    % fill out data structure
+                    if ~isfield(protocols, devID)
+                        [protocols(:).(devID)] = deal([]);
+                    end
+                    if ~isfield([protocols.(devID)], stimID)
+                        %% TODO HUGE TODO YOU HAVE TO DO THIS
+                        protocols.(devID).(stimID) = [];
+                    end
+                    if isempty(param)
+                        protocols.(devID).(stimID) = {val};
+                    else
+                        protocols.(devID).(stimID).(param) = {val};
+                    end
                 end
             end
         end
     end
     obj.p = protocols;
-    for f = {'Comments', 'tPre', 'tPost', 'nRepetitions'}
-        obj.p.(f{:}) = p.(f{:});
-    end
 elseif  contains(obj.path.SessionProtocolFile, '.stim')
     %TODO
 end
@@ -129,7 +131,7 @@ end
 obj.h.trialInformationScroller.Value = '';
 
 %% calculate estimated time + rest time
-protocolTotalTimeSecs = ((obj.g.dPause(1) + ((sum([obj.p.tPre]) + sum([obj.p.tPost]))/1000))*obj.g.nProtRep) - obj.g.dPause(1);
+protocolTotalTimeSecs = ((obj.g.dPause(1) + ((sum([obj.p.tPre{:}]) + sum([obj.p.tPost{:}]))/1000))*obj.g.nProtRep) - obj.g.dPause(1);
 protocolTimeMins = floor(protocolTotalTimeSecs/60);
 protocolTimeSecs = ceil(protocolTotalTimeSecs - (60*protocolTimeMins));
 obj.h.protocolTimeEstimate.Text = sprintf('0:00 / %d:%d', protocolTimeMins, protocolTimeSecs);
