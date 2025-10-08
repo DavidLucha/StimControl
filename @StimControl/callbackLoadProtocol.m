@@ -56,78 +56,77 @@ obj.trialNum = 1;
 % TODO figure out if mapping stage is necessary and don't ask if not
 % TODO this is mostly for debugging anyway. Get rid of it when you're done
 % here.
-if ~isfield(obj.path, 'ComponentMapFile') ||  isempty(obj.path.ComponentMapFile) %TODO OR CHANGED
-    [filename, dir] = uigetfile([obj.path.componentMaps filesep '*.csv'], 'Select Stimulus Map');
-    if filename == 0
-        return
-    end
-    obj.path.ComponentMapFile = [dir filename];
-end
+% if ~isfield(obj.path, 'ComponentMapFile') ||  isempty(obj.path.ComponentMapFile) %TODO OR CHANGED
+%     [filename, dir] = uigetfile([obj.path.componentMaps filesep '*.csv'], 'Select Stimulus Map');
+%     if filename == 0
+%         return
+%     end
+%     obj.path.ComponentMapFile = [dir filename];
+% end
 
-tab = readtable(obj.path.ComponentMapFile);
+% tab = readtable(obj.path.ComponentMapFile);
 
 % reset previous if value changed
-obj.d.ComponentProtocols = configureDictionary('string', 'cell');
-obj.d.ProtocolComponents = configureDictionary('string', 'cell');
+% obj.d.ComponentProtocols = configureDictionary('string', 'cell');
+% obj.d.ProtocolComponents = configureDictionary('string', 'cell');
 
 % refresh information scroller
 obj.h.trialInformationScroller.Value = '';
 
+% for lineNum = 1:height(tab)
+%     if ~any(contains(fields(p), tab{lineNum, 1}))
+%         % ignore rows without associated protocol labels
+%         continue
+%     end
+%     % fill out assigned ProtocolComponents
+%     targetComponentIDs = tab{lineNum,2:end};
+%     components = {};
+%     for i = 1:length(targetComponentIDs)
+%         if isempty(targetComponentIDs{i})
+%             continue
+%         end
+%         componentID = targetComponentIDs{i};
+%         component = obj.d.IDComponentMap{componentID};
+%         components{end+1} = component;
+%         if isempty(obj.d.ComponentProtocols) || ~isKey(obj.d.ComponentProtocols, componentID)
+%             obj.d.ComponentProtocols(componentID) = {cellstr(tab{lineNum,1}{:})};
+%         else
+%             tmp = obj.d.ComponentProtocols{componentID};
+%             tmp{end+1} = tab{lineNum,1}{:};
+%             obj.d.ComponentProtocols{componentID} = tmp;
+%         end
+%         idx = obj.d.IDidxMap(componentID);
+%         if ~obj.d.Active(idx)
+%             % mark components as active
+%             obj.h.AvailableHardwareTable.Data(idx,'Enable') = {true};
+%             obj.d.Active(idx) = true;
+%         end
+%         if isempty(component.SessionHandle)
+%             % initialise session if not already initialised
+%             if isa(component, DAQComponent)
+%                 component.InitialiseSession('ChannelConfig', false);
+%             else
+%                 component.InitialiseSession();
+%             end
+%             % component.StartPreview();
+%         end
+%     end
+%     obj.d.ProtocolComponents(tab{lineNum,1}{:}) = {components};
+% end
+% % TODO THROW ERROR IF ALL PARTS OF PROTOCOL AREN'T SUFFICIENTLY MAPPED
 
-for lineNum = 1:height(tab)
-    if ~any(contains(fields(p), tab{lineNum, 1}))
-        % ignore rows without associated protocol labels
-        continue
-    end
-    % fill out assigned ProtocolComponents
-    targetComponentIDs = tab{lineNum,2:end};
-    components = {};
-    for i = 1:length(targetComponentIDs)
-        if isempty(targetComponentIDs{i})
-            continue
-        end
-        componentID = targetComponentIDs{i};
-        component = obj.d.IDComponentMap{componentID};
-        components{end+1} = component;
-        if isempty(obj.d.ComponentProtocols) || ~isKey(obj.d.ComponentProtocols, componentID)
-            obj.d.ComponentProtocols(componentID) = {cellstr(tab{lineNum,1}{:})};
-        else
-            tmp = obj.d.ComponentProtocols{componentID};
-            tmp{end+1} = tab{lineNum,1}{:};
-            obj.d.ComponentProtocols{componentID} = tmp;
-        end
-        idx = obj.d.IDidxMap(componentID);
-        if ~obj.d.Active(idx)
-            % mark components as active
-            obj.h.AvailableHardwareTable.Data(idx,'Enable') = {true};
-            obj.d.Active(idx) = true;
-        end
-        if isempty(component.SessionHandle)
-            % initialise session if not already initialised
-            if isa(component, DAQComponent)
-                component.InitialiseSession('ChannelConfig', false);
-            else
-                component.InitialiseSession();
-            end
-            % component.StartPreview();
-        end
-    end
-    obj.d.ProtocolComponents(tab{lineNum,1}{:}) = {components};
-end
-% TODO THROW ERROR IF ALL PARTS OF PROTOCOL AREN'T SUFFICIENTLY MAPPED
-
-ks = keys(obj.d.ComponentProtocols);
-for i = 1:length(ks)
-    % do protocol-specific initialisation per device
-    k = ks{i};
-    component = obj.d.IDComponentMap{k};
-    if isa(component, 'DAQComponent')
-        % TODO CAMERA INPUT VS OUTPUT CHANNEL TYPE SWITCHER
-        % TODO detect if channel already exists? maybe remove all old
-        % channels
-        component.CreateChannels([], obj.d.ComponentProtocols{k});
-    end
-end
+% ks = keys(obj.d.ComponentProtocols);
+% for i = 1:length(ks)
+%     % do protocol-specific initialisation per device
+%     k = ks{i};
+%     component = obj.d.IDComponentMap{k};
+%     if isa(component, 'DAQComponent')
+%         % TODO CAMERA INPUT VS OUTPUT CHANNEL TYPE SWITCHER
+%         % TODO detect if channel already exists? maybe remove all old
+%         % channels
+%         component.CreateChannels([], obj.d.ComponentProtocols{k});
+%     end
+% end
 
 %% calculate estimated time + rest time
 protocolTotalTimeSecs = ((obj.g.dPause(1) + ((sum([obj.p.tPre]) + sum([obj.p.tPost]))/1000))*obj.g.nProtRep) - obj.g.dPause(1);

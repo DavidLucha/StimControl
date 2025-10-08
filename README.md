@@ -81,9 +81,7 @@ ComponentConfig
 Available 
 Active 
 IDComponentMap          map from ComponentIDs to component handles
-IDidxMap                map from ComponentIDs to component's index in 'Available' - todo remove this, now we have IDComponentMap I don't know if it's needed?
-ProtocolComponents      map from Protocol subnames to ComponentIDs 
-ComponentProtocols      map from ComponentIDs to Protocol subnames (e.g. 'DAQ-Dev1': 'ThermodeA')
+ProtocolIDMap           map from protocol IDs to components
 
 ### The StimControl path struct
 setup.base

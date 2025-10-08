@@ -64,6 +64,9 @@ methods
         if ~exist(obj.path.dirData,'dir')
             mkdir(obj.path.dirData)
         end
+        
+        % % Load protocol-device map. TODO
+        % obj = obj.LoadMap;
 
         %% Reset state machine flags
         obj.f.stopTrial = false;
@@ -187,9 +190,7 @@ methods (Access = private)
         obj.d.Available = {};
         obj.d.Active = [];
         obj.d.IDComponentMap = configureDictionary('string', 'cell');
-        obj.d.IDidxMap = configureDictionary('string', 'double');
-        obj.d.ProtocolComponents = configureDictionary('string', 'cell');
-        obj.d.ComponentProtocols = configureDictionary('string', 'cell');
+        obj.d.ProtocolIDMap = configureDictionary('string', 'string');
         
         tmpPlur = ["", "s"];
         pluralStr = @(input) tmpPlur(double(length(input)~=1)+1);
@@ -216,6 +217,23 @@ methods (Access = private)
             obj.d.Available{i}.StartPreview();
         end
     end
+
+    % function obj = LoadMap(obj)
+    %     % TODO. NOT NECESSARY FOR MVP
+    %     [s, computerID] = system('vol');
+    %     computerID = strsplit(computerID, '\n');
+    %     computerID = strsplit(computerID{2}, ' ');
+    %     computerID = computerID{end};
+    % 
+    %     if ~exist([obj.path.componentMaps filesep computerID '.csv'], 'file')
+    %         % uigetfile
+    % 
+    %     end
+    % end
+    % 
+    % function obj = SelectActiveHardware(obj)
+    %     % TODO. NOT NECESSARY FOR MVP
+    % end
 end
 
 methods

@@ -140,9 +140,30 @@ function Stop(obj)
 end
 
 % Change device parameters TODO ALL OF THESE REQUIRE A RESTART I THINK
-function SetParams(obj, varargin)
-    for i = 1:length(varargin):2
-        set(obj.SessionHandle, varargin{i}, varargin{i+1});
+function SetParams(obj, paramsStruct)
+    paramFields = fields(paramsStruct);
+    for i = 1:length(paramFields)
+        param = paramFields{i};
+        val = paramsStruct.(param);
+        if any(contains(fields(obj.ConfigStruct), param)) 
+            if obj.ComponentProperties.(param).isValid(val) 
+                obj.ConfigStruct = setfield(obj.ConfigStruct, param, val);
+            else
+                error("Invalid value provided for field %s: %s", param, val)
+            end
+        elseif ~strcmpi(param, 'SavePath')
+            error("Could not set field %s. Valid fields are: %s, SavePath", param, getfields(obj.ConfigStruct));
+        end
+        switch param
+            case "ProtocolID"
+                obj.ConfigStruct.ProtocolID = val;
+            case "Rate"
+                obj.Stop();
+                if ~isdouble(val)
+                    val = str2double(val);
+                end
+                obj.SessionHandle.Rate = val;
+        end
     end
 end
 

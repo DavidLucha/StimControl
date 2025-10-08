@@ -73,16 +73,21 @@ obj.h.AvailableHardwareTable = uitable('Parent', grid, ...
         'Column', [1 length(grid.ColumnWidth)]), ...
     'ColumnSortable', true, ...
     'SelectionType', 'row', ...
-    'ColumnEditable', [false false false true ], ...
+    'ColumnEditable', [false false true false true true], ...
     'CellEditCallback', @(src, event) updateComponentTableCell(src, event, obj));
 
 %% Populate Component Table
-columnNames = {'Type', 'ID', 'Status', 'Enable'};
+columnNames = {'Type', 'ID', 'Protocol ID', 'Status', 'Enable', 'Preview'};
 tData = table();
 available = obj.d.Available;
 for i = 1:length(obj.d.Available)
     device = obj.d.Available{i};
-    tData(end+1, :) = {class(device), device.ComponentID, device.GetStatus, ~isempty(device.SessionHandle)};
+    tData(end+1, :) = {class(device), ...
+                        device.ComponentID, ...
+                        device.ConfigStruct.ProtocolID, ...
+                        device.GetStatus, ...
+                        ~isempty(device.SessionHandle), ...
+                        device.Previewing};
 end
 
 tData.Properties.VariableNames = columnNames;
@@ -91,15 +96,26 @@ end
 
 %% UPDATE FUNCTIONS
 function updateComponentTableCell(src, event, obj)
-    rowIndex = event.Indices(1);
-    component = obj.d.Available{rowIndex};
-    if event.NewData
-        obj.d.Active(rowIndex) = true;
-        component.InitialiseSession();
-        component.StartPreview();
-    else
-        obj.d.Active(rowIndex) = false;
-        component.StopPreview();
-        % TODO de-initialise if needed?
+    idxRow = event.Indices(1);
+    property = src.Data.Properties.VariableNames(event.Indices(2));
+    component = obj.d.Available{idxRow};
+    if strcmpi(property, "Protocol ID")
+        component.SetParam("ProtocolID", event.NewData); 
+        % TODO PREVENT DUPLICATES
+        % TODO SET UPDATE IN EDITCOMPONENT
+    elseif strcmpi(property, "Enable")
+        if event.NewData
+            obj.d.Active(idxRow) = true;
+            component.InitialiseSession();
+        else
+            obj.d.Active(idxRow) = false;
+            component.Stop();
+        end
+    elseif strcmpi(property, "Preview")
+        if event.NewData    
+            component.StartPreview();
+        else
+            component.StopPreview();
+        end
     end
 end

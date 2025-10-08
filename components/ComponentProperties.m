@@ -1,11 +1,12 @@
 classdef (Abstract, HandleCompatible) ComponentProperties < handle
-    properties (Abstract, Access=public)
-        % ComponentID
+    properties (Abstract, Constant, Access=public)
+        ID
+        ProtocolID
     end
 
     methods
-        function out = isfield(fieldName, obj)
-            f = fields(obj);
+        function out = isfield(obj, fieldName)
+            f = properties(obj);
             if ~any(cellfun(@(x) strcmpi(fieldName, x), f))
                 out = false;
             else
