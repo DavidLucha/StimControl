@@ -34,7 +34,9 @@ end
 if strcmpi(src.Value, '')
     obj.h.trialInformationScroller.Value = '';
     obj.h.trialInformationScroller.FontColor = 'black';
-    obj.trialNum = 0;
+    if ~isempty(obj.p)
+        obj.trialNum = 0;
+    end
     return
 end
 
@@ -48,15 +50,7 @@ else
     error("Unsupported file format. Supported formats: .qst, .stim");
 end
 
-if isempty(obj.p) || true %TODO REMOVE || TRUE
-    % first time loading a trial. Initialise.
-    comps = obj.d.Available(logical(obj.d.Active));
-    activeIDs = [cellstr(keys(obj.d.ProtocolIDMap)); fields(obj.p(1).Trigger)]; %TODO this is an imperfect measure!!! and also you'll need to be able to select active hardware!
-    for i = 1:sum(obj.d.Active)
-        comp = comps{i};
-        comp.InitialiseSession('ActiveDeviceIDs', activeIDs);
-    end
-end
+createChans = isempty(obj.p);
 
 obj.p = p;
 obj.g = g;
@@ -75,7 +69,7 @@ if ~isfield(obj.path, 'ComponentMapFile') ||  isempty(obj.path.ComponentMapFile)
 end
 
 tab = readtable(obj.path.ComponentMapFile, 'ReadRowNames', true);
-% TODO REMOVE ROWS FOR NON-INITIALISED HARDWARE
+% TODO REMOVE ROWS FOR NON-INITIALISED HARDWARE?
 
 if contains(obj.path.SessionProtocolFile, '.qst')
     df = p;
@@ -108,8 +102,8 @@ if contains(obj.path.SessionProtocolFile, '.qst')
                     % check mapped device exists & is valid for protocol.
                     if ~isKey(obj.d.ProtocolIDMap, devID)
                         msg = sprintf("No hardware assigned to Protocol ID %s. Please set an appropriate component's Protocol ID in the setup tab.", devID);
-                        continue %% TODO REMOVE: DEBUG ONLY
                         obj.errorMsg(msg);
+                        continue %% TODO REMOVE: DEBUG ONLY
                         error(msg);
                     end
                     targetDevice = obj.d.ProtocolIDMap(devID);
@@ -140,6 +134,16 @@ if contains(obj.path.SessionProtocolFile, '.qst')
     obj.p = protocols;
 elseif  contains(obj.path.SessionProtocolFile, '.stim')
     %TODO
+end
+
+if createChans || true %TODO REMOVE || TRUE
+    % first time loading a trial. Initialise.
+    comps = obj.d.Available(logical(obj.d.Active));
+    activeIDs = [cellstr(keys(obj.d.ProtocolIDMap)); fields(obj.p(1).Trigger)]; %TODO this is an imperfect measure!!! and also you'll need to be able to select active hardware!
+    for i = 1:sum(obj.d.Active)
+        comp = comps{i};
+        comp.InitialiseSession('ActiveDeviceIDs', activeIDs);
+    end
 end
 
 

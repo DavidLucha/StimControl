@@ -45,7 +45,7 @@ function obj = InitialiseSession(obj, varargin)
     params = p.Results;
 
     obj.ConfigStruct = obj.GetConfigStruct(params.ConfigStruct);
-    if all(~params.ComponentID)
+    if ~isfield(params, 'ComponentID')
         obj.ComponentID = obj.GetComponentID;
     else
         obj.ComponentID = params.ComponentID;

@@ -96,7 +96,9 @@ function obj = InitialiseSession(obj, varargin)
     end
     
     %---channels---
-    if islogical(params.ChannelConfig) || isempty(params.ChannelConfig)
+    if (islogical(params.ChannelConfig) && params.ChannelConfig) || ...
+            (~islogical(params.ChannelConfig) && ~isempty(params.ChannelConfig)) || ...
+            ~isempty(params.ActiveDeviceIDs)
         % current value is default
         [s, pcInfo] = system('vol');
         pcInfo = strsplit(pcInfo, '\n');
@@ -105,8 +107,8 @@ function obj = InitialiseSession(obj, varargin)
         obj.ConfigStruct.ChannelConfig = [obj.ConfigStruct.ChannelConfig filesep filename];
         % TODO REMOVE - DEBUG
         obj.ConfigStruct.ChannelConfig = 'C:\Users\labadmin\Documents\MATLAB\StimControl\config\component_params\48AC-D74C_Dev1-ni-PCIe-6323.csv';
+        obj = obj.CreateChannels(obj.ConfigStruct.ChannelConfig, params.ActiveDeviceIDs);
     end
-    obj = obj.CreateChannels(obj.ConfigStruct.ChannelConfig, params.ActiveDeviceIDs);
 end
 
 % Start device
@@ -558,9 +560,9 @@ function obj = CreateChannels(obj, filename, protocolIDs)
             tmp = strsplit(obj.ComponentID, '-');
             deviceID = tmp{1};
             portNum = line.('portNum'){1}; 
-            channelName = line.('channelName'){1};
-            if isempty(channelName)
-                channelName = line.('Note'){1};
+            channelID = [line.ProtType{:} line.ProtID{:}];
+            if isempty(channelID)
+                channelID = line.('Note'){1};
             end
             ioType = line.('ioType'){1};
             signalType = line.('signalType'){1};
@@ -587,7 +589,7 @@ function obj = CreateChannels(obj, filename, protocolIDs)
                         obj.OutChanIdxes(end+1) = idx;
                         obj.InChanIdxes(end+1) = idx;
                 end
-                ch.Name = channelName;
+                ch.Name = channelID;
                 if ~isempty(terminalConfig) && ~contains(class(ch), 'Digital')
                     ch.TerminalConfig = terminalConfig;
                 end
@@ -617,7 +619,7 @@ function obj = CreateChannels(obj, filename, protocolIDs)
             %     keyboard
             %     error("Unable to map line %s to protocolIDs %s", [line.ProtType '.' line.ProtID], protocolIDs{:})
             % end
-            channelID = [line.ProtType{:} line.ProtID{:}];
+            
             if ~isfield(obj.ChannelMap, channelID)
                 obj.ChannelMap.(channelID) = {};
             end
@@ -718,6 +720,16 @@ function name = FindDaqName(obj, deviceID, vendorID, model)
         correctIndex = x;
     end
     name = daqs(correctIndex).Vendor.ID;
+end
+
+function info = deviceInfo(obj)
+    if isempty(obj.SessionHandle)
+        info = [];
+        return
+    end
+    deviceID = obj.ConfigStruct.ID;
+    daqs = daqlist;
+    info = daqs(strcmpi(daqs.DeviceID, deviceID),:).DeviceInfo;
 end
 
 
