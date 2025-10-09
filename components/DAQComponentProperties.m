@@ -28,20 +28,11 @@ ChannelConfig = ComponentProperty( ...
 end
 methods (Static, Access=private)
     function out = GetDefaultChannelConfig()
-        %DEBUG: TODO REMOVE
-        [s, out] = system('vol');
-        out = strsplit(out, '\n');
-        out = out{2}(end-8:end);
-        if strcmpi(out, '48AC-D74C')
-            filename = 'Minimal_LaserRoom_DaqChanParams.csv';
-        else
-            filename = 'Minimal_OuterLab_DaqChanParams.csv';
-        end
-        %END DEBUG
+        % nb returns BASE DIRECTORY ONLY
         if contains(pwd, 'StimControl')
-            out = [pwd filesep 'config' filesep 'component_params' filesep filename];
+            out = [pwd filesep 'config' filesep 'component_params' filesep];
         else
-            out = [pwd filesep 'StimControl' filesep 'config' filesep 'component_params' filesep filename];
+            out = [pwd filesep 'StimControl' filesep 'config' filesep 'component_params'];
         end
     end
 end

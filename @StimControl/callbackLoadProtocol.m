@@ -48,6 +48,16 @@ else
     error("Unsupported file format. Supported formats: .qst, .stim");
 end
 
+if isempty(obj.p) || true %TODO REMOVE || TRUE
+    % first time loading a trial. Initialise.
+    comps = obj.d.Available(logical(obj.d.Active));
+    activeIDs = [cellstr(keys(obj.d.ProtocolIDMap)); fields(obj.p(1).Trigger)]; %TODO this is an imperfect measure!!! and also you'll need to be able to select active hardware!
+    for i = 1:sum(obj.d.Active)
+        comp = comps{i};
+        comp.InitialiseSession('ActiveDeviceIDs', activeIDs);
+    end
+end
+
 obj.p = p;
 obj.g = g;
 obj.idxStim = 1;
@@ -97,11 +107,16 @@ if contains(obj.path.SessionProtocolFile, '.qst')
     
                     % check mapped device exists & is valid for protocol.
                     if ~isKey(obj.d.ProtocolIDMap, devID)
-                        error("No hardware assigned to Protocol ID %s. Please set an appropriate component's Protocol ID in the setup tab.", devID);
+                        msg = sprintf("No hardware assigned to Protocol ID %s. Please set an appropriate component's Protocol ID in the setup tab.", devID);
+                        continue %% TODO REMOVE: DEBUG ONLY
+                        obj.errorMsg(msg);
+                        error(msg);
                     end
                     targetDevice = obj.d.ProtocolIDMap(devID);
                     if ~contains(class(targetDevice{:}), devType)
-                        error("Incorrect hardware type assigned to protocol ID %s. Class should be %sComponent but is %s.", devID, devType, class(obj.d.ProtocolIDMap.devID));                   
+                        msg = sprintf("Incorrect hardware type assigned to protocol ID %s. Class should be %sComponent but is %s.", devID, devType, class(obj.d.ProtocolIDMap.devID));
+                        obj.errorMsg(msg);
+                        error(msg);                   
                     end
     
                     % fill out data structure

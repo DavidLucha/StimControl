@@ -21,7 +21,8 @@ elseif src == obj.h.animalSelectDropDown
         animalID = src.Value;
     end
 else
-    % not implemented
+    dbstack
+    error("Not implemented");
     return
 end
 obj.animalID = animalID;

@@ -31,12 +31,19 @@ function obj = SerialComponent(varargin)
     params = p.Results;
     obj = obj.Initialise(params);
     if params.Initialise && ~params.Abstract
-        obj = obj.InitialiseSession(params);
+        obj = obj.InitialiseSession('ConfigStruct', params.ConfigStruct);
     end
 end
 
 % Initialise the hardware session. 
-function obj = InitialiseSession(obj, params)
+function obj = InitialiseSession(obj, varargin)
+    p = inputParser;
+    addParameter(p, 'ConfigStruct', []);
+    addParameter(p, 'KeepHardwareSettings', []);
+    addParameter(p, 'ActiveDeviceIDs', {}, @iscellstr);
+    parse(p, varargin{:});
+    params = p.Results;
+
     obj.ConfigStruct = obj.GetConfigStruct(params.ConfigStruct);
     if all(~params.ComponentID)
         obj.ComponentID = obj.GetComponentID;

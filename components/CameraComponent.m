@@ -70,6 +70,8 @@ function obj = InitialiseSession(obj, varargin)
     p = inputParser;
     addParameter(p, 'ConfigStruct', []);
     addParameter(p, 'KeepHardwareSettings', []);
+    addParameter(p, 'ActiveDeviceIDs', {}, @(x) iscell(x) || iscellstr(x));
+
     parse(p, varargin{:});
     params = p.Results;
     

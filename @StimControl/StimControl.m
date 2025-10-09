@@ -290,7 +290,9 @@ methods
     end
 
     function set.animalID(obj, val)
-        obj.h.animalSelectDropDown.Items{end+1} = val;
+        if ~ismember(obj.h.animalSelectDropDown.Items, val)
+            obj.h.animalSelectDropDown.Items{end+1} = val;
+        end
         obj.h.animalSelectDropDown.Value = val;
     end
 
@@ -362,6 +364,9 @@ methods
             obj.h.pauseBtn.Enable = 'off';
             obj.h.pauseBtn.Text = 'PAUSE';
 
+        elseif strcmpi(val, 'error')
+            obj.h.statusLabel.Text = 'Error';
+            obj.h.statusLamp.Color = '#A80000';
         else
             error("Invalid status. Implement status here or it won't work.")
         end
@@ -443,6 +448,7 @@ methods
         try
             obj.h.trialInformationScroller.Value = char(message);
             obj.h.trialInformationScroller.FontColor = 'red';
+            obj.status = 'error';
         catch % handle likely not initialised
             error(message)
         end

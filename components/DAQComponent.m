@@ -74,6 +74,7 @@ function obj = InitialiseSession(obj, varargin)
     addParameter(p, 'ChannelConfig', '', @(x) ischar(x) || isstring(x) || islogical(x));
     addParameter(p, 'ConfigStruct', []);
     addParameter(p, 'KeepHardwareSettings', []);
+    addParameter(p, 'ActiveDeviceIDs', {}, @iscellstr);
     parse(p, varargin{:});
     params = p.Results;
 
@@ -95,9 +96,17 @@ function obj = InitialiseSession(obj, varargin)
     end
     
     %---channels---
-    if ~islogical(params.ChannelConfig) || params.ChannelConfig
-        obj = obj.CreateChannels(obj.ConfigStruct.ChannelConfig, []);
+    if islogical(params.ChannelConfig) || isempty(params.ChannelConfig)
+        % current value is default
+        [s, pcInfo] = system('vol');
+        pcInfo = strsplit(pcInfo, '\n');
+        pcID = pcInfo{2}(end-8:end);
+        filename = [pcID '_' obj.ComponentID '.csv'];
+        obj.ConfigStruct.ChannelConfig = [obj.ConfigStruct.ChannelConfig filesep filename];
+        % TODO REMOVE - DEBUG
+        obj.ConfigStruct.ChannelConfig = 'C:\Users\labadmin\Documents\MATLAB\StimControl\config\component_params\48AC-D74C_Dev1-ni-PCIe-6323.csv';
     end
+    obj = obj.CreateChannels(obj.ConfigStruct.ChannelConfig, params.ActiveDeviceIDs);
 end
 
 % Start device
@@ -319,6 +328,9 @@ function LoadTrialFromParams(obj, componentTrialData, genericTrialData)
     % release(obj.SessionHandle)
     
     channels = obj.SessionHandle.Channels;
+    if isempty(channels)
+        disp("oooh no");
+    end
     rate = obj.SessionHandle.Rate;
     if rate==0
         % Software triggering required - only on-demand operations supported.
@@ -525,9 +537,7 @@ function obj = CreateChannels(obj, filename, protocolIDs)
         filename = obj.ConfigStruct.ChannelConfig;
     end
     % clear previous channels, if any
-    if length(obj.SessionHandle.Channels) > 0
-        removechannel(obj.SessionHandle, [1 length(obj.SessionHandle.Channels)]);
-    end
+    obj = obj.ClearChannels();
     % obj.SessionHandle.
     tab = readtable(filename);
     s = size(tab);
@@ -539,13 +549,14 @@ function obj = CreateChannels(obj, filename, protocolIDs)
             warning('');
             line = tab(ii, :); %TODO CHECK FOR BLANKS
             % line.('deviceID') or line.(1);
-            if ~isempty(protocolIDs) && ~any(contains(protocolIDs, line.('ProtocolID'){:}))
+            if ~isempty(protocolIDs) ...
+                && ~any(contains(protocolIDs, [line.('ProtType'){:} line.('ProtID'){:}])) ...
+                && ~any(contains([line.('ProtType'){:} line.('ProtID'){:}], protocolIDs))
                 % skip channels that aren't required for this protocol.
-                %TODO CHECK THIS WORKS FOR SUFFIXES e.g. ThermA-Recording
-                %vs ThermA-Driver vs ThermA
                 continue
             end
-            deviceID = line.('deviceID'){1};
+            tmp = strsplit(obj.ComponentID, '-');
+            deviceID = tmp{1};
             portNum = line.('portNum'){1}; 
             channelName = line.('channelName'){1};
             if isempty(channelName)
@@ -561,7 +572,6 @@ function obj = CreateChannels(obj, filename, protocolIDs)
             if contains(class(range), 'cell')
                 range = range{1};
             end
-            channelID = line.('ProtocolID'){1};
             if ~isMATLABReleaseOlderThan('R2024b')
                 channelList = add(channelList, ioType, deviceID, portNum, signalType, TerminalConfig=terminalConfig, Range=range);
             else
@@ -591,10 +601,33 @@ function obj = CreateChannels(obj, filename, protocolIDs)
                     warning(message);
                 end
             end
-            obj.ChannelMap.(channelID) =  idx;
+            % if any(strcmp(protocolIDs, [line.ProtType line.ProtID]))
+            %     % exact match between protocolID and table protocolID
+            %     channelID = [line.ProtType line.ProtID];
+            % elseif any(strcmp(protocolIDs, line.ProtType))
+            %     % subtype not defined in protocolIDs. Activate all TODO check this is the
+            %     % desired behaviour
+            %     % note that it's the same, we'll just go through keys and
+            %     % put the same data in all of them. Keeping logic here for
+            %     % now.
+            %     channelID = [line.ProtType line.ProtID];
+            % else
+            %     % for debugging. TODO remove when we have a chance
+            %     dbstack
+            %     keyboard
+            %     error("Unable to map line %s to protocolIDs %s", [line.ProtType '.' line.ProtID], protocolIDs{:})
+            % end
+            channelID = [line.ProtType{:} line.ProtID{:}];
+            if ~isfield(obj.ChannelMap, channelID)
+                obj.ChannelMap.(channelID) = {};
+            end
+            obj.ChannelMap.(channelID){end+1, 1} = idx;
+            obj.ChannelMap.(channelID){end, 2} = line.ProtFunc;
+
         catch exception
-            % dbstack
-            % keyboard
+            disp(exception.message)
+            dbstack
+            keyboard
             message = ['Encountered an error reading channels config file on line ' ...
                     char(string(ii)) ': ' exception.message ' Line skipped.'];
             warning(message);
@@ -602,6 +635,16 @@ function obj = CreateChannels(obj, filename, protocolIDs)
     end
     if ~isMATLABReleaseOlderThan('R2024b')
         obj.SessionHandle.Channels = channelList;
+    end
+end
+
+function obj = ClearChannels(obj)
+    obj.ChannelMap = struct();
+    obj.OutChanIdxes = [];
+    obj.InChanIdxes = [];
+    obj.TrackedChannels = {};
+    if length(obj.SessionHandle.Channels) ~= 0
+        removechannel(obj.SessionHandle, 1:length(obj.SessionHandle.Channels));
     end
 end
 end
