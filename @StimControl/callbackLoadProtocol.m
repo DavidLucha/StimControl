@@ -125,6 +125,28 @@ if contains(obj.path.SessionProtocolFile, '.qst')
                             protocols(i).(devID).(stimID) = val{i};
                         else
                             protocols(i).(devID).(stimID).(param) = val{i};
+                            
+                            % add fields to maintain consistency with new protocol files
+                            if ~isfield(protocols(i).(devID).(stimID), 'tStart')
+                                % set the tStart - either tPre or tPost
+                                if any(contains({'thermode', 'stim', 'piezo'}, stimID))
+                                    tStartVal = 'tPost'; %it's a stimulus
+                                else
+                                    tStartVal = 'tPre'; %it's a recording
+                                end
+                                protocols(i).(devID).(stimID).tStart = tStartVal;
+                            end
+                            if ~isfield(protocols(i).(devID).(stimID), 'Type')
+                                % set the tStart - either tPre or tPost
+                                if regexpi(stimID, '^thermode[A-z]?')
+                                    type = 'thermode'; 
+                                elseif regexpi(stimID, '^piezo[A-z]?')
+                                    type = 'pulse';
+                                elseif regexpi(stimID, 'led[A-z]?')
+                                    type = 'pwm';
+                                end
+                                protocols(i).(devID).(stimID).('Type') = type;
+                            end
                         end
                     end
                 end
