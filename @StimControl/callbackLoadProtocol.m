@@ -100,14 +100,14 @@ if contains(obj.path.SessionProtocolFile, '.qst')
                     devID = deviceLabel{2};
     
                     % check mapped device exists & is valid for protocol.
-                    if ~isKey(obj.d.ProtocolIDMap, devID)
+                    if ~isfield(obj.d.ProtocolIDMap, devID)
                         msg = sprintf("No hardware assigned to Protocol ID %s. Please set an appropriate component's Protocol ID in the setup tab.", devID);
                         obj.errorMsg(msg);
                         continue %% TODO REMOVE: DEBUG ONLY
                         error(msg);
                     end
-                    targetDevice = obj.d.ProtocolIDMap(devID);
-                    if ~contains(class(targetDevice{:}), devType)
+                    targetDevice = obj.d.ProtocolIDMap.(devID);
+                    if ~contains(class(targetDevice), devType)
                         msg = sprintf("Incorrect hardware type assigned to protocol ID %s. Class should be %sComponent but is %s.", devID, devType, class(obj.d.ProtocolIDMap.devID));
                         obj.errorMsg(msg);
                         error(msg);                   
@@ -139,10 +139,13 @@ end
 if createChans || true %TODO REMOVE || TRUE
     % first time loading a trial. Initialise.
     comps = obj.d.Available(logical(obj.d.Active));
-    activeIDs = [cellstr(keys(obj.d.ProtocolIDMap)); fields(obj.p(1).Trigger)]; %TODO this is an imperfect measure!!! and also you'll need to be able to select active hardware!
-    for i = 1:sum(obj.d.Active)
-        comp = comps{i};
-        comp.InitialiseSession('ActiveDeviceIDs', activeIDs);
+    activeIDs = [cellstr(fields(obj.d.ProtocolIDMap)); fields(obj.p(1).Trigger)]; %TODO this is an imperfect measure!!! and also you'll need to be able to select active hardware!
+    for i = 1:length(obj.d.Available)
+        if ~obj.d.Active(i) || ~isa(obj.d.Available{i}, 'DAQComponent')
+            continue
+        end
+        comp = obj.d.Available{i};
+        obj.d.Available{i} = comp.InitialiseSession('ActiveDeviceIDs', activeIDs);
     end
 end
 

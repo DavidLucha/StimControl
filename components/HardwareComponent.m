@@ -132,6 +132,17 @@ function status = GetStatus(obj)
     end
 end
 
+function componentID = SanitiseComponentID(obj, componentID)
+    spaceChars = '- ';
+    illegalChars = '~`!#$%^&*()+=[]{}|\/?,.<>:";';
+    for ci = 1:length(spaceChars)
+        componentID = replace(componentID, spaceChars(ci), '_');
+    end
+    for ci = 1:length(illegalChars)
+        componentID = erase(componentID, illegalChars(ci));
+    end
+end
+
 function statusPanel = GetStatusVis(obj, parentGUIElement)
     %TODO
     % Creates the status visualiser for the HardwareComponent. 

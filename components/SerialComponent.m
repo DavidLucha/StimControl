@@ -192,6 +192,7 @@ end
 function componentID = GetComponentID(obj)
     componentID = convertStringsToChars([obj.ConfigStruct.Port '-' obj.ConfigStruct.Tag]);
     componentID = [componentID{:}];
+    componentID = obj.SanitiseComponentID(componentID);
 end
 
 function SoftwareTrigger(obj, ~, ~)

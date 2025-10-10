@@ -20,10 +20,10 @@ properties %(Access = private)
     isPaused    = false;
     hardwareParams
     trialIdx    = 1;
-    tLastStatusChange = 0;  % for timers
-    tOffset = 0;            % for pausing
+    tLastStatusChange = 0;      % for timers
+    tOffset     = 0;            % for pausing
     taskPool    = [];
-    f           = []            % state machine flags
+    f           = [];           % state machine flags
 
 end
 
@@ -189,8 +189,8 @@ methods (Access = private)
         %% Find available hardware
         obj.d.Available = {};
         obj.d.Active = [];
-        obj.d.IDComponentMap = configureDictionary('string', 'cell');
-        obj.d.ProtocolIDMap = configureDictionary('string', 'cell');
+        obj.d.IDComponentMap = [];
+        obj.d.ProtocolIDMap = [];
         
         tmpPlur = ["", "s"];
         pluralStr = @(input) tmpPlur(double(length(input)~=1)+1);
@@ -205,8 +205,8 @@ methods (Access = private)
 
         for comp = components
             comp = comp{:};
-            obj.d.IDComponentMap(comp.ComponentID) = {comp};
-            obj.d.ProtocolIDMap(comp.ConfigStruct.ProtocolID) = {comp};
+            obj.d.IDComponentMap.(comp.ComponentID) = comp;
+            obj.d.ProtocolIDMap.(comp.ConfigStruct.ProtocolID) = comp;
             obj.d.Available{end+1} = comp;
             obj.d.Active(end+1) = true;
         end

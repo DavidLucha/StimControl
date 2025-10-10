@@ -557,7 +557,7 @@ function obj = CreateChannels(obj, filename, protocolIDs)
                 % skip channels that aren't required for this protocol.
                 continue
             end
-            tmp = strsplit(obj.ComponentID, '-');
+            tmp = strsplit(obj.ComponentID, '_');
             deviceID = tmp{1};
             portNum = line.('portNum'){1}; 
             channelID = [line.ProtType{:} line.ProtID{:}];
@@ -624,7 +624,7 @@ function obj = CreateChannels(obj, filename, protocolIDs)
                 obj.ChannelMap.(channelID) = {};
             end
             obj.ChannelMap.(channelID){end+1, 1} = idx;
-            obj.ChannelMap.(channelID){end, 2} = line.ProtFunc;
+            obj.ChannelMap.(channelID){end, 2} = line.ProtFunc{:};
 
         catch exception
             disp(exception.message)
@@ -658,6 +658,7 @@ methods (Access = protected)
 function componentID = GetComponentID(obj)
     componentID = convertStringsToChars([obj.ConfigStruct.ID '-' obj.ConfigStruct.Vendor '-' obj.ConfigStruct.Model]);
     componentID = [componentID{:}];
+    componentID = obj.SanitiseComponentID(componentID);
 end
 
 function SoftwareTrigger(obj, ~, ~)

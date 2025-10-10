@@ -394,6 +394,7 @@ function componentID = GetComponentID(obj)
     if iscell(componentID)
         componentID = [componentID{:}];
     end
+    componentID = obj.SanitiseComponentID(componentID);
 end
 
 function ReceiveFrame(obj, src, vidObj)
