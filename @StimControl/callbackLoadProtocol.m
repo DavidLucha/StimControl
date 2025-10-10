@@ -145,7 +145,7 @@ if createChans || true %TODO REMOVE || TRUE
             continue
         end
         comp = obj.d.Available{i};
-        obj.d.Available{i} = comp.InitialiseSession('ActiveDeviceIDs', activeIDs);
+        comp = comp.InitialiseSession('ActiveDeviceIDs', activeIDs);
     end
 end
 

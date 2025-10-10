@@ -61,6 +61,9 @@ function obj = DAQComponent(varargin)
     params = p.Results;
 
     obj = obj.Initialise(params);
+    if contains(lower(obj.ComponentID), 'sim')
+        obj.ConfigStruct.ProtocolID = 'Sim'; %TODO THIS IS NOT ROBUST - REMOVE
+    end
     if params.Initialise && ~params.Abstract
         obj = obj.InitialiseSession('ConfigStruct', params.ConfigStruct, ...
             'ChannelConfig', params.ChannelConfig);
