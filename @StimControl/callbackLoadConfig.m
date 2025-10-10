@@ -53,7 +53,7 @@ for i = 1:length(jsonData)
             disp("Unsupported hardware type. Come back later.")
     end
     if contains(keys(obj.d.IDComponentMap), component.ComponentID) %todo this might not allow >1 piece of identical hardware - not currently a problem.
-        existingComponent = obj.d.IDComponentMap{component.ComponentID};
+        existingComponent = obj.d.Available{obj.d.IDComponentMap{component.ComponentID}};
         existingComponent.SetParams(component.ConfigStruct);
     else
         obj.d.Available{end+1} = component;

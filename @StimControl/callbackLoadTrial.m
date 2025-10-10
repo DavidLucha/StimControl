@@ -32,7 +32,7 @@ for fIdx = 1:length(fs)
     if any(strcmpi({'tPre', 'tPost', 'nRepetitions', 'Comments'}, f))
         continue
     end
-    component = obj.d.ProtocolIDMap.(f);
+    component = obj.d.Available{obj.d.ProtocolIDMap(f)};
     component.LoadTrialFromParams(trialData(obj.trialIdx).(f), genericTrialData);
 end
 

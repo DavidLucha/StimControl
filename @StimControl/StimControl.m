@@ -189,8 +189,8 @@ methods (Access = private)
         %% Find available hardware
         obj.d.Available = {};
         obj.d.Active = [];
-        obj.d.IDComponentMap = [];
-        obj.d.ProtocolIDMap = [];
+        obj.d.IDComponentMap = configureDictionary('string', 'uint32');
+        obj.d.ProtocolIDMap = configureDictionary('string', 'uint32');
         
         tmpPlur = ["", "s"];
         pluralStr = @(input) tmpPlur(double(length(input)~=1)+1);
@@ -203,10 +203,10 @@ methods (Access = private)
         %TODO PREVENT DUPLICATES IN IDS AND PROTOCOLIDS
         components = [daqs cameras serials];
 
-        for comp = components
-            comp = comp{:};
-            obj.d.IDComponentMap.(comp.ComponentID) = comp;
-            obj.d.ProtocolIDMap.(comp.ConfigStruct.ProtocolID) = comp;
+        for ci = 1:length(components)
+            comp = components{ci};
+            obj.d.IDComponentMap(comp.ComponentID) = ci;
+            obj.d.ProtocolIDMap(comp.ConfigStruct.ProtocolID) = ci;
             obj.d.Available{end+1} = comp;
             obj.d.Active(end+1) = true;
         end
