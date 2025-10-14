@@ -107,9 +107,9 @@ function obj = InitialiseSession(obj, varargin)
         pcInfo = strsplit(pcInfo, '\n');
         pcID = pcInfo{2}(end-8:end);
         filename = [pcID '_' obj.ComponentID '.csv'];
-        obj.ConfigStruct.ChannelConfig = [obj.ConfigStruct.ChannelConfig filesep filename];
-        % TODO REMOVE - DEBUG
-        obj.ConfigStruct.ChannelConfig = 'C:\Users\labadmin\Documents\MATLAB\StimControl\config\component_params\48AC-D74C_Dev1-ni-PCIe-6323.csv';
+        if ~contains(obj.ConfigStruct.ChannelConfig, filename)
+            obj.ConfigStruct.ChannelConfig = [obj.ConfigStruct.ChannelConfig filename];
+        end
         obj = obj.CreateChannels(obj.ConfigStruct.ChannelConfig, params.ActiveDeviceIDs);
     end
 end
@@ -313,7 +313,8 @@ function LoadTrial(obj, out)
         % clocked sampling not supported - timer required for outputs.
         % TODO this might not strictly be true - might be possible to
         % connect to a clock for SOME DAQS - USB6001 is not one of them though
-        obj.CreateSoftwareTriggerTimer(obj.ComponentConfig.Rate);
+        % look at obj.deviceInfo to check this
+        obj.CreateSoftwareTriggerTimer(obj.ConfigStruct.Rate);
 
     elseif any(contains({obj.SessionHandle.Channels.Type}, 'Output'))
         % normal DAQ things hell yeah
@@ -361,25 +362,49 @@ function LoadTrialFromParams(obj, componentTrialData, genericTrialData)
 
     for i = 1:length(fds)
         fieldName = fds{i};
-        % Todo the following two lines were intended as just for if the
-        % fieldname isn't a field, but I think consistent logical indexing
-        % makes more sense?
         fieldNames = fields(obj.ChannelMap);
-        chIdxes = find(contains(fieldNames, fieldName));
+        chIdxes = {};
+        % find all channel indexes associated with the stimulus type.
+        fieldIdxes = find(contains(fieldNames, fieldName));
+        if ~isempty(fieldIdxes)
+            chIdxes = obj.ChannelMap.(fieldNames{fieldIdxes});
+            chIdxes = [chIdxes{:,1}];
+        end
+        if isempty(chIdxes)
+            % possible the fieldName refers to a subtype
+            fieldID = regexpi(fieldName, "^([a-z]+)([A-Z][a-z]+)*([A-Z]$)", 'tokens', 'once');
+            fieldID = fieldID{1};
+            fieldIdxes = find(contains(fieldNames, fieldID));
+            mapItems = obj.ChannelMap.(fieldNames{fieldIdxes});
+            % todo separate out A and B for thermodes.
+            chIdxes = [mapItems{:,1}];
+        end
         outIdxes = [];
         for i = 1:length(chIdxes)
             ci = chIdxes(i);
-            outIdxes(end+1) = find(obj.OutChanIdxes == ci);
+            outIdx = find(obj.OutChanIdxes == ci);
+            if ~isempty(outIdx)
+                outIdxes(end+1) = outIdx;
+            end
         end
+        if isempty(outIdxes)
+            warning("No output channels assigned for stimulus %s in DAQ %s. Check the channel config file.", fieldName, obj.ComponentID);
+            continue
+        end
+
+        % Generate Stimulus
         stim = obj.GenerateStim(componentTrialData.(fieldName), fieldName, stimLength, tPreLength, chIdxes);
         for i = 1:length(outIdxes)
             idx = outIdxes(i);
-            if ~any(regexpi(obj.SessionHandle.Channels(idx), 'Counter', 'ONCE'))
+            if ~any(regexpi(obj.SessionHandle.Channels(idx).Type, 'Counter', 'ONCE'))
                 % not a counter channel, can be pre-loaded
                 out(:,idx) = stim;
             end
         end
-        previewOut(:,chIdxes) = stim;
+        for i = 1:length(chIdxes)
+            ci = chIdxes(i);
+            previewOut(:,ci) = stim';
+        end
     end
     obj.PreviewData = previewOut;
     obj.LoadTrial(out);
@@ -404,7 +429,11 @@ function stim = GenerateStim(obj, params, stimName, stimLength, tPreLength, chId
     TicksToMs = @(x) x*1000/rate;
     Aurorasf = 1/52; % (1V per 50mN as per book,20241125 measured as 52mN per 1 V PB)
 
-    if params.Duration == 0
+    if (isfield(params, 'Duration') && params.Duration == 0) ...
+            || (isfield(params, 'Dur') && params.Dur == 0)
+        return
+    elseif (isfield(params, 'Duration') && params.Duration == -1) ...
+        || (isfield(params, 'Dur') && params.Dur == -1)
         if startTPost
             durationTicks = stimLength - tPreLength;
         else
@@ -422,15 +451,16 @@ function stim = GenerateStim(obj, params, stimName, stimLength, tPreLength, chId
     % target appropriate generator
     switch params.Type
         case 'thermode'
-            
+            % vibration stim
+            stim(tpreLength:tPreLength+durationTicks) = 1;
+            % NB the start pulse has to be called separately.
         case 'arbitrary'
-
+            
         case 'pwm'
             r = regexpi(fields(params), 'Ramp');
             ramp = ~isempty([r{:}]);
             if (ramp && params.RampUp > 0 && params.RampDown > 0) ...
-                    || any(~strcmpi([obj.SessionHandle.Channels(chIdxes).Type], 'Counter')) %todo not sure if this is the actual thing
-                % clocked channel won't work. Manually generate.
+                    || any(~strcmpi([obj.SessionHandle.Channels(chIdxes).Type], 'Counter')) %todo not sure if this is the correct string to compare
                 if isfield(params, 'RampUp') && params.RampUp + params.RampDown > params.Duration
                     error('invalid parameters for stimulus %s: ramp duration must fit within overall duration', stimName);
                 end
@@ -505,6 +535,8 @@ function stim = GenerateStim(obj, params, stimName, stimLength, tPreLength, chId
                 chan.DurationInSeconds = TicksToMs(durationTicks)/1000;
             end
         case 'trigger'
+
+        case 'serialtrigger'
 
         case 'pulse'
 
@@ -672,7 +704,8 @@ function obj = CreateChannels(obj, filename, protocolIDs)
             tmp = strsplit(obj.ComponentID, '_');
             deviceID = tmp{1};
             portNum = line.('portNum'){1}; 
-            channelID = [line.ProtType{:} line.ProtID{:}];
+            channelID = line.ProtType{:};
+            % channelID = [line.ProtType{:} line.ProtID{:}];
             if isempty(channelID)
                 channelID = line.('Note'){1};
             end
@@ -721,6 +754,7 @@ function obj = CreateChannels(obj, filename, protocolIDs)
             end
             obj.ChannelMap.(channelID){end+1, 1} = idx;
             obj.ChannelMap.(channelID){end, 2} = line.ProtFunc{:};
+            obj.ChannelMap.(channelID){end, 3} = line.ProtID{:};
 
         catch exception
             disp(exception.message)

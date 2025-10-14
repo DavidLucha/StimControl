@@ -1,6 +1,6 @@
 function callbackDebug(obj, src, event)    
 keyboard;
-cam = obj.d.Available{3};
+cam = obj.d.Available{end};
 d = obj.d.Available{1};
 d.StartPreview;
 disp("DEBUG");

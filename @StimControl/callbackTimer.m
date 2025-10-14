@@ -3,7 +3,7 @@ function callbackTimer(obj,~,~)
 persistent trialNums;
 persistent nTrials;
 persistent startTic;
-persistent previousStatus;
+persistent previousStatus; %todo this may cause issues with multiple sessions of different status? edge case
 persistent pauseOffset;
 if isempty(startTic)
     startTic = tic;
@@ -115,6 +115,7 @@ else
                     obj.status = 'stopping';
                 end
             case 'error'
+                return
         end
     % catch errors during protocol execution
     catch err

@@ -1,0 +1,10 @@
+﻿ProtocolName,ComponentID
+thermodeA,DAQ-Trigger Serial-QST
+thermodeB,DAQ-Trigger Serial-QST
+PWM,DAQ-Trigger
+ArbitraryA,DAQ-Trigger
+Ana,DAQ-Trigger
+Vib,DAQ-Trigger
+Cam,DAQ-Trigger Camera-Widefield
+led,DAQ-Trigger
+piezo,DAQ-Trigger
