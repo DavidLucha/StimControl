@@ -80,6 +80,9 @@ obj.h.AvailableHardwareTable = uitable('Parent', grid, ...
 columnNames = {'Type', 'ID', 'Protocol ID', 'Status', 'Enable', 'Preview'};
 tData = table();
 available = obj.d.Available;
+if isempty(obj.d.Available) % prevent errors with no hardware attached
+    return
+end
 for i = 1:length(obj.d.Available)
     device = obj.d.Available{i};
     tData(end+1, :) = {class(device), ...

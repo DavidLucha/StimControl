@@ -332,7 +332,7 @@ function LoadTrialFromParams(obj, componentTrialData, genericTrialData)
 
         end
         if ~isrunning(obj.SessionHandle)
-            error("failed to start CameraComponent %s", obj.ConfigStruct.ComponentID);
+            error("failed to start CameraComponent %s", obj.ComponentID);
         end
     else %immediate
         obj.recordingTime = genericTrialData.tPre + genericTrialData.tPost;
@@ -406,7 +406,7 @@ function componentID = GetComponentID(obj)
 end
 
 function ReceiveFrame(obj, src, vidObj)
-    filepath = strcat(obj.SavePath, filesep, obj.SavePrefix, '_', obj.ConfigStruct.ComponentID);
+    filepath = strcat(obj.SavePath, filesep, obj.SavePrefix, '_', obj.ConfigStruct.ProtocolID, '_', obj.ComponentID);
     if ~exist(filepath, 'dir')
         mkdir(filepath);
     end
@@ -421,7 +421,7 @@ function ReceiveFrame(obj, src, vidObj)
             obj.FrameCount = obj.FrameCount + 1;
         end
     catch exception
-        disp("Encountered an error imaging on CameraComponent %s", obj.ConfigStruct.ComponentID)
+        disp("Encountered an error imaging on CameraComponent %s", obj.ComponentID)
         dbstack
         disp(exception.message)
         keyboard
