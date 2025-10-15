@@ -1,7 +1,6 @@
 classdef (HandleCompatible) CameraComponent < HardwareComponent
 % Generic wrapper class for camera objects
 % https://au.mathworks.com/help/imaq/videoinput.html
-% https://au.mathworks.com/help/parallel-computing/quick-start-parallel-computing-in-matlab.html
 properties (Constant, Access = public)
     ComponentProperties = CameraComponentProperties
 end
@@ -21,8 +20,15 @@ methods(Static, Access=public)
     end
 
     function components = FindAll(varargin)
+        % Find all attached cameras and initialise if desired.
+        % ARGUMENTS: 
+        %     Initialise (logical, true): whether to start each device's associated hardware session
+        %     Params (struct, []): device parameters, used to pre-load device configurations
+        % RETURNS:
+        %     components (cell array): cell array of all detected Components.
         p = inputParser();
         addParameter(p, 'Initialise', true, @islogical);
+        addParameter(p, 'Params', [], @(x) isstruct(x) || isempty(x));
         p.parse(varargin{:});
         components = {};
         imaqreset;
@@ -32,12 +38,14 @@ methods(Static, Access=public)
             devices = adaptorDevices.DeviceInfo;
             for j = 1:length(devices)
                 temp = devices(j);
+                protocolID = [CameraComponentProperties.ProtocolID.default char(string(j))];
                 initStruct = struct( ...
                     'Adaptor', adaptorDevices.AdaptorName, ...
-                    'ID', temp.DeviceName);
-                 comp = CameraComponent('Initialise', p.Results.Initialise, ...
-                     'ConfigStruct', initStruct);
-                 components{end+1} = comp;
+                    'ID', temp.DeviceName, ...
+                    'ProtocolID', protocolID);
+                comp = CameraComponent('Initialise', p.Results.Initialise, ...
+                    'ConfigStruct', initStruct);
+                components{end+1} = comp;
             end
         end
     end
@@ -366,6 +374,14 @@ function TakeSnapShot(obj, savePath)
     end
 end
 
+function UpdateSavePath(obj)
+    filepath = strcat(obj.SavePath, filesep, obj.SavePrefix, '_', obj.ConfigStruct.ProtocolID);
+    if ~exist(filepath, 'dir')
+        mkdir(filepath);
+    end
+    obj.FrameCount = 1;
+end
+
 end
 
 %% Protected Methods
@@ -408,9 +424,6 @@ end
 function ReceiveFrame(obj, src, vidObj)
     try
         filepath = strcat(obj.SavePath, filesep, obj.SavePrefix, '_', obj.ConfigStruct.ProtocolID);
-        if ~exist(filepath, 'dir')
-            mkdir(filepath);
-        end
         imgs = getdata(src,src.FramesAvailable); 
         if isempty(imgs)
             return
@@ -423,7 +436,6 @@ function ReceiveFrame(obj, src, vidObj)
             imwrite(imgs(:,:,:,i),imname);
             obj.FrameCount = obj.FrameCount + 1;
         end
-        disp(obj.FrameCount);
     catch exception
         fprintf("Encountered an error imaging on CameraComponent %s", obj.ComponentID)
         dbstack

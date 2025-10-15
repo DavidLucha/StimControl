@@ -34,20 +34,33 @@ methods (Access = public, Static)
     end
 
     function components = FindAll(varargin)
-        % Finds all available DAQ devices.
+        % Find all attached DAQs and initialise if desired.
+        % ARGUMENTS: 
+        %     Initialise (logical, true): whether to start each device's associated hardware session
+        %     Params (struct, []): device parameters, used to pre-load device configurations
+        % RETURNS:
+        %     components (cell array): cell array of all detected Components.
         p = inputParser();
         addParameter(p, 'Initialise', true, @islogical);
+        addParameter(p, 'Params', [], @(x) isstruct(x) || isempty(x));
         p.parse(varargin{:});
         components = {};
         daqs = daqlist();
         for i = 1:height(daqs)
             s = table2struct(daqs(i, :));
+            % todo - only if there is no protocolID connected to device in config file
+            protocolID = [DAQComponentProperties.ProtocolID.default char(string(i))];
             initStruct = struct( ...
                 'Vendor', s.VendorID, ...
                 'ID', s.DeviceID, ...
-                'Model', s.Model);
+                'Model', s.Model, ...
+                'ProtocolID', protocolID);
             comp = DAQComponent('Initialise', p.Results.Initialise, ...
                 'ConfigStruct', initStruct, 'ChannelConfig', false);
+            % if component is in map file, set protocolID
+            % if ~isempty(pids) && 
+            %     comp.ProtocolID
+            % end
             components{end+1} = comp;
         end
     end

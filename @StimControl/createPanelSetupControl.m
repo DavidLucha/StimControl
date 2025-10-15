@@ -74,6 +74,7 @@ obj.h.AvailableHardwareTable = uitable('Parent', grid, ...
     'ColumnSortable', true, ...
     'SelectionType', 'row', ...
     'ColumnEditable', [false false true false true true], ...
+    'SelectionChangedFcn', @obj.callbackEditComponentConfig, ...
     'CellEditCallback', @(src, event) updateComponentTableCell(src, event, obj));
 
 %% Populate Component Table
@@ -104,8 +105,6 @@ function updateComponentTableCell(src, event, obj)
     component = obj.d.Available{idxRow};
     if strcmpi(property, "Protocol ID")
         component.SetParam("ProtocolID", event.NewData); 
-        % TODO PREVENT DUPLICATES
-        % TODO SET UPDATE IN EDITCOMPONENT
         % TODO REFRESH BUTTON
         obj.d.ProtocolIDMap = remove(obj.d.ProtocolIDMap, event.PreviousData);
         obj.d.ProtocolIDMap(event.NewData) = idxRow;

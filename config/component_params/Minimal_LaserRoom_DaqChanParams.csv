@@ -1,9 +1,0 @@
-Note,deviceID,portNum,channelName,ioType,signalType,TerminalConfig,Range,ProtocolID
-Thermode,Dev1,ai1,ThermodeA,input,Voltage,SingleEnded,[-5 5],ThermodeA
-Thermode,Dev1,ai2,ThermodeB,input,Voltage,SingleEnded,[-5 5],ThermodeB
-servo pwm,Dev1,port0/line0,servo pwm,output,Digital,,,PWM
-Camera,Dev1,port0/line4,camera trigger,output,Digital,,,Cam
-Analog Out,Dev1,ao0,VoltageOut,output,Voltage,SingleEnded,[-10 10],ArbitraryA
-Analog in,Dev1,ai3,VoltageIn,input,Voltage,SingleEnded,[-10 10],Ana
-Digital In,Dev1,port0/line20,digital input,input,Digital,,,Dig
-Vibration,Dev1,port0/line6,camera trigger,output,Digital,,,Vib

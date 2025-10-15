@@ -49,6 +49,7 @@ methods
         addpath(pwd)
         addpath(genpath(fullfile(obj.path.base,'components')))
         addpath(genpath(fullfile(obj.path.base,'common')))
+        addpath(genpath(fullfile(obj.path.base,'@StimControl', 'icons')))
         clc
         disp('Welcome to StimControl')
         
@@ -122,7 +123,6 @@ methods (Access = private)
     callbackLoadTrial(obj, src, event)
     callbackStartStop(obj, src, event)
     callbackPauseResume(obj, src, event)
-    callbackTrialStart(obj, src, event)
     callbackNewTrial(obj, src, event)
     callbackSelectAnimal(obj, src, event)
 
@@ -133,58 +133,9 @@ methods (Access = private)
     % hardware control callbacks
     callbackEditComponentConfig(obj, ~, ~)
 
-    % Run it all
-    runTrial(obj, src, event)
-
     % misc
     callbackFileExit(obj,~,~)
     callbackTimer(obj, ~, ~)
-
-    % createPanelAnimal(obj,hPanel,~)
-    % createPanelProtocol(obj,hPanel,~)
-    % createPanelSingleRun(obj,hPanel,~)
-    % createPanelLED(obj,hPanel,~)
-    % createPanelThermode(obj,hPanel,~,idxThermode,nThermodes)
-    % createPlotThermode(obj,hAx)
-    % createPlotLED(obj,hAx)
-    % createDAQchannels(obj)
-    % 
-    % callbackInitialise(obj)
-    % callbackFileOpen(obj,~,~)
-    % callbackFileClose(obj,hClose,~)
-    % callbackFileExit(obj,~,~)
-    % 
-    % callbackDebugKB(obj,~,~)
-    % callbackDebugCB(obj,~,~)
-    % callbackDebugDelEmpty(obj,~,~)
-    % 
-    % callbackThermodeToggle(obj,hEdit,src)
-    % callbackThermodeEdit(obj,hEdit,src)
-    % callbackThermodeSync(obj,hCheck,~)
-    % callbackThermodeITerm(obj,hCheck,~)
-    % 
-    % callbackLEDEdit(obj,hEdit,src)
-    % 
-    % callbackTimer(obj,~,~)
-    % 
-    % callbackAnimalAdd(obj,hCtrl,~)
-    % updateAnimals(obj)
-    % 
-    % callbackSingleRunStart(obj,hCtrl,~)
-    % 
-    % callbackProtocolNstim(obj,hCtrl,src)
-    % callbackProtocolStart(obj,~,~)
-    % callbackProtocolStop(obj,~,~)
-    % 
-    % enableThermodeEdit(obj,bool)
-    % p2serial(obj,p)
-    % p2GUI(obj)
-    % setAxesPadding(~,hax,padding)
-    % checkSync(obj)
-    % waitForNeutral(obj)
-    % setTitle(obj,string)
-    % stimulate(obj,filename)
-    % out = estimateTime(obj)
 
     %% Inline functions
     function obj = findAvailableHardware(obj)
@@ -202,7 +153,6 @@ methods (Access = private)
         fprintf("\t Found %d camera%s\n", length(cameras), pluralStr(cameras));
         % serials = SerialComponent.FindAll();
         % fprintf("\t found %d serial device%s\n", length(serials), pluralStr(serials));
-        %TODO PREVENT DUPLICATES IN IDS AND PROTOCOLIDS
         components = cameras;
 
         for ci = 1:length(components)
@@ -268,7 +218,7 @@ methods
 
     function updateDate(obj)
         dt = datetime("now");
-        dt.Format = "yyyyMMdd";
+        dt.Format = "yyMMdd";
         obj.path.date = char(dt);
     end
 

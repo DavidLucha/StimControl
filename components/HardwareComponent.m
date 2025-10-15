@@ -8,7 +8,7 @@ properties (Access = public)
     Name
     SessionHandle
     SavePath
-    SavePrefix
+    TrialPrefix
     Required %todo remove
     Abstract
     ConfigStruct
@@ -18,10 +18,9 @@ properties (Access = public)
     ComponentID
     TriggerTimer = [];
 end
-% properties(Access=public, Dependent)
-%     SavePath
-%     SavePrefix
-% end
+properties(Access=public, Dependent)
+    SavePrefix
+end
 
 methods(Access=public)
 
@@ -219,37 +218,26 @@ end
 function objStruct = GetParams(obj)
     objStruct = setfield(obj.ConfigStruct, 'ComponentID', obj.ComponentID);
 end
+
+function UpdateSavePath(obj)
+    % Updates the component's savepath. Does nothing 
+    % unless the component saves to a sub-folder within the experiment;
+    % in that case make the subfolder. See CameraComponent
 end
 
-% methods
-% function set.SavePath(obj, val)
-%     filepath = strcat(obj.SavePath, filesep, obj.SavePrefix, '_', obj.ConfigStruct.ProtocolID);
-%     if ~exist(filepath, 'dir')
-%         mkdir(filepath);
-%     end
-% end
-% 
-% function out = get.SavePath(obj)
-%     filepath = strcat(obj.SavePath, filesep, obj.SavePrefix, '_', obj.ConfigStruct.ProtocolID);
-%     if ~exist(filepath, 'dir')
-%         mkdir(filepath);
-%     end
-% end
-% 
-% function set.SavePrefix(obj, val)
-%     filepath = strcat(obj.SavePath, filesep, obj.SavePrefix, '_', obj.ConfigStruct.ProtocolID);
-%     if ~exist(filepath, 'dir')
-%         mkdir(filepath);
-%     end
-% end
-% 
-% function out = get.SavePrefix(obj)
-%     filepath = strcat(obj.SavePath, filesep, obj.SavePrefix, '_', obj.ConfigStruct.ProtocolID);
-%     if ~exist(filepath, 'dir')
-%         mkdir(filepath);
-%     end
-% end
-% end
+end
+
+methods
+
+function set.SavePrefix(obj, val)
+    obj.TrialPrefix = val;
+    obj.UpdateSavePath;
+end
+
+function out = get.SavePrefix(obj)
+    out = obj.TrialPrefix;
+end
+end
 
 methods(Static, Abstract, Access=public)
     % Complete reset. Clear device and all handles of device type.

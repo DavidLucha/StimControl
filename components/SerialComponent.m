@@ -327,6 +327,12 @@ methods(Static, Access=public)
     end
 
     function components = FindAll(varargin)
+        % Find all attached serial devices and initialise if desired.
+        % ARGUMENTS: 
+        %     Initialise (logical, true): whether to start each device's associated hardware session
+        %     Params (struct, []): device parameters, used to pre-load device configurations
+        % RETURNS:
+        %     components (cell array): cell array of all detected Components.
         p = inputParser();
         addParameter(p, 'Initialise', true, @islogical);
         p.parse(varargin{:});
