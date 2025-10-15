@@ -25,6 +25,7 @@ methods(Static, Access=public)
         addParameter(p, 'Initialise', true, @islogical);
         p.parse(varargin{:});
         components = {};
+        imaqreset;
         adaptors = imaqhwinfo().InstalledAdaptors;
         for i = 1:length(adaptors)
             adaptorDevices = imaqhwinfo(adaptors{i});
@@ -83,12 +84,11 @@ function obj = InitialiseSession(obj, varargin)
         camstr = obj.GetConfigStruct(params.ConfigStruct);
         obj.ConfigStruct = camstr;
 
-        imaqreset
         if ~contains(imaqhwinfo().InstalledAdaptors, obj.ConfigStruct.Adaptor)
             error("Camera adaptor %s not installed. Installed adaptors: %s", ...
                 obj.ConfigStruct.Adaptor, imaqhwinfo.InstalledAdaptors{:});
         end
-        vidObj = videoinput(obj.ConfigStruct.Adaptor);
+        vidObj = videoinput(obj.ConfigStruct.Adaptor, obj.ConfigStruct.ID);
         src = getselectedsource(vidObj);
         if contains(obj.ConfigStruct.Adaptor, 'pcocameraadaptor')
             clockSpeed = set(src,'PCPixelclock_Hz');
@@ -185,9 +185,9 @@ function StartPreview(obj)
     end
     preview(obj.SessionHandle, obj.PreviewPlot.Children);
     axis(obj.PreviewPlot, "tight");
-    maxRange = floor(256*0.7); %limit intensity to 70% of dynamic range to avoid ceiling effects
-    cMap = gray(maxRange); cMap(end+1:256,:) = repmat([1 0 0 ],256-maxRange,1);
-    colormap(obj.PreviewPlot,cMap);
+    % maxRange = floor(256*0.7); %limit intensity to 70% of dynamic range to avoid ceiling effects
+    % cMap = gray(maxRange); cMap(end+1:256,:) = repmat([1 0 0 ],256-maxRange,1);
+    % colormap(obj.PreviewPlot,cMap);
 
     if strcmpi(obj.ConfigStruct.TriggerMode, 'hardware')
         x = obj.PreviewPlot.XLim(2)/2;

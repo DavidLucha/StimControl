@@ -106,6 +106,7 @@ function updateComponentTableCell(src, event, obj)
         component.SetParam("ProtocolID", event.NewData); 
         % TODO PREVENT DUPLICATES
         % TODO SET UPDATE IN EDITCOMPONENT
+        % TODO REFRESH BUTTON
         obj.d.ProtocolIDMap = remove(obj.d.ProtocolIDMap, event.PreviousData);
         obj.d.ProtocolIDMap(event.NewData) = idxRow;
     elseif strcmpi(property, "Enable")
