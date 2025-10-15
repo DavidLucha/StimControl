@@ -48,7 +48,7 @@ end
 
 if contains(obj.path.SessionProtocolFile, '.qst')
     % legacy considerations
-    [p, g] = readParameters(obj.path.SessionProtocolFile);
+    [p, g] = readQSTParameters(obj.path.SessionProtocolFile);
 elseif contains(obj.path.SessionProtocolFile, '.stim')
     % current format
     [p, g] = readProtocol(obj.path.SessionProtocolFile);

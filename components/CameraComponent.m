@@ -133,7 +133,7 @@ function obj = InitialiseSession(obj, varargin)
         set(vidObj,'TriggerRepeat',obj.ConfigStruct.TriggerRepeat);
         set(vidObj,'ROIposition',str2num(obj.ConfigStruct.ROIPosition));
         set(vidObj,'FramesPerTrigger',str2double(obj.ConfigStruct.FramesPerTrigger));
-        vidObj.FramesAcquiredFcnCount = obj.ConfigStruct.FrameGrabInterval;
+        vidObj.FramesAcquiredFcnCount = 10; %TODO parametrise
         vidObj.FramesAcquiredFcn = @obj.ReceiveFrame;
         obj.SessionHandle = vidObj;
         obj.UpdateTriggerMode();
@@ -406,31 +406,35 @@ function componentID = GetComponentID(obj)
 end
 
 function ReceiveFrame(obj, src, vidObj)
-    filepath = strcat(obj.SavePath, filesep, obj.SavePrefix, '_', obj.ConfigStruct.ProtocolID, '_', obj.ComponentID);
-    if ~exist(filepath, 'dir')
-        mkdir(filepath);
-    end
     try
+        filepath = strcat(obj.SavePath, filesep, obj.SavePrefix, '_', obj.ConfigStruct.ProtocolID);
+        if ~exist(filepath, 'dir')
+            mkdir(filepath);
+        end
         imgs = getdata(src,src.FramesAvailable); 
+        if isempty(imgs)
+            return
+        end
         obj.LastAcquisition = tic;
         numImgs = size(imgs);
         numImgs = numImgs(4);
         for i = 1:numImgs
-            imname = strcat(filepath, filesep, string(obj.FrameCount), '_', string(datetime(datetime, "Format", 'yyyyMMdd_HHmmss.SSS')), ".TIFF");
+            imname = strcat(filepath, filesep, string(obj.FrameCount), '_', string(datetime(datetime, "Format", 'yyyyMMdd_HHmmss-SSS')), ".TIFF");
             imwrite(imgs(:,:,:,i),imname);
             obj.FrameCount = obj.FrameCount + 1;
         end
+        disp(obj.FrameCount);
     catch exception
-        disp("Encountered an error imaging on CameraComponent %s", obj.ComponentID)
+        fprintf("Encountered an error imaging on CameraComponent %s", obj.ComponentID)
         dbstack
         disp(exception.message)
         keyboard
     end
-    if obj.selfStop
-        if toc(obj.startTic) > seconds(obj.recordingTime)
-            obj.Stop();
-        end
-    end
+    % if obj.selfStop
+    %     if toc(obj.startTic) > seconds(obj.recordingTime)
+    %         obj.Stop();
+    %     end
+    % end
 end
 
 function UpdateTriggerMode(obj)
@@ -477,7 +481,7 @@ function status = GetSessionStatus(obj)
         status = 'ready';
         if strcmpi(obj.ConfigStruct.TriggerMode, 'immediate') || ...
             (~isempty(obj.LastAcquisition) && ...
-                toc(obj.LastAcquisition) < seconds(obj.ConfigStruct.TrialTimeout))
+                seconds(toc(obj.LastAcquisition)) < seconds(obj.ConfigStruct.TrialTimeout))
             status = 'running';
         end
     elseif ~isempty(obj.SessionHandle) && isvalid(obj.SessionHandle)

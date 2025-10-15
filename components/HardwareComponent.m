@@ -18,6 +18,10 @@ properties (Access = public)
     ComponentID
     TriggerTimer = [];
 end
+% properties(Access=public, Dependent)
+%     SavePath
+%     SavePrefix
+% end
 
 methods(Access=public)
 
@@ -216,6 +220,36 @@ function objStruct = GetParams(obj)
     objStruct = setfield(obj.ConfigStruct, 'ComponentID', obj.ComponentID);
 end
 end
+
+% methods
+% function set.SavePath(obj, val)
+%     filepath = strcat(obj.SavePath, filesep, obj.SavePrefix, '_', obj.ConfigStruct.ProtocolID);
+%     if ~exist(filepath, 'dir')
+%         mkdir(filepath);
+%     end
+% end
+% 
+% function out = get.SavePath(obj)
+%     filepath = strcat(obj.SavePath, filesep, obj.SavePrefix, '_', obj.ConfigStruct.ProtocolID);
+%     if ~exist(filepath, 'dir')
+%         mkdir(filepath);
+%     end
+% end
+% 
+% function set.SavePrefix(obj, val)
+%     filepath = strcat(obj.SavePath, filesep, obj.SavePrefix, '_', obj.ConfigStruct.ProtocolID);
+%     if ~exist(filepath, 'dir')
+%         mkdir(filepath);
+%     end
+% end
+% 
+% function out = get.SavePrefix(obj)
+%     filepath = strcat(obj.SavePath, filesep, obj.SavePrefix, '_', obj.ConfigStruct.ProtocolID);
+%     if ~exist(filepath, 'dir')
+%         mkdir(filepath);
+%     end
+% end
+% end
 
 methods(Static, Abstract, Access=public)
     % Complete reset. Clear device and all handles of device type.

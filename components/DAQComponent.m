@@ -331,7 +331,6 @@ function LoadTrialFromParams(obj, componentTrialData, genericTrialData)
     if obj.SessionHandle.Running
         obj.SessionHandle.stop
     end
-    % release(obj.SessionHandle)
     
     rate = obj.SessionHandle.Rate;
     if rate==0
@@ -348,7 +347,6 @@ function LoadTrialFromParams(obj, componentTrialData, genericTrialData)
     % Add Listener 
     if ~obj.SessionHandle.Running
         obj.SessionHandle.ScansAvailableFcn = @obj.plotData;
-        % obj.SessionHandle.NotifyWhenDataAvailableExceeds=1000;
     end
 
     fds = fields(componentTrialData);

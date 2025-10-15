@@ -96,5 +96,4 @@ DAQ Channel Param files take the following fields and possible values. Informati
 - [ ] move ComponentID to ComponentProperties with generator function
 - [ ] switch preview build to single createpanelpreview function
 - [ ] add [progress bar](https://au.mathworks.com/help/matlab/ref/uiprogressdlg.html) to loading screens?
-- [ ] put runTrial into ONE TIMER with a startfcn
 - [ ] go through all the TODOs and get rid of commented code

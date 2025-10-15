@@ -88,15 +88,15 @@ else
                 elseif obj.f.trialFinished
                     % trial completed.
                     obj.f.trialFinished = false;
-                    if obj.trialIdx == nTrials
-                        obj.status = 'ready';
-                        obj.f.runningExperiment = false;
-                    elseif obj.f.passive
+                    if obj.f.passive
                         startTic = tic;
                         updatePassiveGuiTimer(obj, startTic, false);
                         obj.trialIdx = obj.trialIdx + 1;
                         startPassive(obj); % pre-loading
                         obj.status = 'awaiting trigger';
+                    elseif obj.trialIdx == nTrials
+                        obj.status = 'ready';
+                        obj.f.runningExperiment = false;
                     else
                         obj.trialIdx = obj.trialIdx + 1;
                         startTic = tic;
@@ -214,12 +214,12 @@ function startPassive(obj)
     updateInteractivity(obj, 'off');
     obj.indicateLoading('Loading trial data');
     obj.updateDateTime;
-    timeString = [obj.path.time(1:2) ':' obj.path.time(3:4) ':' obj.path.time(5:6)];
+    timeString = [obj.path.time(1:2) '-' obj.path.time(3:4) '-' obj.path.time(5:6)];
     obj.h.trialInformationScroller.Value{end+1} = ...
         char(sprintf("Trial %d started: %s", obj.trialIdx, timeString));
     
     % Set filepath params
-    savePrefix = sprintf("%05d_stim_passive_", obj.trialIdx, obj.path.time);
+    savePrefix = sprintf("%s_stim_passive_%s", num2str(obj.trialIdx, '%05.f'), obj.path.time);
     for i = 1:sum(obj.d.Active)
         component = obj.activeComponents{i};
         component.SavePath = obj.dirExperiment;
