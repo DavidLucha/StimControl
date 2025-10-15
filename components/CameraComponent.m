@@ -164,6 +164,11 @@ function Stop(obj)
     if ~isempty(obj.SessionHandle) && isrunning(obj.SessionHandle)
         stop(obj.SessionHandle);
     end
+    if ~isempty(obj.TriggerTimer) ...
+        || (isa(obj.TriggerTimer, 'timer') && isValid(obj.TriggerTimer))
+        stop(obj.TriggerTimer);
+        delete(obj.TriggerTimer);
+    end
 end
 
 % Start device preview
@@ -323,6 +328,9 @@ function LoadTrialFromParams(obj, componentTrialData, genericTrialData)
         if ~isrunning(obj.SessionHandle)
             start(obj.SessionHandle);
         end
+        if obj.TriggerTimer
+
+        end
         if ~isrunning(obj.SessionHandle)
             error("failed to start CameraComponent %s", obj.ConfigStruct.ComponentID);
         end
@@ -468,7 +476,8 @@ function status = GetSessionStatus(obj)
     if isrunning(obj.SessionHandle)
         status = 'ready';
         if strcmpi(obj.ConfigStruct.TriggerMode, 'immediate') || ...
-            (~isempty(obj.LastAcquisition) && toc(obj.LastAcquisition) < seconds(1))
+            (~isempty(obj.LastAcquisition) && ...
+                toc(obj.LastAcquisition) < seconds(obj.ConfigStruct.TrialTimeout))
             status = 'running';
         end
     elseif ~isempty(obj.SessionHandle) && isvalid(obj.SessionHandle)
@@ -481,9 +490,9 @@ function img = GetCurrentPreviewDisplay(obj)
 end
 
 function SoftwareTrigger(obj, ~, ~)
-    % if 
     trigger(obj.SessionHandle);
 end
+
 
 end
 end

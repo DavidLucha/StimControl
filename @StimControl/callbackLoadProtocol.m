@@ -40,6 +40,12 @@ if strcmpi(src.Value, '')
     return
 end
 
+if ~isfile(obj.path.SessionProtocolFile)
+    obj.warnMsg('Protocol file not found. Passive mode enabled.');
+    obj.status = 'no protocol loaded';
+    return
+end
+
 if contains(obj.path.SessionProtocolFile, '.qst')
     % legacy considerations
     [p, g] = readParameters(obj.path.SessionProtocolFile);

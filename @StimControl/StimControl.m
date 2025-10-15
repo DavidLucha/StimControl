@@ -71,6 +71,7 @@ methods
         %% Reset state machine flags
         obj.f.stopTrial = false;
         obj.f.startTrial = false;
+        obj.f.passive = false;
         obj.f.pause = false;
         obj.f.resume = false;
         obj.f.runningExperiment = false;
@@ -96,7 +97,7 @@ methods
         
         % obj.p2GUI;
         % obj.checkSync
-        StartPreviews(obj);
+        % StartPreviews(obj);
         disp("Ready")
     end
 end
@@ -286,7 +287,11 @@ methods
 
     function out = get.experimentID(obj)
         tmp = strsplit(obj.h.protocolSelectDropDown.Value, '.');
-        out = tmp{2};
+        if length(tmp) < 2
+            out = tmp{:};
+        else
+            out = tmp{2};
+        end
     end
 
     function set.animalID(obj, val)
@@ -310,12 +315,12 @@ methods
         val = lower(val);
         if strcmpi(val, 'not initialised')
             obj.h.statusLabel.Text = 'Not Initialised';
-            obj.h.statusLamp.Color = '#808080';
+            obj.h.statusLamp.Color = '#808080'; % dark grey
             obj.h.StartStopBtn.Enable = 'off';
             obj.h.StartStopBtn.Text = 'START';
             obj.h.pauseBtn.Enable = 'off';
-            obj.isRunning = false;
-            obj.isPaused = false;
+            obj.h.StartPassiveBtn.Enable = 'off';
+            obj.h.StartSingleTrialBtn.Enable = 'off';
 
         elseif strcmpi(val, 'ready')
             obj.h.statusLabel.Text = 'Ready';
@@ -323,18 +328,18 @@ methods
             obj.h.StartStopBtn.Enable = 'on';
             obj.h.StartStopBtn.Text = 'START';
             obj.h.pauseBtn.Enable = 'off';
-            obj.isRunning = false;
-            obj.isPaused = false;
+            obj.h.StartPassiveBtn.Enable = 'on';
+            obj.h.StartSingleTrialBtn.Enable = 'on';
 
         elseif strcmpi(val, 'running')
             obj.h.statusLabel.Text = 'Running';
             obj.h.statusLamp.Color = '#FFA500';
-            obj.h.StartStopBtn.Enable = 'on'; %TODO or on?
+            obj.h.StartStopBtn.Enable = 'on';
             obj.h.StartStopBtn.Text = 'STOP';
             obj.h.pauseBtn.Enable = 'off';
             obj.h.pauseBtn.Text = 'PAUSE';
-            obj.isRunning = true;
-            obj.isPaused = false;
+            obj.h.StartPassiveBtn.Enable = 'off';
+            obj.h.StartSingleTrialBtn.Enable = 'off';
 
         elseif strcmpi(val, 'inter-trial')
             obj.h.statusLabel.Text = 'Inter-trial';
@@ -342,9 +347,9 @@ methods
             obj.h.StartStopBtn.Enable = 'on';
             obj.h.StartStopBtn.Text = 'STOP';
             obj.h.pauseBtn.Enable = 'on';
+            obj.h.StartPassiveBtn.Enable = 'off';
             obj.h.pauseBtn.Text = 'PAUSE';
-            obj.isRunning = true;
-            obj.isPaused = false;
+            obj.h.StartSingleTrialBtn.Enable = 'off';
 
         elseif strcmpi(val, 'paused')
             obj.h.statusLabel.Text = 'Paused';
@@ -353,8 +358,8 @@ methods
             obj.h.StartStopBtn.Text = 'STOP';
             obj.h.pauseBtn.Enable = 'on';
             obj.h.pauseBtn.Text = 'RESUME';
-            obj.isRunning = true;
-            obj.isPaused = true;
+            obj.h.StartPassiveBtn.Enable = 'off';
+            obj.h.StartSingleTrialBtn.Enable = 'off';
 
         elseif strcmpi(val, 'stopping')
             obj.h.statusLabel.Text = 'Stopping';
@@ -362,11 +367,33 @@ methods
             obj.h.StartStopBtn.Enable = 'off';
             obj.h.StartStopBtn.Text = 'START';
             obj.h.pauseBtn.Enable = 'off';
+            obj.h.StartPassiveBtn.Enable = 'off';
             obj.h.pauseBtn.Text = 'PAUSE';
 
         elseif strcmpi(val, 'error')
             obj.h.statusLabel.Text = 'Error';
             obj.h.statusLamp.Color = '#A80000';
+
+        elseif strcmpi(val, 'awaiting trigger')
+            obj.h.statusLabel.Text = 'Awaiting Trigger';
+            obj.h.statusLamp.Color = '#008080';
+            obj.h.StartStopBtn.Enable = 'on';
+            obj.h.StartStopBtn.Text = 'STOP';
+            obj.h.pauseBtn.Enable = 'off';
+            obj.h.pauseBtn.Text = 'PAUSE';
+            obj.h.StartPassiveBtn.Enable = 'off';
+            obj.h.StartSingleTrialBtn.Enable = 'off';
+        
+        elseif strcmpi(val, 'no protocol loaded')
+            obj.h.statusLabel.Text = 'No Protocol Loaded';
+            obj.h.statusLamp.Color = '#008080';
+            obj.h.StartStopBtn.Enable = 'off';
+            obj.h.StartStopBtn.Text = 'START';
+            obj.h.pauseBtn.Enable = 'off';
+            obj.h.pauseBtn.Text = 'PAUSE';
+            obj.h.StartPassiveBtn.Enable = 'on';
+            obj.h.StartSingleTrialBtn.Enable = 'off';
+
         else
             error("Invalid status. Implement status here or it won't work.")
         end
@@ -451,6 +478,15 @@ methods
             obj.status = 'error';
         catch % handle likely not initialised
             error(message)
+        end
+    end
+
+    function warnMsg(obj, message)
+        try
+            obj.h.trialInformationScroller.Value = char(message);
+            obj.h.trialInformationScroller.FontColor = 'black';
+        catch % handle likely not initialised
+            warning(message)
         end
     end
 

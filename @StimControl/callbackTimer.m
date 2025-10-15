@@ -28,6 +28,15 @@ else
         switch obj.status
             case 'not initialised'
                 % do nothing
+            case 'no protocol loaded'
+                if obj.f.passive
+                    startTic = tic;
+                    obj.trialIdx = 1;
+                    nTrials = Inf;
+                    updatePassiveGuiTimer(obj, startTic, true);
+                    startPassive(obj);
+                    obj.status = 'running';
+                end
             case 'ready'
                 if obj.f.startTrial
                     % start the trial
@@ -48,11 +57,19 @@ else
                     startTrial(obj);
                     obj.f.startTrial = false;
                     obj.status = 'running';
+                elseif obj.f.passive
+                    startTic = tic;
+                    obj.trialIdx = 1;
+                    nTrials = Inf;
+                    updatePassiveGuiTimer(obj, startTic, true);
+                    startPassive(obj); %TODO MAKE THIS SO THAT IT DOESN'T ACTIVELY START, E.G, DAQs
+                    obj.status = 'running';
                 end
             case 'stopping'
                 % stop the trial (interrupt)
                 obj.f.stopTrial = false;
                 obj.f.startTrial = false;
+                obj.f.passive = false;
                 for idx = 1:sum(obj.d.Active)
                     component = obj.activeComponents{idx};
                     component.Stop();
@@ -60,7 +77,11 @@ else
                 obj.h.StatusCountdownLabel.Text = '-0:00';
                 updateGUITimers(obj, tic, true);
                 updateInteractivity(obj, 'on');
-                obj.status = 'ready';
+                if ~isempty(obj.p)
+                    obj.status = 'ready';
+                else
+                    obj.status = 'no protocol loaded';
+                end
             case 'running'
                 if obj.f.stopTrial
                     obj.status = 'stopping';
@@ -70,6 +91,12 @@ else
                     if obj.trialIdx == nTrials
                         obj.status = 'ready';
                         obj.f.runningExperiment = false;
+                    elseif obj.f.passive
+                        startTic = tic;
+                        updatePassiveGuiTimer(obj, startTic, false);
+                        obj.trialIdx = obj.trialIdx + 1;
+                        startPassive(obj); % pre-loading
+                        obj.status = 'awaiting trigger';
                     else
                         obj.trialIdx = obj.trialIdx + 1;
                         startTic = tic;
@@ -81,10 +108,24 @@ else
                     end
                 else
                     % monitor trial
-                    updateGUITimers(obj, startTic, false);
+                    if ~obj.f.passive
+                        updateGUITimers(obj, startTic, false);
+                    else
+                        updatePassiveGuiTimer(obj, startTic, false);
+                    end
                     if ~any(cellfun(@(c) strcmpi(c.GetStatus(), 'running'), obj.activeComponents))
                         obj.f.trialFinished = true;
                     end
+                end
+            case 'awaiting trigger'
+                if any(cellfun(@(c) strcmpi(c.GetStatus(), 'running'), obj.activeComponents))
+                    startTic = tic;
+                    updatePassiveGuiTimer(obj, startTic, false);
+                    obj.status = 'running';
+                elseif obj.f.stopTrial
+                    obj.status = 'stopping';
+                else
+                    updatePassiveGuiTimer(obj, startTic, false);
                 end
             case 'inter-trial'
                 if obj.f.pause
@@ -115,6 +156,11 @@ else
                     obj.status = 'stopping';
                 end
             case 'error'
+                if obj.f.passive
+                    obj.status = 'no protocol loaded';
+                elseif obj.f.startTrial
+                    obj.status = 'ready';                    
+                end
                 return
         end
     % catch errors during protocol execution
@@ -123,7 +169,9 @@ else
         tmp = regexprep(err.getReport('extended','hyperlinks','off'),'\n','\r\n');
         fprintf(fid,'%s',tmp);
         fclose(fid);
+        obj.f.passive = false;
         errordlg('Protocol execution incomplete. See error.log for more information.')
+        obj.errorMsg(tmp);
         keyboard % see what's going on
     end
 end
@@ -162,6 +210,30 @@ function startTrial(obj)
     obj.f.trialLoaded = false;
 end
 
+function startPassive(obj)
+    updateInteractivity(obj, 'off');
+    obj.indicateLoading('Loading trial data');
+    obj.updateDateTime;
+    timeString = [obj.path.time(1:2) ':' obj.path.time(3:4) ':' obj.path.time(5:6)];
+    obj.h.trialInformationScroller.Value{end+1} = ...
+        char(sprintf("Trial %d started: %s", obj.trialIdx, timeString));
+    
+    % Set filepath params
+    savePrefix = sprintf("%05d_stim_passive_", obj.trialIdx, obj.path.time);
+    for i = 1:sum(obj.d.Active)
+        component = obj.activeComponents{i};
+        component.SavePath = obj.dirExperiment;
+        component.SavePrefix = savePrefix;
+    end
+    updateInteractivity(obj, 'on');
+
+    % COMPONENTS: ACTIVATE
+    for ci = 1:sum(obj.d.Active)
+        component = obj.activeComponents{ci};
+        component.StartTrial;
+    end
+end
+
 function updateInteractivity(obj, state)
     allUI = findobj(obj.h.Session.Tab);
     for ii = 1:length(allUI)
@@ -175,6 +247,19 @@ function updateInteractivity(obj, state)
             uiObj.Enable = state;
         end
     end
+end
+
+function updatePassiveGuiTimer(obj, startTic, reset)
+    persistent totalSecs;
+    
+    if isempty(totalSecs) || reset
+        totalSecs = 0;
+    end
+    tElapsed = toc(startTic);
+    obj.h.StatusCountdownLabel.Text = sprintf("+%s",  ...
+        string(duration(seconds(tElapsed), 'Format', 'mm:ss')));
+    obj.h.protocolTimeEstimate.Text = sprintf("%s / 00:00",  ...
+        string(duration(totalSecs + seconds(tElapsed), 'Format', 'mm:ss')));
 end
 
 function updateGUITimers(obj, startTic, reset)
