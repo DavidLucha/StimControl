@@ -391,19 +391,23 @@ function LoadTrialFromParams(obj, componentTrialData, genericTrialData)
             warning("No output channels assigned for stimulus %s in DAQ %s. Check the channel config file.", fieldName, obj.ComponentID);
             continue
         end
-
-        % Generate Stimulus
-        stim = obj.GenerateStim(componentTrialData.(fieldName), fieldName, stimLength, tPreLength, chIdxes);
-        for i = 1:length(outIdxes)
-            idx = outIdxes(i);
-            if ~any(regexpi(obj.SessionHandle.Channels(idx).Type, 'Counter', 'ONCE'))
-                % not a counter channel, can be pre-loaded
-                out(:,idx) = stim;
+        % Generate Stimulus. Handle special cases.
+        if contains(fieldName, 'thermode')
+            % multiple outputs
+        else
+            % Generate Stimulus
+            stim = obj.GenerateStim(componentTrialData.(fieldName), fieldName, stimLength, tPreLength, chIdxes);
+            for i = 1:length(outIdxes)
+                idx = outIdxes(i);
+                if ~any(regexpi(obj.SessionHandle.Channels(idx).Type, 'Counter', 'ONCE'))
+                    % not a counter channel, can be pre-loaded
+                    out(:,idx) = stim;
+                end
             end
-        end
-        for i = 1:length(chIdxes)
-            ci = chIdxes(i);
-            previewOut(:,ci) = stim';
+            for i = 1:length(chIdxes)
+                ci = chIdxes(i);
+                previewOut(:,ci) = stim';
+            end
         end
     end
     obj.PreviewData = previewOut;
