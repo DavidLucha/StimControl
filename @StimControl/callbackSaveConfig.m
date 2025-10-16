@@ -5,11 +5,10 @@ function callbackSaveConfig(obj, src, event)
     filename = ['params' obj.path.nameExtension '_' char(datetime)];
     saveData = {};
     for i = 1:length(obj.d.Available)
-        if ~obj.d.Active(i)
-            continue
-        end
         component = obj.d.Available{i};
-        saveData{end+1} = component.GetParams;
+        params = component.GetParams;
+        params.Active = obj.d.Active(i);
+        saveData{end+1} =params;
         component.SaveAuxiliaries(filepath);
     end
     jsonData = jsonencode(saveData);

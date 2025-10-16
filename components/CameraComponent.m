@@ -193,6 +193,8 @@ function StartPreview(obj)
     end
     preview(obj.SessionHandle, obj.PreviewPlot.Children);
     axis(obj.PreviewPlot, "tight");
+    % Commented the below out because colourmap can't be applied to multiple imaq previews at once
+    % Workarounds seem computationally expensive - consider revisiting.
     % maxRange = floor(256*0.7); %limit intensity to 70% of dynamic range to avoid ceiling effects
     % cMap = gray(maxRange); cMap(end+1:256,:) = repmat([1 0 0 ],256-maxRange,1);
     % colormap(obj.PreviewPlot,cMap);

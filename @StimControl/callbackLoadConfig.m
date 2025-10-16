@@ -22,7 +22,7 @@ if strcmpi(src.Value, 'Browse...')
 else
     filepath = [basepath filesep src.Value];
 end
-
+    
 if src == obj.h.SessionSelectDropDown
     %% Load session - NOT IMPLEMENTED
     return
