@@ -224,7 +224,7 @@ methods
 
     function updateTime(obj)
         dt = datetime("now");
-        dt.Format  = "hhmmss";
+        dt.Format  = "HHmmss";
         obj.path.time = char(dt);
     end
 

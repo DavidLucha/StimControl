@@ -424,26 +424,37 @@ function componentID = GetComponentID(obj)
 end
 
 function ReceiveFrame(obj, src, vidObj)
-    try
+    % try
         filepath = strcat(obj.SavePath, filesep, obj.SavePrefix, '_', obj.ConfigStruct.ProtocolID);
+        if ~isfolder(filepath)
+            mkdir(filepath)
+        end
         imgs = getdata(src,src.FramesAvailable); 
         if isempty(imgs)
             return
         end
         obj.LastAcquisition = tic;
         numImgs = size(imgs);
+        if length(numImgs) < 4
+            % single image?? bad data?? try writing it
+            imname = strcat(filepath, filesep, string(obj.FrameCount), '_', string(datetime(datetime, "Format", 'yyyyMMdd_HHmmss-SSS')), ".TIFF");
+            imwrite(imgs(:,:),imname);
+            obj.FrameCount = obj.FrameCount + 1;
+            return
+        end
         numImgs = numImgs(4);
         for i = 1:numImgs
             imname = strcat(filepath, filesep, string(obj.FrameCount), '_', string(datetime(datetime, "Format", 'yyyyMMdd_HHmmss-SSS')), ".TIFF");
             imwrite(imgs(:,:,:,i),imname);
             obj.FrameCount = obj.FrameCount + 1;
         end
-    catch exception
-        fprintf("Encountered an error imaging on CameraComponent %s", obj.ComponentID)
-        dbstack
-        disp(exception.message)
-        keyboard
-    end
+        % disp([obj.ConfigStruct.ProtocolID char(string(obj.FrameCount))])
+    % catch exception
+    %     fprintf("Encountered an error imaging on CameraComponent %s", obj.ComponentID)
+    %     dbstack
+    %     disp(exception.message)
+    %     keyboard
+    % end
     % if obj.selfStop
     %     if toc(obj.startTic) > seconds(obj.recordingTime)
     %         obj.Stop();

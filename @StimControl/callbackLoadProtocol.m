@@ -17,6 +17,7 @@ if strcmpi(src.Value, 'Browse...')
     [filename, dir] = uigetfile([obj.path.protocolBase], 'Select protocol');
     if filename == 0
         src.Value = '';
+        return
     end
     obj.path.SessionProtocolFile = [dir filename];
     experimentID = strsplit(filename, '.');
@@ -42,9 +43,14 @@ end
 
 if ~isfile(obj.path.SessionProtocolFile)
     obj.warnMsg('Protocol file not found. Passive mode enabled.');
+    %TODO MAKE SURE START TRIAL IS DISABLED HERE
     obj.status = 'no protocol loaded';
     return
 end
+
+%FOR DUAL CAM SETUP ONLY
+obj.status = 'no protocol loaded';
+return
 
 if contains(obj.path.SessionProtocolFile, '.qst')
     % legacy considerations
@@ -190,6 +196,8 @@ obj.h.trialInformationScroller.Value = '';
 obj.h.trialInformationScroller.FontColor = 'black';
 
 obj.updateDateTime; 
+% TODO SET TRIAL LOADED HERE AND UNLOADED AT COMPONENT.START AND LOAD NEW
+% PROTOCOL
 
 %% Load first trial
 obj.callbackLoadTrial(src, event);

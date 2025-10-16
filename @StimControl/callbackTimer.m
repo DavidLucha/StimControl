@@ -36,6 +36,8 @@ else
                     updatePassiveGuiTimer(obj, startTic, true);
                     startPassive(obj);
                     obj.status = 'running';
+                    %TODO DOUBLE CREATION OF FOLDERS AT START PASSIVE PLUS
+                    %UNNECESSARY GENERATION AT END
                 end
             case 'ready'
                 if obj.f.startTrial
@@ -220,9 +222,13 @@ function startPassive(obj)
     
     % Set filepath params
     savePrefix = sprintf("%s_stim_passive_%s", num2str(obj.trialIdx, '%05.f'), obj.path.time);
+    % todo this may be redundant but it's useful for right now
+    if ~isfolder([obj.dirExperiment '_Basler'])
+        mkdir([obj.dirExperiment '_Basler']);
+    end
     for i = 1:sum(obj.d.Active)
         component = obj.activeComponents{i};
-        component.SavePath = obj.dirExperiment;
+        component.SavePath = [obj.dirExperiment '_Basler'];
         component.SavePrefix = savePrefix;
     end
     updateInteractivity(obj, 'on');
