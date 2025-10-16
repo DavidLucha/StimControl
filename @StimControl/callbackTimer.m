@@ -34,8 +34,10 @@ else
                     obj.trialIdx = 1;
                     nTrials = Inf;
                     updatePassiveGuiTimer(obj, startTic, true);
+                    obj.h.trialInformationScroller.Value = '';
+                    obj.h.trialInformationScroller.FontColor = 'black';
                     startPassive(obj);
-                    obj.status = 'running';
+                    obj.status = 'awaiting trigger';
                     %TODO DOUBLE CREATION OF FOLDERS AT START PASSIVE PLUS
                     %UNNECESSARY GENERATION AT END
                 end
@@ -63,6 +65,8 @@ else
                     startTic = tic;
                     obj.trialIdx = 1;
                     nTrials = Inf;
+                    obj.h.trialInformationScroller.Value = '';
+                    obj.h.trialInformationScroller.FontColor = 'black';
                     updatePassiveGuiTimer(obj, startTic, true);
                     startPassive(obj); %TODO MAKE THIS SO THAT IT DOESN'T ACTIVELY START, E.G, DAQs
                     obj.status = 'running';
@@ -158,6 +162,8 @@ else
                     obj.status = 'stopping';
                 end
             case 'error'
+                % DEBUG: TODO REMOVE THE LINE BELOW
+                obj.f.passive = 1;
                 if obj.f.passive
                     obj.status = 'no protocol loaded';
                 elseif obj.f.startTrial
@@ -167,6 +173,8 @@ else
         end
     % catch errors during protocol execution
     catch err
+        %TODO pretty big logic error that lets you click start when there's
+        %no protocol loaded. For now, fixing by making it passive. 
         fid = fopen(fullfile(obj.path.dirData, filesep,'error.log'),'a+');
         tmp = regexprep(err.getReport('extended','hyperlinks','off'),'\n','\r\n');
         fprintf(fid,'%s',tmp);
