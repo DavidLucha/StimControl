@@ -48,10 +48,6 @@ if ~isfile(obj.path.SessionProtocolFile)
     return
 end
 
-%FOR DUAL CAM SETUP ONLY
-obj.status = 'no protocol loaded';
-return
-
 if contains(obj.path.SessionProtocolFile, '.qst')
     % legacy considerations
     [p, g] = readQSTParameters(obj.path.SessionProtocolFile);
