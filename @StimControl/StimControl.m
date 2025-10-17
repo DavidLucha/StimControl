@@ -47,8 +47,8 @@ methods
             obj.path.base = [pwd filesep 'StimControl'];
         end
         addpath(pwd)
-        addpath(genpath(fullfile(obj.path.base,'@StimControl', 'components')))
-        addpath(genpath(fullfile(obj.path.base, '@StimControl', 'common')))
+        addpath(genpath(fullfile(obj.path.base, 'components')))
+        addpath(genpath(fullfile(obj.path.base, 'common')))
         addpath(genpath(fullfile(obj.path.base,'@StimControl', 'icons')))
         clc
         disp('Welcome to StimControl')
@@ -147,11 +147,11 @@ methods (Access = private)
         
         tmpPlur = ["", "s"];
         pluralStr = @(input) tmpPlur(double(length(input)~=1)+1);
-        daqs = DAQComponent.FindAll();
+        daqs = obj.components.DAQComponent.FindAll();
         fprintf("\t Found %d DAQ%s\n", length(daqs), pluralStr(daqs));
-        cameras = CameraComponent.FindAll();
+        cameras = obj.components.CameraComponent.FindAll();
         fprintf("\t Found %d camera%s\n", length(cameras), pluralStr(cameras));
-        serials = SerialComponent.FindAll();
+        serials = obj.components.SerialComponent.FindAll();
         fprintf("\t found %d serial device%s\n", length(serials), pluralStr(serials));
         components = [daqs cameras serials];
 
