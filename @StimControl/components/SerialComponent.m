@@ -20,7 +20,9 @@ properties(Constant, Access = public)
 end
 
 properties (Access = public)
-    
+    TrialData;      % data for trial
+    idxStim;        % index of current stim
+    nStimsInTrial;  % number of stims in trial
 end
 
 methods(Access=public)
@@ -62,8 +64,10 @@ function obj = InitialiseSession(obj, varargin)
 
     % start the connection with the target port.
     obj = obj.OpenSerialConnection();
-    obj.query('Ose'); % activate external triggering (required with newer QST devices). added 2024.10.30
-    obj.query('Om550'); % enable 55deg stim. added 2025.05.08
+    if contains(obj.ConfigStruct.ProtocolID, 'QST')
+        obj.query('Ose'); % activate external triggering (required with newer QST devices). added 2024.10.30
+        obj.query('Om550'); % enable 55deg stim. added 2025.05.08
+    end
 
 end
 
@@ -78,7 +82,7 @@ end
 
 % Stop device
 function Stop(obj)
-
+    obj.query('A');
 end
 
 % Change device parameters
@@ -88,7 +92,36 @@ end
 
 % Dynamic visualisation of the object output
 function StartPreview(obj)
+    % Start component preview. Copied from QSTcontrol, not tested yet.
+    % idTherm = ['Thermode' char(64+nTherm)];
 
+    % % get current parameters from thermode
+    % ps = strsplit(obj.s(nTherm).query('P'),'\r');
+    % h  = obj.h.(idTherm);
+
+    % % process first line of parameter block
+    % p = sscanf(ps{1},'N%d T%d I%d Y%d S%s');
+    % h.edit.N.Value     = p(1)/10;
+    % h.edit.N.String    = sprintf('%1.1f',h.edit.N.Value);
+    % p = num2cell(p(5:end)'==49);
+    % [h.toggle.S.Value] = p{:};
+
+    % % process remaining lines of parameter block
+    % p = cell2mat(cellfun(@(x) {sscanf(x,'C%d V%d R%d D%d')},ps(2:end)));
+    % p(1:3,:) = p(1:3,:) / 10;
+    % f        = {'C','V','R','D'};
+    % format   = {'%0.1f','%0.1f','%0.1f','%d'};
+    % for ii = 1:4
+    %     tmp = num2cell(p(ii,:));
+    %     h.check.(f{ii}).Value   = isequal(tmp{:});
+    %     [h.edit.(f{ii}).Value]  = tmp{:};   
+    %     tmp = cellfun(@(x) {sprintf(format{ii},x)},tmp);
+    %     [h.edit.(f{ii}).String] = tmp{:};
+    % end
+        
+    % % update plots
+    % obj.createPlotThermode(obj.h.(idTherm).axes)
+    % obj.createPlotLED(obj.h.LED.axes)
 end
 
 % Dynamic visualisation of the object output
@@ -103,8 +136,15 @@ end
 
 % Preload a single trial
 function LoadTrialFromParams(obj, componentTrialData, genericTrialData)
-    obj.trialData = componentTrialData;
-    preloadSingleStim(obj)
+    obj.TrialData = componentTrialData;
+    if contains(obj.ConfigStruct.ProtocolID, 'QST')
+        preloadSingleQSTStim(obj, componentTrialData(1))
+    end
+    obj.nStimsInTrial = genericTrialData.nRepetitions * length(componentTrialData);
+    obj.idxStim = 1;
+    if obj.nStimsInTrial > 1
+        % set up to preload multiple - HOW????
+    end
 end
 end
 
@@ -137,18 +177,21 @@ function status = GetSessionStatus(obj)
     end
 end
 
-function preloadSingleStim(obj, stimStruct)
+function preloadSingleQSTStim(obj, stimStruct)
     %QSTControl p2Serial
-    for ii = 1:length(obj.s)
-        idTherm = sprintf('Thermode%s',64+ii);
-        if ~isfield(p,idTherm)
+    %TODO flush previous
+    for ii = 1:length(fields(stimStruct))
+        idTherm = sprintf('thermode%s',64+ii);
+        if ~isfield(stimStruct,idTherm)
             continue
         end
         
         % build command stack
+        % TODO this doesn't handle multiple thermodes with different behaviour. 
+        % in QSTcontrol this is handled using different serial sessions I think?
         stack = {};
-        for param = fieldnames(p.(idTherm))'
-            val = p.(idTherm).(param{:});
+        for param = fieldnames(stimStruct.(idTherm))'
+            val = stimStruct.(idTherm).(param{:});
             switch param{:}
                 case 'NeutralTemp'
                     cmd = sprintf('N%03d',round(val*10));
@@ -172,7 +215,7 @@ function preloadSingleStim(obj, stimStruct)
         
         % send command stack to thermode
         tmp = [stack; repmat({' '},size(stack))];
-        obj.s(ii).query([tmp{:}]);
+        obj.query([tmp{:}]);
     end
 
         function out = helper(format,val)
@@ -188,13 +231,15 @@ function preloadSingleStim(obj, stimStruct)
 end
 
 function componentID = GetComponentID(obj)
+    % Get the component ID based on port and tag.
     componentID = convertStringsToChars([obj.ConfigStruct.Port '-' obj.ConfigStruct.Tag]);
     componentID = [componentID{:}];
     componentID = obj.SanitiseComponentID(componentID);
 end
 
 function SoftwareTrigger(obj, ~, ~)
-
+    % trigger the component through software. High latency.
+    obj.query('L');
 end
 
 function varargout = query(obj, query, timeout)
@@ -308,20 +353,47 @@ function obj = OpenSerialConnection(obj)
             'InputBufferSize', obj.ConfigStruct.InputBufferSize);
     else
         obj.SessionHandle = serialport(obj.ConfigStruct.Port, ...
-            obj.ConfigStruct.BaudRate, ...
-            'Terminator', obj.ConfigStruct.Terminator, ...
-            'InputBufferSize', obj.ConfigStruct.InputBufferSize);
+            obj.ConfigStruct.BaudRate);
     end
-    fopen(obj.SessionHandle);
+    fopen(obj.SessionHandle); %todo try/catch here might cause problems later on
 end
 
+%% QSTControl METHODS
+function result = waitForNeutral(obj)
+    % Wait for thermodes to reach neutral temperature
+    % RETURNS:
+    %   result (logical): whether the neutral temperature was reached successfully
+    % Commented out in QSTcontrol. 
+    % % Get neutral Temperature setting from serial devices
+    % Tneutral = arrayfun(@(x) str2double(regexp(obj.query('P'),'N(\d*)',...
+    %     'tokens','once')),1);
+    % 
+    % % Anonymous function that obtains temperature difference
+    % Tdelta = @() abs(Tneutral - arrayfun(@(x) ...
+    %     mean(str2num(obj.queryN('E',23))),1))/10;%#ok<ST2NM>
+    % 
+    % % Acceptable temperature difference
+    % Tcrit = 1;
+    % 
+    % % If things look good already, return to calling function
+    % if all(Tdelta()<Tcrit)
+    %     return
+    % end
+    % % Wait for device to reach neutral temperature
+    % while ~all(Tdelta()<Tcrit)
+    %     pause(0.5)
+    % end
+    % pause(1)
+end
 
 end
 
 methods(Static, Access=public)
-    % Complete reset. Clear device and all handles of device type.
     function Clear()
-        
+        % Complete reset. Clear device and all handles of device type.
+        for port = SerialComponent.FindPorts'
+            SerialComponent.ClearPort(port);
+        end
     end
 
     function components = FindAll(varargin)
@@ -333,6 +405,7 @@ methods(Static, Access=public)
         %     components (cell array): cell array of all detected Components.
         p = inputParser();
         addParameter(p, 'Initialise', true, @islogical);
+        addParameter(p, 'Params', [], @(x) isstruct(x) || isempty(x));
         p.parse(varargin{:});
         components = {};
         for port = SerialComponent.FindPorts
@@ -379,6 +452,7 @@ methods(Static, Access=public)
             fclose(tmp);
             delete(tmp);
         end
+        clear(port);
     end
 end
 end

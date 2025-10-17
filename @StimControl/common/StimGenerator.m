@@ -164,6 +164,23 @@ function stim = sinewave(varargin)
 
 end
 
+function stim = thermalpreview(varargin)
+    % Generates a thermal preview stim of given length
+    % PARAMS:
+    %     sampleRate (double=1000): sample rate of output array (Hz)
+    %     duration   (double=1000): duration of output (ms)
+    %     totalTicks (double=1000): duration of output in total ticks. Alternative to duration. 
+    %         When both are defined, duration will be limited to within totalTicks. 
+    p = inputParser();
+    addParameter(p, 'display', false, @(x) islogical(x));
+    parse(p, varargin{:});
+    params = p.Results;
+
+    %% TODO
+    if params.display
+        StimGenerator.show(stim);
+    end
+end
 
 %% HELPER METHODS
 function out = MsToTicks(x, rate)

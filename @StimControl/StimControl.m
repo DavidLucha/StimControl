@@ -47,8 +47,8 @@ methods
             obj.path.base = [pwd filesep 'StimControl'];
         end
         addpath(pwd)
-        addpath(genpath(fullfile(obj.path.base,'components')))
-        addpath(genpath(fullfile(obj.path.base,'common')))
+        addpath(genpath(fullfile(obj.path.base,'@StimControl', 'components')))
+        addpath(genpath(fullfile(obj.path.base, '@StimControl', 'common')))
         addpath(genpath(fullfile(obj.path.base,'@StimControl', 'icons')))
         clc
         disp('Welcome to StimControl')

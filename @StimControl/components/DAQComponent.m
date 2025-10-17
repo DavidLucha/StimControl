@@ -50,6 +50,12 @@ methods (Access = public, Static)
             s = table2struct(daqs(i, :));
             % todo - only if there is no protocolID connected to device in config file
             protocolID = [DAQComponentProperties.ProtocolID.default char(string(i))];
+            %todo - temp while I get above working
+            if contains(s.Model, 'Sim')
+                protocolID = 'SIM';
+            else
+                protocolID = 'Trigger';
+            end
             initStruct = struct( ...
                 'Vendor', s.VendorID, ...
                 'ID', s.DeviceID, ...
@@ -121,7 +127,7 @@ function obj = InitialiseSession(obj, varargin)
         pcID = pcInfo{2}(end-8:end);
         filename = [pcID '_' obj.ComponentID '.csv'];
         if ~contains(obj.ConfigStruct.ChannelConfig, filename)
-            obj.ConfigStruct.ChannelConfig = [obj.ConfigStruct.ChannelConfig filename];
+            obj.ConfigStruct.ChannelConfig = [obj.ConfigStruct.ChannelConfig filesep filename];
         end
         obj = obj.CreateChannels(obj.ConfigStruct.ChannelConfig, params.ActiveDeviceIDs);
     end
@@ -386,9 +392,13 @@ function LoadTrialFromParams(obj, componentTrialData, genericTrialData)
             fieldID = regexpi(fieldName, "^([a-z]+)([A-Z][a-z]+)*([A-Z]$)", 'tokens', 'once');
             fieldID = fieldID{1};
             fieldIdxes = find(contains(fieldNames, fieldID));
-            mapItems = obj.ChannelMap.(fieldNames{fieldIdxes});
-            % todo separate out A and B for thermodes.
-            chIdxes = [mapItems{:,1}];
+            if isempty(fieldIdxes)
+                chIdxes = [];
+            else
+                mapItems = obj.ChannelMap.(fieldNames{fieldIdxes});
+                % todo separate out A and B for thermodes.
+                chIdxes = [mapItems{:,1}];
+            end
         end
         outIdxes = [];
         for i = 1:length(chIdxes)
