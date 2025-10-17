@@ -23,6 +23,8 @@ properties (Access = public)
     TrialData;      % data for trial
     idxStim;        % index of current stim
     nStimsInTrial;  % number of stims in trial
+    trialStartedTic; % time trial started
+    selfTrigger = false; % whether to trigger using self triggers.
 end
 
 methods(Access=public)
@@ -65,6 +67,7 @@ function obj = InitialiseSession(obj, varargin)
     % start the connection with the target port.
     obj = obj.OpenSerialConnection();
     if contains(obj.ConfigStruct.ProtocolID, 'QST')
+        obj.query('F'); % disable temperature display
         obj.query('Ose'); % activate external triggering (required with newer QST devices). added 2024.10.30
         obj.query('Om550'); % enable 55deg stim. added 2025.05.08
     end
@@ -77,12 +80,30 @@ function SaveAuxiliaryConfig(obj, filepath)
 end
 
 function StartTrial(obj)
-
+    % Start trial. If there's no multi-trigger, then the data is already
+    % pre-loaded, so do nothing.
+    if obj.multiTrigger
+        if isempty(obj.TriggerTimer) || ~isvalid(obj.TriggerTimer)
+             obj.TriggerTimer = timer(...
+                'StartDelay',       0, ...
+                'Period',           0.5, ...
+                'ExecutionMode',    'fixedDelay', ...
+                'TimerFcn',         @obj.multiTriggerTimer, ...
+                'Name',             'SerialExecutionTimer');
+        end
+        start(obj.TriggerTimer);
+    end
 end
 
-% Stop device
 function Stop(obj)
+    % Stops the device and any trigger timers.
     obj.query('A');
+    if ~isempty(obj.TriggerTimer)
+        if isvalid(obj.TriggerTimer)
+            stop(obj.TriggerTimer);
+            delete(obj.TriggerTimer);
+        end
+    end
 end
 
 % Change device parameters
@@ -119,9 +140,7 @@ function StartPreview(obj)
     %     [h.edit.(f{ii}).String] = tmp{:};
     % end
         
-    % % update plots
-    % obj.createPlotThermode(obj.h.(idTherm).axes)
-    % obj.createPlotLED(obj.h.LED.axes)
+    
 end
 
 % Dynamic visualisation of the object output
@@ -143,7 +162,21 @@ function LoadTrialFromParams(obj, componentTrialData, genericTrialData)
     obj.nStimsInTrial = genericTrialData.nRepetitions * length(componentTrialData);
     obj.idxStim = 1;
     if obj.nStimsInTrial > 1
-        % set up to preload multiple - HOW????
+        obj.multiTrigger = true;
+        if ~isempty(obj.TriggerTimer)
+            if isvalid(obj.TriggerTimer)
+                stop(obj.TriggerTimer);
+                delete(obj.TriggerTimer);
+            end
+        end
+        obj.TriggerTimer = timer(...
+            'StartDelay',       0, ...
+            'Period',           0.5, ...
+            'ExecutionMode',    'fixedDelay', ...
+            'TimerFcn',         @obj.multiTriggerTimer, ...
+            'Name',             'SerialExecutionTimer');
+    else
+        obj.multiTrigger = false;
     end
 end
 end
@@ -162,7 +195,7 @@ function status = GetSessionStatus(obj)
     %TODO check the strings for this are consistent with the
     % strings for everything else. Not tested for serialport devices.
     b = obj.battery;
-    status = '';
+    status = obj.query('Og'); 
     if ~obj.isConnected
         status = "not connected";
     elseif ~strcmpi(obj.SessionHandle.TransferStatus, 'idle')
@@ -294,9 +327,58 @@ function fprintfd(obj,query,delay)
     end
 end
 
+function out = convertPResponse(obj, response)
+    % Convert a 'P' response string into a struct of parameters
+    out = struct('NeutralTemp', [], ...
+            'SurfaceSelect', [], ...
+            'SetpointTemp', [], ...
+            'PacingRate', [], ...
+            'ReturnSpeed', [], ...
+            'dStimulus', [], ...
+            'nTrigger', [], ...
+            'integralTerm', []);
+    % process first line of parameter block
+    p = sscanf(response{1},'N%d T%d I%d Y%d S%s');
+    out.NeutralTemp     = p(1)/10;
+    out.nTrigger       = p(2);
+    out.integralTerm   = p(3);
+    p = num2cell(p(5:end)'==49);
+    [out.SurfaceSelect] = p{:};
+
+    % process remaining lines of parameter block
+    p = cell2mat(cellfun(@(x) {sscanf(x,'C%d V%d R%d D%d')},ps(2:end)));
+    p(1:3,:) = p(1:3,:) / 10;
+    f        = {'C','V','R','D'};
+    format   = {'%0.1f','%0.1f','%0.1f','%d'};
+    % TODO look into p2GUI
+    % params = strsplit(response,'\r');
+    % for pLine = params
+    %     pLine = strsplit(pLine{:},' ');
+    %     for param = pLine
+    %         switch param{:}
+    %             case 'N'
+    %                 out.NeutralTemp(end+1) = str2double(param(2:end))/10;
+    %             case 'S'
+    %                 out.SurfaceSelect = str2num(param(2:end)); %#ok<ST2NM>
+    %             case 'C'
+    %                 out.SetpointTemp(end+1) = str2double(param(2:end))/10;
+    %             case 'V'
+    %                 out.PacingRate(end+1) = str2double(param(2:end))/10;
+    %             case 'R'
+    %                 out.ReturnSpeed(end+1) = str2double(param(2:end))/10;
+    %             case 'D'
+    %                 out.dStimulus(end+1) = str2double(param(2:end));
+    %             case 'T'
+    %                 out.nTrigger(end+1) = str2double(param(2:end));
+    %             case 'I'
+    %                 out.integralTerm(end+1) = str2double(param(2:end));
+    %         end
+    %     end
+    % end
+end
+
 function bench(obj,query)
     % Benchmarking information. Tracks the time taken per byte sent.
-
     if isMATLABReleaseOlderThan('R2024a')
         if ~exist('query','var')
             query = 'H';
@@ -328,18 +410,27 @@ function bench(obj,query)
 end
 
 function out = temperature(obj)
+    % retrieve current device temperature
     out = str2num(obj.queryN('E',23)); %#ok<ST2NM>
 end
 
 function out = battery(obj)
+    % retrieve current device battery level
     out = sscanf(obj.queryN('B',13),'%*fv %d%%');
 end
 
 function help(obj)
+    % get device help information
     disp(obj.query('H',.14))
 end
 
+function out = queuedOutputs(obj)
+    % Gets the parameters currently loaded to the device
+    out = obj.query('P',.1);
+end
+
 function response = isConnected(obj)
+    %TODO this only works if this is 
     varargout = obj.query('H', 1);
     response = ~isempty(varargout);
 end
@@ -356,6 +447,11 @@ function obj = OpenSerialConnection(obj)
             obj.ConfigStruct.BaudRate);
     end
     fopen(obj.SessionHandle); %todo try/catch here might cause problems later on
+end
+
+function multiTriggerTimer(obj, ~, ~)
+    timeout = obj.TrialData(obj.idxStim);
+    timeTrialStarted = obj.trialStartedTic;
 end
 
 %% QSTControl METHODS
@@ -413,7 +509,8 @@ methods(Static, Access=public)
                 'Port', port);
             comp = SerialComponent('Initialise', p.Results.Initialise, ...
                 'ConfigStruct', initStruct);
-            if comp.isConnected
+            if comp.isConnected %todo when swapping from QSTcontrol to StimControl the device needs to be restarted. 
+                % is this circumventable??
                 components{end+1} = comp;
             else
                 SerialComponent.ClearPort(port);

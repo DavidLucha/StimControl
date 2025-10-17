@@ -1,1 +1,3 @@
 - In QST commands, what does trigger number mean?
+- how does the QST behave when fed multiple queries to start with?
+- pacing rate, 

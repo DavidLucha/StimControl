@@ -171,10 +171,81 @@ function stim = thermalpreview(varargin)
     %     duration   (double=1000): duration of output (ms)
     %     totalTicks (double=1000): duration of output in total ticks. Alternative to duration. 
     %         When both are defined, duration will be limited to within totalTicks. 
+    %     display     (logical=false): whether to display the generated stimulus
+    % PARAMS (THERMAL):
+    %     pStruct   (struct): structure of parameters for thermal stimulus
+    %        If provided, will override individual parameters (below)
+    %     NeutralTemp (double=32): neutral temperature (°C)
+    %     PacingRate  (double=300): pacing rate (ms)
+    %     ReturnSpeed (double=300): return speed (ms)
+    %     SetpointTemp (double=32): setpoint temperature (°C)
+    %     SurfaceSelect (vector[1x5]=[1 1 0 0 0]): surface select (1=on, 0=off)
+    %     dStimulus   (double=2000): stimulus duration (ms)
+    %     integralTerm (double=1): integral term
+    %     nTrigger    (double=1): number of triggers
+    %     VibrationDuration (double=0): vibration duration (ms)
+
     p = inputParser();
+    addParameter(p, 'sampleRate', 1000, @(x) isnumeric(x));
+    addParameter(p, 'totalTicks', 1000, @(x) isnumeric(x));
+    addParameter(p, 'duration', -1, @(x) isnumeric(x)); 
     addParameter(p, 'display', false, @(x) islogical(x));
+
+    addParameter(p, 'pStruct', [], @(x) isstruct(x));
+
+    addParameter(p, 'NeutralTemp', 32, @(x) isnumeric(x));
+    addParameter(p, 'PacingRate', 300, @(x) isnumeric(x));
+    addParameter(p, 'ReturnSpeed', 300, @(x) isnumeric(x));
+    addParameter(p, 'SetpointTemp', 32, @(x) isnumeric(x));
+    addParameter(p, 'SurfaceSelect', [1 1 0 0 0], @(x) isnumeric(x) && isvector(x) && length(x) == 5);
+    addParameter(p, 'dStimulus', 2000, @(x) isnumeric(x));
+    addParameter(p, 'VibrationDuration', 0, @(x) isnumeric(x));
+
     parse(p, varargin{:});
     params = p.Results;
+
+    if ~contains(p.UsingDefaults, 'totalTicks')
+        stim = StimGenerator.GetBaseFromTicks(params.totalTicks);
+    elseif params.duration ~= -1
+        stim = StimGenerator.GetBaseFromDuration(params.duration, params.SampleRate);
+    else
+        error('please specify either the total stimulus ticks or the stimulus duration')
+    end
+
+    fs = params.sampleRate;
+    if ~isempty(pStruct)
+        N = params.pStruct.NeutralTemp;
+        C = params.pStruct.SetpointTemp;
+        D = params.pStruct.dStimulus;
+        V = params.pStruct.PacingRate;
+        R = params.pStruct.ReturnSpeed;
+        S = params.pStruct.SurfaceSelect;
+    else
+        N = params.NeutralTemp;
+        C = params.SetpointTemp;
+        D = params.dStimulus;
+        V = params.PacingRate;
+        R = params.ReturnSpeed;
+        S = params.SurfaceSelect;
+    end
+    
+
+    tax = linspace(1/fs, length(stim)/fs, length(stim));
+    stim = ones(length(tax),5) * N;
+    [~,t0] = min(abs(tax));
+
+    for ii = find(S)
+        dP    = D(ii)*fs-1;
+        pulse = ones(dP,1);
+        dV    = round(abs(C(ii)-N)/V(ii)*fs);
+        dR    = round(abs(C(ii)-N)/R(ii)*fs);
+        tmp   = linspace(0,1,dV)';
+        pulse(1:min([dV dP])) = tmp((1:min([dV dP])));
+        pulse = [pulse; linspace(pulse(end),0,dR)'] * (C(ii)-N) + N;
+        
+        tmp   = min([round(tPost*fs)+1 length(pulse)]);
+        stim(t0+(1:tmp)-1,ii) = pulse(1:tmp);
+    end
 
     %% TODO
     if params.display
@@ -208,6 +279,7 @@ end
 function p = show(stim)
     tax = linspace(1, length(stim), length(stim));
     p = plot(tax, stim);
+    p.YLim = [min(stim) max(stim)] + [-1 1]*max([range(stim)*.1 .5]);
 end
 end
 end

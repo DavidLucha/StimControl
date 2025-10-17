@@ -147,11 +147,11 @@ methods (Access = private)
         
         tmpPlur = ["", "s"];
         pluralStr = @(input) tmpPlur(double(length(input)~=1)+1);
-        daqs = obj.components.DAQComponent.FindAll();
+        daqs = DAQComponent.FindAll();
         fprintf("\t Found %d DAQ%s\n", length(daqs), pluralStr(daqs));
-        cameras = obj.components.CameraComponent.FindAll();
+        cameras = CameraComponent.FindAll();
         fprintf("\t Found %d camera%s\n", length(cameras), pluralStr(cameras));
-        serials = obj.components.SerialComponent.FindAll();
+        serials = SerialComponent.FindAll();
         fprintf("\t found %d serial device%s\n", length(serials), pluralStr(serials));
         components = [daqs cameras serials];
 
