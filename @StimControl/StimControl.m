@@ -153,7 +153,7 @@ methods (Access = private)
         fprintf("\t Found %d camera%s\n", length(cameras), pluralStr(cameras));
         serials = SerialComponent.FindAll();
         fprintf("\t found %d serial device%s\n", length(serials), pluralStr(serials));
-        components = cameras;
+        components = [daqs cameras serials];
 
         for ci = 1:length(components)
             comp = components{ci};

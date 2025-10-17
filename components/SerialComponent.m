@@ -72,8 +72,6 @@ function SaveAuxiliaryConfig(obj, filepath)
     return;
 end
 
-% Start device. For synchronisation reasons, should only be used for
-% self-triggered devices and 
 function StartTrial(obj)
 
 end
