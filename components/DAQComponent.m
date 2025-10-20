@@ -478,74 +478,36 @@ function stim = GenerateStim(obj, params, stimName, stimLength, tPreLength, chId
         case 'thermode'
             % vibration stim
             stim(tpreLength:tPreLength+durationTicks) = 1;
+            
             % NB the start pulse has to be called separately.
         case 'arbitrary'
-            
+            % pwm = StimGenerator.pwm(...
+            %         'sampleRate', obj.SessionHandle.Rate, ...
+            %         'totalTicks', durationTicks, ...
+            %         'rampUp', params.RampUp, ...
+            %         'rampDown', params.RampDown, ...
+            %         'frequency', params.Frequency, ...
+            %         'dutyCycle', params.DC);
+            %     stim(delay:delay+durationTicks) = pwm;
         case 'pwm'
             r = regexpi(fields(params), 'Ramp');
             ramp = ~isempty([r{:}]);
             if (ramp && params.RampUp > 0 && params.RampDown > 0) ...
                     || any(~strcmpi([obj.SessionHandle.Channels(chIdxes).Type], 'Counter')) %todo not sure if this is the correct string to compare
-                if isfield(params, 'RampUp') && params.RampUp + params.RampDown > params.Duration
-                    error('invalid parameters for stimulus %s: ramp duration must fit within overall duration', stimName);
+                if ~isfield(params, 'RampDown')
+                    params.RampDown = 0;
                 end
-                periodTicks = round(rate/params.Frequency); % period in ticks
-                onTicks = round(periodTicks*(params.DutyCycle/100));
-                totalPeriods = floor(durationTicks / periodTicks);
-                if ramp
-                    rampUpPeriods = round(MsToTicks(params.RampUp) / periodTicks); %TODO SIMPLIFY
-                    rampUpTickIncrease = onTicks / rampUpPeriods;
-                    rampDownPeriods = round(MsToTicks(params.RampDown) / periodTicks); %TODO SIMPLIFY
-                    rampDownTickDecrease = onTicks / rampDownPeriods;
-                else
-                    rampUpPeriods = 0;
-                    rampDownPeriods = 0;
+                if ~isfield(params, 'RampUp')
+                    params.RampUp = 0;
                 end
-                highPeriods = totalPeriods - (rampUpPeriods + rampDownPeriods);
-                offset = delay + startTPost*tPreLength;
-                % generate stim
-                singleStim = zeros(1, durationTicks);
-                if ramp
-                    % ramp up
-                    for i = offset:rampUpPeriods:periodTicks
-                        singleStim(i:i+round(rampUpTickIncrease * i)) = 1;
-                    end
-                    st = rampUpPeriods*periodTicks + 1;
-                else
-                    st = offset;
-                end
-                % max DC
-                for i = st:st + highPeriods:periodTicks
-                    singleStim(i:i+onTicks) = 1;
-                end
-                st = st + (highPeriods * periodTicks);
-                % ramp down
-                if ramp
-                    for i = st:st + rampUpPeriods:periodTicks
-                        singleStim(i:i+round(onTicks - (rampDownTickDecrease * i))) = 1;
-                    end
-                end
-                if isfield(params, 'RepDel')
-                    repdelTicks = MsToTicks(params.RepDel);
-                    nRepeats = params.rep;
-                else
-                    repdelTicks = 0;
-                    nRepeats = 1;
-                end
-                totalDurTicks = (repdelTicks + durationTicks) * nRepeats;
-                if length(singleStim) == length(stim)
-                    stim = singleStim;
-                elseif length(singleStim) > length(stim)
-                    stim = singleStim(1:length(stim));
-                else
-                    maxLength = length(singleStim);
-                    for i = offset:offset+totalDurTicks:durationTicks+maxLength
-                        % if i + stimBlockLength - 1 <= stimLength
-                        %     stim(i : i + stimBlockLength - 1) = singleStim;
-                        % end
-                        stim(i:i+numel(singleStim)-1) = singleStim;
-                    end
-                end
+                pwm = StimGenerator.pwm(...
+                    'sampleRate', obj.SessionHandle.Rate, ...
+                    'totalTicks', durationTicks, ...
+                    'rampUp', params.RampUp, ...
+                    'rampDown', params.RampDown, ...
+                    'frequency', params.Frequency, ...
+                    'dutyCycle', params.DC);
+                stim(delay:delay+durationTicks) = pwm;
             end
             % initialise counter channels
             for ci = 1:length(chIdxes)

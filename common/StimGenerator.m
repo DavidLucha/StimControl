@@ -4,6 +4,8 @@ methods (Static, Access=public)
 
 
 function stimBlock = GenerateStimBlock(varargin)
+    %%IN PROGRESS
+
     % Generates a stim block of given length
     % PARAMS:
     %     sampleRate (double=1000): sample rate of output array (Hz)
@@ -13,6 +15,20 @@ function stimBlock = GenerateStimBlock(varargin)
     %     repDel
     %     oddball bool true
     %     display (logical, false)
+        % Generates a stimulus given arguments.
+    % PARAMS: 
+    %   stimulusData      (struct): 
+    %   blockData         (struct): 
+            % nStims
+            % repDel
+            % oddball
+            % tStart
+    %   genericData       (struct): 
+            % tPre
+            % tPost
+    %   fieldName         (string): 
+    %   sampleRate        (double): 
+    %   Aurorasf          (double): 
         
     p = inputParser();
     addParameter(p, 'sampleRate', 1000, @(x) isnumeric(x));
@@ -45,6 +61,32 @@ function stimBlock = GenerateStimBlock(varargin)
     %         stim(i:i+numel(stim)-1) = stim;
     %     end
     % end
+end
+
+function stim = GenerateStim(varargin)
+    % Generates a stimulus given arguments.
+    % PARAMS: 
+    %   stimulusData      (struct): 
+    %   genericTrialData  (struct): 
+    %   fieldName         (string): 
+    %   sampleRate        (double): 
+    %   Aurorasf          (double): 
+
+    p = inputParser();
+    addinput(p, stimulusData, [], @(x) isstruct(x));
+    addinput(p, genericTrialData, [], @(x) isstruct(x));
+    addinput(p, fieldName, [], @(x) ischar(x) || isstring(x));
+    addinput(p, sampleRate, 1000, @(x) isnumeric(x));
+    addinput(p, Aurorasf, 52, @(x) isnumeric(x));
+    p.parse(varargin{:});
+    params = p.Results;
+
+    stimData = params.stimulusData;
+    trialData = params.trialData;
+    stimName = params.fieldName;
+    rate = params.sampleRate;
+    Aurorasf = params.Aurorasf;
+
 end
 
 function stim = pwm(varargin)
@@ -331,11 +373,54 @@ function stim = digitaltrigger(varargin)
 end
 
 function stim = arbitrarystim(varargin)
+    % Generates a digital trigger stim
+    % PARAMS:
+    %     sampleRate (double=1000): sample rate of output array (Hz)
+    %     duration   (double=1000): duration of output (ms)
+    %     totalTicks (double=1000): duration of output in total ticks. Alternative to duration. 
+    %                       When both are defined, duration will be limited to within totalTicks. 
+    %     interpolate(logical=false): whether to interpolate or remove entries to match the totalTicks
+    %     filename (string=''): the location of the file to read from
+    %     display (logical=false): whether to display the output
 
-end
+    p = inputParser();
+    addParameter(p, 'sampleRate', 1000, @(x) isnumeric(x));
+    addParameter(p, 'totalTicks', 1000, @(x) isnumeric(x));
+    addParameter(p, 'duration', -1, @(x) isnumeric(x));
+    addParameter(p, 'interpolate', false, @(x) islogical(x));
+    addParameter(p, 'filename', '', @(x) ischar(x) || isstring(x));
+    addParameter(p, 'name', 'arbitrary');
+    addParameter(p, 'display', false, @(x) islogical(x));
+    parse(p, varargin{:});
+    params = p.Results;
 
-function stim = constantvalue(varargin)
+    stim = readmatrix(params.filename);
+    if ~ismember('sampleRate', p.UsingDefaults) ...
+        || ~ismember('totalTicks', p.UsingDefaults) ...
+        || ~ismember('duration', p.UsingDefaults)
+        if params.duration ~= -1
+            expectedTicks = round(params.duration * params.sampleRate / 1000);
+        else
+            expectedTicks = params.totalTicks;
+        end
+        if length(mat) ~= expectedTicks
+            if params.interpolate
+                warning("Given stimulus %s does not have an appropriate number of samples for %s ticks at %s rate. Interpolating...", params.filename, expectedTicks, params.sampleRate);
+                % TODO INTERP1 https://au.mathworks.com/help/matlab/ref/double.interp1.html
+                if length(mat) > expectedTicks
 
+                else
+
+                end
+            else
+                error("Given stimulus %s does not have an appropriate number of samples for %s ticks at %s rate, and interpolation was set to false.", params.filename, expectedTicks, params.sampleRate);
+            end
+        end
+    end
+
+    if params.display
+        StimGenerator.show(stim);
+    end
 end
 
 function stim = thermalpreview(varargin)
