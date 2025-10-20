@@ -219,7 +219,49 @@ function stim = sinewave(varargin)
 end
 
 function stim = analognoise(varargin)
+    % Generate analog noise.
+    % PARAMS:
+    %     sampleRate (double=1000): sample rate of output array (Hz)
+    %     duration   (double=1000): duration of output (ms)
+    %     totalTicks (double=1000): duration of output in total ticks. Alternative to duration. 
+    %                       When both are defined, duration will be limited to within totalTicks. 
+    %     maxAmplitude  (double=5): maximum amplitude of the signal (V)
+    %     minAmplitude  (double=-5): minimum amplitude of the signal (V)
+    %     distribution  (string='uniform'): random distribution to use
+    p = inputParser();
+    addParameter(p, 'sampleRate', 1000, @(x) isnumeric(x));
+    addParameter(p, 'totalTicks', 1000, @(x) isnumeric(x));
+    addParameter(p, 'duration', -1, @(x) isnumeric(x));
+    addParameter(p, 'maxAmplitude', 5, @(x) isnumeric(x));
+    addParameter(p, 'minAmplitude', -5, @(x) isnumeric(x));
+    addParameter(p, 'distribution', 'uniform', @(x) ischar(x) || isstring(x));
+    addParameter(p, 'name', 'noise');
+    addParameter(p, 'display', false, @(x) islogical(x));
+    parse(p, varargin{:});
+    params = p.Results;
+    
+    if params.duration ~= -1
+        len = StimGenerator.MsToTicks(params.duration, params.sampleRate);
+    else
+        len = params.totalTicks;
+    end
 
+    switch params.distribution
+        case 'normal'
+            p = 6;
+            stim = sum(rand(len,p),2)/p;
+        case 'uniform'
+            stim = rand([len 1]);
+        otherwise
+            error("Invalid distribution: %s", params.distribution);
+    end
+    mul = (params.maxAmplitude - params.minAmplitude);
+    stim = stim * mul;
+    stim = stim + params.minAmplitude;
+    
+    if params.display
+        StimGenerator.show(stim);
+    end
 end
 
 function stim = squarewave(varargin)
