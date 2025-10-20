@@ -173,14 +173,14 @@ function stim = analogpulse(varargin)
 end
 
 function stim = sinewave(varargin)
-% Generates an analog sinewave stim of given length
+    % Generates an analog sinewave stim of given length
     % PARAMS:
     %     sampleRate (double=1000): sample rate of output array (Hz)
     %     duration   (double=1000): duration of output (ms)
     %     totalTicks (double=1000): duration of output in total ticks. Alternative to duration. 
     %                       When both are defined, duration will be limited to within totalTicks. 
     %     amplitude  (double=5): peak-peak amplitude of the signal (V)
-    %     frequency  (double=0): wave frequency
+    %     frequency  (double=30): wave frequency
     %     phase      (double=0): phase shift, radians
     %     constant   (double or vector = 0): constant term over course of sample. 
     %                       Must be of length totalTicks or a double
@@ -223,10 +223,68 @@ function stim = analognoise(varargin)
 end
 
 function stim = squarewave(varargin)
+    % Generates a squarewave stim
+    % PARAMS:
+    %     sampleRate (double=1000): sample rate of output array (Hz)
+    %     duration   (double=1000): duration of output (ms)
+    %     totalTicks (double=1000): duration of output in total ticks. Alternative to duration. 
+    %                       When both are defined, duration will be limited to within totalTicks. 
+    %     frequency  (double=30): wave frequency (Hz)
+    %     maxAmp     (double=5): maximum amplitude (V)
+    %     minAmp     (double=-5): minimum amplitude (V)
+    p = inputParser();
+    addParameter(p, 'sampleRate', 1000, @(x) isnumeric(x));
+    addParameter(p, 'totalTicks', 1000, @(x) isnumeric(x));
+    addParameter(p, 'duration', -1, @(x) isnumeric(x));
+    addParameter(p, 'frequency', 30, @(x) isnumeric(x) && x>0);
+    addParameter(p, 'maxAmp', 5, @(x) isnumeric(x));
+    addParameter(p, 'minAmp', 0, @(x) isnumeric(x));
+    addParameter(p, 'name', 'squareWave');
+    addParameter(p, 'display', false, @(x) islogical(x));
+    parse(p, varargin{:});
+    params = p.Results;
 
+    stim = StimGenerator.GetBase(params.totalTicks, params.durationMs, params.sampleRate);
+    pulseTicks = round(params.sampleRate/params.frequency);
+    stim = stim+params.minAmp;
+    for i = 1:pulseTicks:length(stim)
+        stim(i:i+round(pulseTicks/2)) = params.maxAmp;
+    end
+
+    if params.display
+        StimGenerator.show(stim);
+    end
 end
 
 function stim = digitaltrigger(varargin)
+    % Generates a digital trigger stim
+    % PARAMS:
+    %     sampleRate (double=1000): sample rate of output array (Hz)
+    %     duration   (double=1000): duration of output (ms)
+    %     totalTicks (double=1000): duration of output in total ticks. Alternative to duration. 
+    %                       When both are defined, duration will be limited to within totalTicks. 
+    %     frequency  (double=30): wave frequency
+
+    p = inputParser();
+    addParameter(p, 'sampleRate', 1000, @(x) isnumeric(x));
+    addParameter(p, 'totalTicks', 1000, @(x) isnumeric(x));
+    addParameter(p, 'duration', -1, @(x) isnumeric(x));
+    addParameter(p, 'frequency', 30, @(x) isnumeric(x) && x>0);
+    addParameter(p, 'name', 'digitalTrigger');
+    addParameter(p, 'display', false, @(x) islogical(x));
+    parse(p, varargin{:});
+    params = p.Results;
+
+    stim = StimGenerator.GetBase(params.totalTicks, params.durationMs, params.sampleRate);
+    pulseTicks = round(params.sampleRate/params.frequency);
+
+    for i = 1:pulseTicks:length(stim)
+        stim(i:i+round(pulseTicks/2)) = 1;
+    end
+
+    if params.display
+        StimGenerator.show(stim);
+    end
 
 end
 
