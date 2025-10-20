@@ -2,6 +2,51 @@ classdef StimGenerator
 
 methods (Static, Access=public)
 
+
+function stimBlock = GenerateStimBlock(varargin)
+    % Generates a stim block of given length
+    % PARAMS:
+    %     sampleRate (double=1000): sample rate of output array (Hz)
+    %     nStims (double = 1): number of times to repeat the stim within the block
+    %     stimParams
+    %     stims (exclusive with stimParams)
+    %     repDel
+    %     oddball bool true
+    %     display (logical, false)
+        
+    p = inputParser();
+    addParameter(p, 'sampleRate', 1000, @(x) isnumeric(x));
+    addParameter(p, 'nStims', 1, @(x) isnumeric(x));
+    addParameter(p, 'stimParams', [], @(x) isstruct(x));
+    addParameter(p, 'repDel', 0, @(x) isnumeric(x) && x >=0);
+    addParameter(p, 'display', false, @(x) islogical(x));
+    parse(p, varargin{:});
+    params = p.Results;
+        % offset = delay + startTPost*tPreLength;
+
+ % if isfield(params, 'RepDel')
+    %     repdelTicks = MsToTicks(params.RepDel);
+    %     nRepeats = params.rep;
+    % else
+    %     repdelTicks = 0;
+    %     nRepeats = 1;
+    % end
+    % totalDurTicks = (repdelTicks + durationTicks) * nRepeats;
+    % if length(stim) == length(stim)
+    %     stim = stim;
+    % elseif length(stim) > length(stim)
+    %     stim = stim(1:length(stim));
+    % else
+    %     maxLength = length(stim);
+    %     for i = offset:offset+totalDurTicks:durationTicks+maxLength
+    %         % if i + stimBlockLength - 1 <= stimLength
+    %         %     stim(i : i + stimBlockLength - 1) = singleStim;
+    %         % end
+    %         stim(i:i+numel(stim)-1) = stim;
+    %     end
+    % end
+end
+
 function stim = pwm(varargin)
     % Generates a PWM stim of given length
     % PARAMS:
@@ -29,7 +74,7 @@ function stim = pwm(varargin)
     if ~contains(p.UsingDefaults, 'totalTicks')
         stim = StimGenerator.GetBaseFromTicks(params.totalTicks);
     elseif params.duration ~= -1
-        stim = StimGenerator.GetBaseFromDuration(params.duration, params.SampleRate);
+        stim = StimGenerator.GetBaseFromDuration(params.duration, params.sampleRate);
     else
         error('please specify either the total stimulus ticks or the stimulus duration')
     end
@@ -43,60 +88,52 @@ function stim = pwm(varargin)
     onTicks = round(periodTicks*(params.dutyCycle/100));
     totalPeriods = floor(durationTicks / periodTicks);
     if params.rampUp > 0 || params.rampDown > 0
-        rampUpPeriods = round(StimGenerator.MsToTicks(params.rampUp) / periodTicks); %TODO SIMPLIFY
-        rampUpTickIncrease = onTicks / rampUpPeriods;
-        rampDownPeriods = round(StimGenerator.MsToTicks(params.rampDown) / periodTicks); %TODO SIMPLIFY
-        rampDownTickDecrease = onTicks / rampDownPeriods;
+        rampUpPeriods = round(StimGenerator.MsToTicks(params.rampUp, params.sampleRate) / periodTicks); %TODO SIMPLIFY
+        rampDownPeriods = round(StimGenerator.MsToTicks(params.rampDown, params.sampleRate) / periodTicks); %TODO SIMPLIFY
     else
         rampUpPeriods = 0;
         rampDownPeriods = 0;
     end
     highPeriods = totalPeriods - (rampUpPeriods + rampDownPeriods);
-    % offset = delay + startTPost*tPreLength;
     % generate stim
-    if params.rampUp > 0 || params.rampDown > 0
-        % ramp up
-        for i = 1:rampUpPeriods:periodTicks
-            stim(i:i+round(rampUpTickIncrease * i)) = 1;
+    jj = 1;
+    for i = 1:periodTicks:length(stim)
+        if jj <= rampUpPeriods
+            numOnTicks = round(onTicks/(rampUpPeriods+1))*jj;
+        elseif jj > totalPeriods-rampDownPeriods
+            tmp = (1+totalPeriods)-jj;
+            numOnTicks = round(onTicks/(rampDownPeriods+1))*tmp;
+        else
+            numOnTicks = onTicks;
         end
-        st = rampUpPeriods*periodTicks + 1;
-    else
-        st = 1;
+       stim(i:i+numOnTicks) = 1;
+       fprintf("%d %d %d \r\n", jj, i, numOnTicks);
+       jj = jj+1; 
     end
-    % max DC
-    for i = st:periodTicks:(st + highPeriods)*periodTicks
-        stim(i:i+onTicks) = 1;
-    end
-    st = st + (highPeriods * periodTicks);
-    % ramp down
-    if params.rampUp > 0 || params.rampDown > 0
-        for i = st:st + rampUpPeriods:periodTicks
-            stim(i:i+round(onTicks - (rampDownTickDecrease * i))) = 1;
-        end
-    end
-    %todo this is DODGYYY
-    stim = stim(1:durationTicks);
-    % if isfield(params, 'RepDel')
-    %     repdelTicks = MsToTicks(params.RepDel);
-    %     nRepeats = params.rep;
+    % if params.rampUp > 0
+    %     % ramp up
+    %     jj = 1;
+    %     for i = 1:periodTicks:rampUpPeriods*periodTicks
+    %         stim(i:i+round(rampUpTickIncrease * jj)) = 1;
+    %         jj = jj+1;
+    %     end
+    %     st = rampUpPeriods*periodTicks + 1;
     % else
-    %     repdelTicks = 0;
-    %     nRepeats = 1;
+    %     st = 1;
     % end
-    % totalDurTicks = (repdelTicks + durationTicks) * nRepeats;
-    % if length(stim) == length(stim)
-    %     stim = stim;
-    % elseif length(stim) > length(stim)
-    %     stim = stim(1:length(stim));
-    % else
-    %     maxLength = length(stim);
-    %     for i = offset:offset+totalDurTicks:durationTicks+maxLength
-    %         % if i + stimBlockLength - 1 <= stimLength
-    %         %     stim(i : i + stimBlockLength - 1) = singleStim;
-    %         % end
-    %         stim(i:i+numel(stim)-1) = stim;
+    % % max DC
+    % for i = st:periodTicks:st+(highPeriods*periodTicks)
+    %     stim(i:i+onTicks) = 1;
+    % end
+    % st = st + (highPeriods * periodTicks);
+    % % ramp down
+    % if params.rampDown > 0
+    %     for i = st:periodTicks:st + rampDownPeriods
+    %         stim(i:i+round(onTicks - (rampDownTickDecrease * i))) = 1;
     %     end
     % end
+    %todo this is DODGYYY
+    stim = stim(1:durationTicks);
     if params.display
         StimGenerator.show(stim);
     end
@@ -111,8 +148,9 @@ function stim = digitalpulse(varargin)
     %         When both are defined, duration will be limited to within totalTicks. 
     p = inputParser();
     addParameter(p, 'display', false, @(x) islogical(x));
-    addParameter(p, '')
-    addParameter()
+    addParameter(p, 'sampleRate', 1000, @(x) isnumeric(x));
+    addParameter(p, 'totalTicks', 1000, @(x) isnumeric(x));
+    addParameter(p, 'duration', -1, @(x) isnumeric(x));
 
     if params.display
         StimGenerator.show(stim);
@@ -128,7 +166,8 @@ function stim = analogpulse(varargin)
     %         When both are defined, duration will be limited to within totalTicks. 
     %     rampUp     (double=0): duration of any up ramping (ms), must fall within total duration
     %     rampDown   (double=0): duration of any down ramping (ms), must fall within total duration
-    %     amplitude  (double=5): amplitude of the pulse, V
+    %     maxAmp     (double=5): maximum amplitude of the pulse, V
+    %     minAmp     (double=0): minimum of the pulse, V
 
     p = inputParser();
     addParameter(p, 'sampleRate', 1000, @(x) isnumeric(x));
@@ -136,23 +175,27 @@ function stim = analogpulse(varargin)
     addParameter(p, 'duration', -1, @(x) isnumeric(x));
     addParameter(p, 'rampUp', 0, @(x) isnumeric(x));
     addParameter(p, 'rampDown', 0, @(x) isnumeric(x));
-    addParameter(p, 'frequency', 30, @(x) isnumeric(x));
-    addParameter(p, 'dutyCycle', 50, @(x) isnumeric(x));
+    addParameter(p, 'maxAmp', 5, @(x) isnumeric(x));
+    addParameter(p, 'minAmp', 0, @(x) isnumeric(x));
     addParameter(p, 'name', 'analogPulse');
     addParameter(p, 'display', false, @(x) islogical(x));
     parse(p, varargin{:});
     params = p.Results;
-    if ~contains(p.UsingDefaults, 'totalTicks')
-        stim = StimGenerator.GetBaseFromTicks(totalTicks);
-    elseif params.duration ~= -1
+    if params.duration ~= -1
         stim = StimGenerator.GetBaseFromDuration(params.duration, params.SampleRate);
     else
-        error('please specify either the total stimulus ticks or the stimulus duration')
+        stim = StimGenerator.GetBaseFromTicks(totalTicks);
     end
     if (params.duration > 0 && params.rampUp + params.rampDown > params.duration) ...
-        || (params.duration == -1 && (params.rampUp + params.RampDown > StimGenerator.TicksToMs(params.totalTicks, params.sampleRate)))
+        || (params.duration == -1 && (params.rampUp + params.RampDown > StimGenerator.TicksToMs(length(stim), params.sampleRate)))
         error('invalid parameters for stimulus: ramp duration must fit within overall duration');
     end
+
+    rampUpTicks = StimGenerator.MsToTicks(params.rampUp, params.sampleRate);
+    rampDownTicks = StimGenerator.MsToTicks(params.rampDown, params.sampleRate);
+    stim(1:rampUpTicks+1) = linspace(params.minAmp, params.maxAmp, rampUpTicks);
+    stim(rampUpTicks+1:length(stim)-rampDownTicks) = params.maxAmp;
+    stim(end-rampDownTicks:end) = linspace(params.maxAmp, params.minAmp, rampDownTicks);
 
     %% TODO
     if params.display
@@ -273,13 +316,13 @@ function out = GetBaseFromTicks(totalTicks)
 end
 
 function out = GetBaseFromDuration(durationMs, sampleRate)
-    out = zeros(round(MsToTicks(durationMs, sampleRate)), 1);
+    out = zeros(round(StimGenerator.MsToTicks(durationMs, sampleRate)), 1);
 end
 
 function p = show(stim)
     tax = linspace(1, length(stim), length(stim));
     p = plot(tax, stim);
-    p.YLim = [min(stim) max(stim)] + [-1 1]*max([range(stim)*.1 .5]);
+    % p.YLim = [min(stim) max(stim)] + [-1 1]*max([range(stim)*.1 .5]);
 end
 end
 end
