@@ -71,13 +71,7 @@ function stim = pwm(varargin)
     addParameter(p, 'display', false, @(x) islogical(x));
     parse(p, varargin{:});
     params = p.Results;
-    if ~contains(p.UsingDefaults, 'totalTicks')
-        stim = StimGenerator.GetBaseFromTicks(params.totalTicks);
-    elseif params.duration ~= -1
-        stim = StimGenerator.GetBaseFromDuration(params.duration, params.sampleRate);
-    else
-        error('please specify either the total stimulus ticks or the stimulus duration')
-    end
+    stim = StimGenerator.GetBase(params.totalTicks, params.duration, params.sampleRate);
     if (params.duration > 0 && params.rampUp + params.rampDown > params.duration) ...
         || (params.duration == -1 && (params.rampUp + params.rampDown > StimGenerator.TicksToMs(params.totalTicks, params.sampleRate)))
         error('invalid parameters for stimulus: ramp duration must fit within overall duration');
@@ -110,29 +104,6 @@ function stim = pwm(varargin)
        fprintf("%d %d %d \r\n", jj, i, numOnTicks);
        jj = jj+1; 
     end
-    % if params.rampUp > 0
-    %     % ramp up
-    %     jj = 1;
-    %     for i = 1:periodTicks:rampUpPeriods*periodTicks
-    %         stim(i:i+round(rampUpTickIncrease * jj)) = 1;
-    %         jj = jj+1;
-    %     end
-    %     st = rampUpPeriods*periodTicks + 1;
-    % else
-    %     st = 1;
-    % end
-    % % max DC
-    % for i = st:periodTicks:st+(highPeriods*periodTicks)
-    %     stim(i:i+onTicks) = 1;
-    % end
-    % st = st + (highPeriods * periodTicks);
-    % % ramp down
-    % if params.rampDown > 0
-    %     for i = st:periodTicks:st + rampDownPeriods
-    %         stim(i:i+round(onTicks - (rampDownTickDecrease * i))) = 1;
-    %     end
-    % end
-    %todo this is DODGYYY
     stim = stim(1:durationTicks);
     if params.display
         StimGenerator.show(stim);
@@ -151,7 +122,10 @@ function stim = digitalpulse(varargin)
     addParameter(p, 'sampleRate', 1000, @(x) isnumeric(x));
     addParameter(p, 'totalTicks', 1000, @(x) isnumeric(x));
     addParameter(p, 'duration', -1, @(x) isnumeric(x));
-
+    parse(p, varargin{:});
+    params = p.Results;
+    stim = StimGenerator.GetBase(params.totalTicks, params.duration, params.sampleRate);
+    stim = ones(length(stim), 1);
     if params.display
         StimGenerator.show(stim);
     end
@@ -181,11 +155,7 @@ function stim = analogpulse(varargin)
     addParameter(p, 'display', false, @(x) islogical(x));
     parse(p, varargin{:});
     params = p.Results;
-    if params.duration ~= -1
-        stim = StimGenerator.GetBaseFromDuration(params.duration, params.SampleRate);
-    else
-        stim = StimGenerator.GetBaseFromTicks(totalTicks);
-    end
+    stim = StimGenerator.GetBase(params.totalTicks, params.duration, params.sampleRate);
     if (params.duration > 0 && params.rampUp + params.rampDown > params.duration) ...
         || (params.duration == -1 && (params.rampUp + params.RampDown > StimGenerator.TicksToMs(length(stim), params.sampleRate)))
         error('invalid parameters for stimulus: ramp duration must fit within overall duration');
@@ -197,13 +167,74 @@ function stim = analogpulse(varargin)
     stim(rampUpTicks+1:length(stim)-rampDownTicks) = params.maxAmp;
     stim(end-rampDownTicks:end) = linspace(params.maxAmp, params.minAmp, rampDownTicks);
 
-    %% TODO
     if params.display
         StimGenerator.show(stim);
     end
 end
 
 function stim = sinewave(varargin)
+% Generates an analog sinewave stim of given length
+    % PARAMS:
+    %     sampleRate (double=1000): sample rate of output array (Hz)
+    %     duration   (double=1000): duration of output (ms)
+    %     totalTicks (double=1000): duration of output in total ticks. Alternative to duration. 
+    %                       When both are defined, duration will be limited to within totalTicks. 
+    %     amplitude  (double=5): peak-peak amplitude of the signal (V)
+    %     frequency  (double=0): wave frequency
+    %     phase      (double=0): phase shift, radians
+    %     constant   (double or vector = 0): constant term over course of sample. 
+    %                       Must be of length totalTicks or a double
+    %     amplitudeMod (vector = 1): modifications for amplitude over the course of the sample. 
+    %                       Must be of length totalTicks.
+
+    p = inputParser();
+    addParameter(p, 'sampleRate', 1000, @(x) isnumeric(x));
+    addParameter(p, 'totalTicks', 1000, @(x) isnumeric(x));
+    addParameter(p, 'duration', -1, @(x) isnumeric(x));
+    addParameter(p, 'frequency', 30, @(x) isnumeric(x));
+    addParameter(p, 'phase', 0, @(x) isnumeric(x));
+    addParameter(p, 'amplitude', 5, @(x) isnumeric(x));
+    addParameter(p, 'constant', 0, @(x) isnumeric(x));
+    addParameter(p, 'amplitudeMod', 1, @(x) isnumeric(x));
+    addParameter(p, 'name', 'sinewave');
+    addParameter(p, 'display', false, @(x) islogical(x));
+    parse(p, varargin{:});
+    params = p.Results;
+    if params.duration ~= -1
+        N = params.duration * params.sampleRate;
+        dur = params.duration;
+    else
+        N = params.totalTicks;
+        dur = StimGenerator.TicksToMs(params.totalTicks, params.sampleRate) / 1000;
+    end
+    tax = linspace(0, dur, N);
+    stim = sin(2*pi*params.frequency*tax + params.phase);
+    stim = stim * params.amplitude;
+    stim = stim + params.constant;
+    stim = stim .* params.amplitudeMod;
+
+    if params.display
+        StimGenerator.show(stim);
+    end
+end
+
+function stim = analognoise(varargin)
+
+end
+
+function stim = squarewave(varargin)
+
+end
+
+function stim = digitaltrigger(varargin)
+
+end
+
+function stim = arbitrarystim(varargin)
+
+end
+
+function stim = constantvalue(varargin)
 
 end
 
@@ -311,12 +342,13 @@ function out = TicksToMs(x, rate)
     out = x*1000/rate;
 end
 
-function out = GetBaseFromTicks(totalTicks)
-    out = zeros(totalTicks, 1);
-end
-
-function out = GetBaseFromDuration(durationMs, sampleRate)
-    out = zeros(round(StimGenerator.MsToTicks(durationMs, sampleRate)), 1);
+function out = GetBase(totalTicks, durationMs, sampleRate)
+    % contains(p.UsingDefaults, 'totalTicks')
+    if durationMs ~= -1
+        out = zeros(round(StimGenerator.MsToTicks(durationMs, sampleRate)), 1);
+    else
+        out = zeros(totalTicks, 1);
+    end
 end
 
 function p = show(stim)
