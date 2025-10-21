@@ -407,11 +407,9 @@ function stim = arbitrarystim(varargin)
             if params.interpolate
                 warning("Given stimulus %s does not have an appropriate number of samples for %s ticks at %s rate. Interpolating...", params.filename, expectedTicks, params.sampleRate);
                 % TODO INTERP1 https://au.mathworks.com/help/matlab/ref/double.interp1.html
-                if length(mat) > expectedTicks
-
-                else
-
-                end
+                samplePoints = linspace(1, length(mat), length(mat));
+                queryPoints = linspace(1, length(mat), expectedTicks);
+                stim = interp1(samplePoints, mat, queryPoints);
             else
                 error("Given stimulus %s does not have an appropriate number of samples for %s ticks at %s rate, and interpolation was set to false.", params.filename, expectedTicks, params.sampleRate);
             end
@@ -420,6 +418,54 @@ function stim = arbitrarystim(varargin)
 
     if params.display
         StimGenerator.show(stim);
+    end
+end
+
+function stim = piezostim(varargin)
+    % Generates a digital trigger stim
+    % PARAMS:
+    %     sampleRate (double=1000): sample rate of output array (Hz)
+    %     duration   (double=1000): duration of output (ms)
+    %     totalTicks (double=1000): duration of output in total ticks. Alternative to duration. 
+    %                       When both are defined, duration will be limited to within totalTicks. 
+    %     ramp      (double=20): stimulus ramp
+    %     amplitude      (double=5): stimulus max amplitude (V)
+    %     frequency      (double=20): frequency of stimulus (Hz)
+    %     nStims      (double=1): how many times to run the stimulus in this block
+    %     filename (string=''): the location of the file to read from
+    %     display (logical=false): whether to display the output
+
+    p = inputParser();
+    addParameter(p, 'sampleRate', 1000, @(x) isnumeric(x));
+    addParameter(p, 'totalTicks', 1000, @(x) isnumeric(x));
+    addParameter(p, 'duration', -1, @(x) isnumeric(x));
+    addParameter(p, 'ramp', 20, @(x) isnumeric(x));
+    addParameter(p, 'amplitude', 5, @(x) isnumeric(x));
+    addParameter(p, 'duration', 20, @(x) isnumeric(x));
+    addParameter(p, 'frequency', 20, @(x) isnumeric(x));
+    addParameter(p, 'nStims', 1, @(x) isnumeric(x) && x>=0);
+    addParameter(p, 'name', 'piezo');
+    addParameter(p, 'display', false, @(x) islogical(x));
+    parse(p, varargin{:});
+    params = p.Results;
+
+    stim = StimGenerator.GetBase(params.totalTicks, params.durationMs, params.sampleRate);
+
+    ramp = params.ramp;
+    piezoAmp = params.amplitude * Aurorasf; piezoAmp = min([piezoAmp 9.5]);  %added a safety block here 2024.11.15
+    piezostimunitx = -ramp:ramp;
+    piezostimunity = normpdf(piezostimunitx,0,3);
+    piezostimunity = piezostimunity./max(piezostimunity);
+    piezohold = ones(1,piezoDur);
+    piezostimunity = [piezostimunity(1:ramp) piezohold piezostimunity(ramp+1:end)];
+    
+    if params.nStims>0
+        for pp = 1:params.nStims
+            pos1 = (pp-1) .*(1/params.frequency) ; % in seconds
+            tloc = find(tax>=pos1); tloc = tloc(1);
+            stim(tloc:tloc+numel(piezostimunity)-1) = stim(tloc:tloc+numel(piezostimunity)-1)+piezostimunity;
+        end
+        stim = piezostim.*piezoAmp;
     end
 end
 
