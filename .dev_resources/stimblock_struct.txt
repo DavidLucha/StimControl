@@ -35,3 +35,7 @@ stimParams
     targetDevices
     type
     isAcquisitionTrigger (bool, if true start at tPre)
+
+****struct of ProtocolID: trialInformation****
+realistically all we need at the moment.
+trialInformation should all include stimParams fields plus individual ones.
