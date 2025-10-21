@@ -1,0 +1,37 @@
+s (session)
+    enabledDevices
+
+g (general)
+    nProtRuns (int)
+    randomise (int)
+    dPause    (int, sec)
+    trials    (nx1 cell array of trials - t struct)
+        can also define tPre tPost and nTrialRuns but they get applied to t directly
+
+t (trial info)
+    root (StimBlock)
+    tPre (int, ms)
+    tPost (int, ms)
+    nTrialRuns (int)
+    comment (string)
+
+StimBlock (node > handle)
+attributes
+    parent (StimBlock)
+    children (cell array of StimBlocks)
+    relationship (char, single/oddball/simultaneous/sequential)
+    repDel (int, ms)
+    startDel (int, ms)
+    nStimRuns (int)
+    stimParams (struct, see stimParams)
+methods
+    generateStim (if isstim, generate, else call child.generate for each child and then arrange)
+    getChildren
+    generateDAQTrial (returns table of componentProtocolID | channelID (stimID) | stimTrain)
+    generateHardwareTrial (returns struct of ProtocolID: trialInformation)
+    
+stimParams
+    identifier (name)
+    targetDevices
+    type
+    isAcquisitionTrigger (bool, if true start at tPre)

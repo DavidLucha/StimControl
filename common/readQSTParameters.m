@@ -187,8 +187,9 @@ for idxStim = 1:length(lines)
     end
 end
 p(idxStim+1:end) = [];
-
+[p, g] = GetStimControlParameters(p, g);
 end
+
 
 
 function p = parseThermode(p,token,idxStim,fnThermodes)
@@ -283,6 +284,11 @@ if value<range(1) || value>range(2)
         'range for %s: ' x '-' x ')'],token,idxStim,format,...
         repmat('X',1,length(pos)),range(1),range(2))
 end
+end
+
+function [p, g] = GetStimControlParameters(p, g)
+    %todo
+    disp("todo")
 end
 
 
