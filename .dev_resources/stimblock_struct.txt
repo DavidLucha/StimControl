@@ -3,22 +3,25 @@ s (session)
 
 g (general)
     nProtRuns (int)
-    randomise (int)
+    rand      (int)
     dPause    (int, sec)
-    trials    (nx1 cell array of trials - t struct)
         can also define tPre tPost and nTrialRuns but they get applied to t directly
 
 t (trial info)
-    root (StimBlock)
     tPre (int, ms)
     tPost (int, ms)
     nTrialRuns (int)
     comment (string)
 
-StimBlock (node > handle)
+s (stimuli)
+    1 x n cell array where each entry is a 1 x m cell array.
+        n is the number of trials in the protocol
+        m is the number of StimulusBlocks in each trial
+
+StimBlock (node)
 attributes
-    parent (StimBlock)
-    children (cell array of StimBlocks)
+    parent (int, index of location of parent in the s array)
+    children (vector where each entry is the index of its children in the s array)
     relationship (char, single/oddball/simultaneous/sequential)
     repDel (int, ms)
     startDel (int, ms)
@@ -29,6 +32,8 @@ methods
     getChildren
     generateDAQTrial (returns table of componentProtocolID | channelID (stimID) | stimTrain)
     generateHardwareTrial (returns struct of ProtocolID: trialInformation)
+Special Considerations
+    root node children is a struct with fields tPreStims and tPostStims.
     
 stimParams
     identifier (name)

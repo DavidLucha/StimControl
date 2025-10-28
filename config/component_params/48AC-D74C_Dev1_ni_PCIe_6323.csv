@@ -1,22 +1,22 @@
-portNum,channelName,ioType,signalType,TerminalConfig,Range,Connected Hardware,ProtType,ProtFunc,ProtID
-ai1,ThermodeA,input,Voltage,SingleEnded,[-5 5],QST,thermode,rec,A
-ai2,ThermodeB,input,Voltage,SingleEnded,[-5 5],QST,thermode,rec,B
-ai3,Aurora Force OUT,input,Voltage,SingleEnded,,Aurora,aurora,force,
-ai4,Aurora Length OUT,input,Voltage,SingleEnded,,Aurora,aurora,length,
-ai5,DC Temperature Controller,input,Voltage,SingleEnded,,Heatpad,heatpad,rec,
-port0/line1,TTL Thermode Onset,input,Digital,,,QST,thermode,onset,
-port0/line20,TTL ScanImage Res Galvo,input,Digital,,,2Photon,galvo,res,
-port0/line21,TTL ScanImage Y Galvo,input,Digital,,,2Photon,galvo,y,
-port0/line3,TTL ScanImage: Acq Start,output,Digital,,,2Photon,galvo,scanimage,
-port0/line4,TTL Basler: Frame Trigger,output,Digital,,,Widefield1,camera,trigger,A
-port0/line23,TTL Basler: UNUSED,output,Digital,,,Widefield1,camera,unused,A
-port0/line0,BLUE LED,output,Digital,,,BlueStimLED,led,stim,Blue
-port0/line25,GREEN LED,output,Digital,,,GreenStimLED,led,stim,Green
-port0/line26,Speaker,output,Digital,,,Speaker,audio,,
-port0/line27,Optical Stimulus,output,Digital,,,OpticalStimulator,optical,,
-port0/line28,HamamatsuTrigger,output,Digital,,,Widefield2,camera,trigger,B
-port0/line29,LED,output,Digital,,,FlashLED,led,flash,white
-port0/line30,IRLED_BaslerImaging,output,Digital,,,IRLED,led,flash,IR
-port0/line2,Vibration,output,Digital,,,VibrationMotor,actuator,vibration,
-port0/line7,Thermode Trigger,output,Digital,,,QST,thermode,trigger,
-ao0,Aurora Force Command Voltage,output,Voltage,SingleEnded,[0 10],Aurora,aurora,command,
+portNum,channelName,ioType,signalType,TerminalConfig,Range,Device,Label,,ProtType,ProtFunc,ProtID
+ai1,ThermodeA,input,Voltage,SingleEnded,[-5 5],QST,thermodeA,,thermode,record,A
+ai2,ThermodeB,input,Voltage,SingleEnded,[-5 5],QST,thermodeB,,thermode,record,B
+ai3,Aurora Force OUT,input,Voltage,SingleEnded,,Aurora,force,,aurora,force,
+ai4,Aurora Length OUT,input,Voltage,SingleEnded,,Aurora,length,,aurora,length,
+ai5,DC Temperature Controller,input,Voltage,SingleEnded,,Heatpad,temp,,heatpad,record,
+port0/line1,TTL Thermode Onset,input,Digital,,,QST,onset,,thermode,onset,
+port0/line20,TTL ScanImage Res Galvo,input,Digital,,,2Photon,res,,galvo,res,
+port0/line21,TTL ScanImage Y Galvo,input,Digital,,,2Photon,y,,galvo,y,
+port0/line3,TTL ScanImage: Acq Start,output,Digital,,,2Photon,scanImage,,galvo,scanimage,
+port0/line4,TTL Basler: Frame Trigger,output,Digital,,,Widefield1,trigger,,camera,trigger,A
+port0/line23,TTL Basler: UNUSED,output,Digital,,,Widefield1,unused,,camera,unused,A
+port0/line0,BLUE LED,output,Digital,,,BlueLED,ttl,,led,stim,Blue
+port0/line25,GREEN LED,output,Digital,,,GreenLED,ttl,,led,stim,Green
+port0/line26,Speaker,output,Digital,,,Speaker,out,,audio,,
+port0/line27,Optical Stimulus,output,Digital,,,OpticalStim,out,,optical,,
+port0/line28,HamamatsuTrigger,output,Digital,,,Widefield2,trigger,,camera,trigger,B
+port0/line29,LED,output,Digital,,,FlashLED,ttl,,led,flash,white
+port0/line30,IRLED_BaslerImaging,output,Digital,,,IRLED,ttl,,led,flash,IR
+port0/line2,Vibration,output,Digital,,,VibrationMotor,out,,actuator,vibration,
+port0/line7,Thermode Trigger,output,Digital,,,QST,trigger,,thermode,trigger,
+ao0,Aurora Force Command Voltage,output,Voltage,SingleEnded,[0 10],Aurora,out,,aurora,command,

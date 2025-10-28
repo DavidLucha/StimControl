@@ -1,8 +1,6 @@
-﻿ProtocolName,ComponentID,
-ThermodeA,Dev1-ni-PCIe-6323,COM5
-ThermodeB,Dev1-ni-PCIe-6323,COM5
-PWM,Dev1-ni-PCIe-6323,
-ArbitraryA,Dev1-ni-PCIe-6323,
-Ana,Dev1-ni-PCIe-6323,
-Vib,Dev1-ni-PCIe-6323,
-Cam,Dev1-ni-PCIe-6323,gentl-acA1440-220um (40407254)
+﻿ProtocolName,ComponentID
+QST,TriggerDAQ QST
+SingleCam,TriggerDAQ Widefield1
+LED,TriggerDAQ BlueStimLED
+piezo,TriggerDAQ Aurora
+MultiCam,TriggerDAQ Widefield1 Widefield2
