@@ -1,0 +1,94 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:144.0) Gecko/20100101 Firefox/144.0" version="28.2.8">
+  <diagram name="Page-1" id="pzvBqfBbgU3kCxLTugUv">
+    <mxGraphModel dx="535" dy="1627" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="CpRlRFRW291O1EeUlUM4-6" value="Component-Protocol Map" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="130" y="560" width="250" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="CpRlRFRW291O1EeUlUM4-7" value="&lt;div&gt;1:&amp;nbsp;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#x9;&lt;/span&gt;DeviceProtocol: Widefield&lt;br&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#x9;&lt;/span&gt;Devices: Widefield1, TriggerDAQ&lt;/div&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" vertex="1" parent="CpRlRFRW291O1EeUlUM4-6">
+          <mxGeometry y="30" width="250" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="CpRlRFRW291O1EeUlUM4-8" value="&lt;div&gt;2:&amp;nbsp;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#x9;&lt;/span&gt;DeviceProtocol: BlueLED&lt;br&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#x9;&lt;/span&gt;Devices: TriggerDAQ, BlueLED&lt;/div&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" vertex="1" parent="CpRlRFRW291O1EeUlUM4-6">
+          <mxGeometry y="90" width="250" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="CpRlRFRW291O1EeUlUM4-14" value="Component Parameters" style="swimlane;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="20" y="240" width="470" height="290" as="geometry" />
+        </mxCell>
+        <mxCell id="CpRlRFRW291O1EeUlUM4-19" value="&lt;div&gt;DAQ Channel Config&lt;/div&gt;&lt;div&gt;(NI_USB660_PCID.csv)&lt;/div&gt;" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" vertex="1" parent="CpRlRFRW291O1EeUlUM4-14">
+          <mxGeometry x="240" y="30" width="220" height="250" as="geometry" />
+        </mxCell>
+        <mxCell id="CpRlRFRW291O1EeUlUM4-20" value="&lt;div&gt;Channel1:&amp;nbsp;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#x9;ConnectedHardware: Widefield1&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#x9;ProtType: camera&lt;/span&gt;&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#x9;&lt;/span&gt;ProtFunc: trigger&lt;/span&gt;&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#x9;&lt;/span&gt;ProtID: A&lt;/span&gt;&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#x9;...&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/div&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" vertex="1" parent="CpRlRFRW291O1EeUlUM4-19">
+          <mxGeometry y="30" width="220" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="CpRlRFRW291O1EeUlUM4-21" value="&lt;div&gt;Channel2:&amp;nbsp;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#x9;&lt;/span&gt;ConnectedHardware: BlueLED&lt;div&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#x9;ProtType: LED&lt;/span&gt;&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#x9;&lt;/span&gt;ProtFunc: trigger&lt;/span&gt;&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#x9;&lt;/span&gt;ProtID: Blue&lt;/span&gt;&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#x9;&lt;/span&gt;...&lt;/span&gt;&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;br&gt;&lt;/div&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" vertex="1" parent="CpRlRFRW291O1EeUlUM4-19">
+          <mxGeometry y="120" width="220" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="CpRlRFRW291O1EeUlUM4-22" value="&lt;div&gt;...&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" vertex="1" parent="CpRlRFRW291O1EeUlUM4-19">
+          <mxGeometry y="210" width="220" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="CpRlRFRW291O1EeUlUM4-2" value="Component Config" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" vertex="1" parent="CpRlRFRW291O1EeUlUM4-14">
+          <mxGeometry x="10" y="30" width="220" height="250" as="geometry" />
+        </mxCell>
+        <mxCell id="CpRlRFRW291O1EeUlUM4-3" value="&lt;div&gt;DAQ-TriggerDAQ&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#x9;&lt;/span&gt;ProtocolID: TriggerDAQ&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#x9;&lt;/span&gt;DeviceID: NI_USB660_PCID&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#x9;param1: ...&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#x9;&lt;/span&gt;param2: ...&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#x9;&lt;/span&gt;...&lt;/div&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" vertex="1" parent="CpRlRFRW291O1EeUlUM4-2">
+          <mxGeometry y="30" width="220" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="CpRlRFRW291O1EeUlUM4-4" value="Camera-Widefield1&lt;div&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#x9;&lt;/span&gt;ProtocolID: Widefield1&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#x9;&lt;/span&gt;DeviceID: Basler_244gHz&lt;div&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#x9;param1: ...&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#x9;&lt;/span&gt;param2: ...&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#x9;&lt;/span&gt;...&lt;/div&gt;&lt;/div&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" vertex="1" parent="CpRlRFRW291O1EeUlUM4-2">
+          <mxGeometry y="130" width="220" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="CpRlRFRW291O1EeUlUM4-23" value="&lt;div&gt;...&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" vertex="1" parent="CpRlRFRW291O1EeUlUM4-2">
+          <mxGeometry y="220" width="220" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="CpRlRFRW291O1EeUlUM4-15" value="&lt;div&gt;Protocol File&lt;/div&gt;&lt;div&gt;(Stimulus Info section)&lt;/div&gt;" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="130" y="740" width="250" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="CpRlRFRW291O1EeUlUM4-16" value="StimulusA[Widefield](trigger): params" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" vertex="1" parent="CpRlRFRW291O1EeUlUM4-15">
+          <mxGeometry y="30" width="250" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="CpRlRFRW291O1EeUlUM4-17" value="StimulusB[BlueLED](squarewave): params" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" vertex="1" parent="CpRlRFRW291O1EeUlUM4-15">
+          <mxGeometry y="60" width="250" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="CpRlRFRW291O1EeUlUM4-25" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=light-dark(#ffff00, #543300);strokeColor=none;strokeWidth=3;opacity=50;" vertex="1" parent="1">
+          <mxGeometry x="60" y="318" width="135" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="CpRlRFRW291O1EeUlUM4-26" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=light-dark(#ffff00, #543300);strokeColor=none;strokeWidth=1;opacity=50;" vertex="1" parent="1">
+          <mxGeometry x="273" y="625" width="70" height="16" as="geometry" />
+        </mxCell>
+        <mxCell id="CpRlRFRW291O1EeUlUM4-27" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=light-dark(#ffff00, #543300);strokeColor=none;strokeWidth=1;opacity=50;" vertex="1" parent="1">
+          <mxGeometry x="305" y="281" width="135" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="CpRlRFRW291O1EeUlUM4-28" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=light-dark(#ff0000, #3a756b);strokeColor=none;strokeWidth=3;opacity=50;" vertex="1" parent="1">
+          <mxGeometry x="60" y="418" width="132" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="CpRlRFRW291O1EeUlUM4-29" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=light-dark(#ff0000, #3a756b);strokeColor=none;strokeWidth=3;opacity=50;" vertex="1" parent="1">
+          <mxGeometry x="290" y="319" width="187" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="CpRlRFRW291O1EeUlUM4-30" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=light-dark(#00ffff, #543300);strokeColor=none;strokeWidth=1;opacity=50;" vertex="1" parent="1">
+          <mxGeometry x="290" y="408" width="170" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="CpRlRFRW291O1EeUlUM4-31" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=light-dark(#ff8000, #543300);strokeColor=none;strokeWidth=1;opacity=50;" vertex="1" parent="1">
+          <mxGeometry x="247" y="608" width="57" height="17" as="geometry" />
+        </mxCell>
+        <mxCell id="CpRlRFRW291O1EeUlUM4-32" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=light-dark(#ff0000, #543300);strokeColor=none;strokeWidth=1;opacity=50;" vertex="1" parent="1">
+          <mxGeometry x="206" y="626" width="67" height="16" as="geometry" />
+        </mxCell>
+        <mxCell id="CpRlRFRW291O1EeUlUM4-33" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=light-dark(#00ffff, #543300);strokeColor=none;strokeWidth=1;opacity=50;" vertex="1" parent="1">
+          <mxGeometry x="279" y="683" width="55" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="CpRlRFRW291O1EeUlUM4-34" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=light-dark(#ffff00, #543300);strokeColor=none;strokeWidth=3;opacity=50;" vertex="1" parent="1">
+          <mxGeometry x="209" y="682" width="70" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="CpRlRFRW291O1EeUlUM4-35" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=light-dark(#ff8000, #543300);strokeColor=none;strokeWidth=1;opacity=50;" vertex="1" parent="1">
+          <mxGeometry x="190" y="777" width="57" height="17" as="geometry" />
+        </mxCell>
+        <mxCell id="CpRlRFRW291O1EeUlUM4-36" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=light-dark(#00ff00, #543300);strokeColor=none;strokeWidth=1;opacity=50;" vertex="1" parent="1">
+          <mxGeometry x="247" y="668" width="55" height="17" as="geometry" />
+        </mxCell>
+        <mxCell id="CpRlRFRW291O1EeUlUM4-37" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=light-dark(#00ff00, #543300);strokeColor=none;strokeWidth=1;opacity=50;" vertex="1" parent="1">
+          <mxGeometry x="189" y="807" width="55" height="17" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
