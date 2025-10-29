@@ -11,6 +11,7 @@ properties %(Access = private)
     g           = []            % general protocol parameters
     idxStim     = []            % current stimulus index
     t                           % timer
+    pids        = []            % protocol id map
     chAI
     chD
     cmdStack    = []
@@ -65,9 +66,6 @@ methods
         if ~exist(obj.path.dirData,'dir')
             mkdir(obj.path.dirData)
         end
-        
-        % % Load protocol-device map. TODO
-        % obj = obj.LoadMap;
 
         %% Reset state machine flags
         obj.f.stopTrial = false;
@@ -97,6 +95,8 @@ methods
             'Name',             'StateMachineTimer');
         start(obj.t)
         
+        disp("loading previous session...");
+        obj.loadDefaultSession;
         % obj.p2GUI;
         % obj.checkSync
         % StartPreviews(obj);
@@ -169,23 +169,6 @@ methods (Access = private)
             obj.d.Available{i}.StartPreview();
         end
     end
-
-    % function obj = LoadMap(obj)
-    %     % TODO. NOT NECESSARY FOR MVP
-    %     [s, computerID] = system('vol');
-    %     computerID = strsplit(computerID, '\n');
-    %     computerID = strsplit(computerID{2}, ' ');
-    %     computerID = computerID{end};
-    % 
-    %     if ~exist([obj.path.componentMaps filesep computerID '.csv'], 'file')
-    %         % uigetfile
-    % 
-    %     end
-    % end
-    % 
-    % function obj = SelectActiveHardware(obj)
-    %     % TODO. NOT NECESSARY FOR MVP
-    % end
 end
 
 methods
@@ -372,7 +355,7 @@ methods
     
     function set.trialNum(obj, value)
         nTrials = length(obj.p);
-        totalNTrials = sum([obj.p.nRepetitions]) * obj.g.nProtRep;
+        totalNTrials = sum([obj.p.nRuns]) * obj.g.nProtRuns;
         validateattributes(value,{'numeric'},...
             {'scalar','integer','real','nonnegative','<=',nTrials});
 
@@ -394,24 +377,6 @@ methods
         obj.h.trialTimeEstimate.Text = sprintf('00:00 / %d:%d', trialMins, trialSecs);
         obj.h.trialNumDisplay.Value = value;   
         obj.h.totalTrialsLabel.Text = sprintf('/ %d', nTrials);
-
-        % TODO UPDATE GUI (as below)
-        % obj.h.protocol.edit.nStim.String   = sprintf('%d/%d',value,nTrials);
-        % obj.h.protocol.edit.Comment.String = obj.p(value).Comments;
-        % obj.h.ThermodeA.edit.vibDur.String = obj.p(value).ThermodeA.VibrationDuration;
-        % obj.h.ThermodeB.edit.vibDur.String = obj.p(value).ThermodeB.VibrationDuration;
-        % obj.h.ThermodeA.edit.vibDur.Value  = obj.p(value).ThermodeA.VibrationDuration;
-        % obj.h.ThermodeB.edit.vibDur.Value  = obj.p(value).ThermodeB.VibrationDuration;
-        % obj.h.LED.edit.ledDur.String       = obj.p(value).ledDuration;
-        % obj.h.LED.edit.ledFreq.String      = obj.p(value).ledFrequency;
-        % obj.h.LED.edit.ledDC.String        = obj.p(value).ledDutyCycle;
-        % obj.h.LED.edit.ledDelay.String     = obj.p(value).ledDelay;
-        % obj.h.LED.edit.ledDur.Value        = obj.p(value).ledDuration;
-        % obj.h.LED.edit.ledFreq.Value       = obj.p(value).ledFrequency;
-        % obj.h.LED.edit.ledDC.Value         = obj.p(value).ledDutyCycle;
-        % obj.h.LED.edit.ledDelay.Value      = obj.p(value).ledDelay;
-        % obj.p2serial(obj.p(value));
-        % obj.p2GUI
     end
 
     function val = get.trialNum(obj)
@@ -441,42 +406,17 @@ methods
         end
     end
 
-    % function out = get.dirAnimal(obj)
-    %     out = fullfile(obj.dirData,obj.animalID);
-    % end
-    % 
-    % function out = get.animalID(obj)
-    %     tmp = obj.h.animal.listbox.id;
-    %     out = tmp.String{tmp.Value};
-    % end
-    % 
-    % function out = get.nThermodes(obj)
-    %     out = length(obj.s);
-    % end
-    % 
-    % function set.idxStim(obj,value)
-    %     nStim = length(obj.p);
-    %     validateattributes(value,{'numeric'},...
-    %         {'scalar','integer','real','nonnegative','<=',nStim})
-    %     obj.idxStim = value;
-    % 
-    %     obj.h.protocol.edit.nStim.String   = sprintf('%d/%d',value,nStim);
-    %     obj.h.protocol.edit.Comment.String = obj.p(value).Comments;
-    %     obj.h.ThermodeA.edit.vibDur.String = obj.p(value).ThermodeA.VibrationDuration;
-    %     obj.h.ThermodeB.edit.vibDur.String = obj.p(value).ThermodeB.VibrationDuration;
-    %     obj.h.ThermodeA.edit.vibDur.Value  = obj.p(value).ThermodeA.VibrationDuration;
-    %     obj.h.ThermodeB.edit.vibDur.Value  = obj.p(value).ThermodeB.VibrationDuration;
-    %     obj.h.LED.edit.ledDur.String       = obj.p(value).ledDuration;
-    %     obj.h.LED.edit.ledFreq.String      = obj.p(value).ledFrequency;
-    %     obj.h.LED.edit.ledDC.String        = obj.p(value).ledDutyCycle;
-    %     obj.h.LED.edit.ledDelay.String     = obj.p(value).ledDelay;
-    %     obj.h.LED.edit.ledDur.Value        = obj.p(value).ledDuration;
-    %     obj.h.LED.edit.ledFreq.Value       = obj.p(value).ledFrequency;
-    %     obj.h.LED.edit.ledDC.Value         = obj.p(value).ledDutyCycle;
-    %     obj.h.LED.edit.ledDelay.Value      = obj.p(value).ledDelay;
-    % 
-    %     obj.p2serial(obj.p(value));
-    %     obj.p2GUI
-    % end
+    function obj = loadDefaultSession(obj)
+        [s, pcInfo] = system('vol');
+        pcInfo = strsplit(pcInfo, '\n');
+        pcID = pcInfo{2}(end-8:end);
+        filename = [pcID '_default.json'];
+        filepath = [obj.path.sessionBase filesep filename];
+        if ~isfile(filepath)
+            return
+        end
+        obj.h.SessionConfigFilesList.Value = filename;
+        obj.callbackLoadConfig(obj.h.SessionConfigFilesList, '');
+    end
 end
 end

@@ -54,7 +54,7 @@ methods (Access = public, Static)
             if contains(s.Model, 'Sim')
                 protocolID = 'SIM';
             else
-                protocolID = 'Trigger';
+                protocolID = 'TriggerDAQ';
             end
             initStruct = struct( ...
                 'Vendor', s.VendorID, ...

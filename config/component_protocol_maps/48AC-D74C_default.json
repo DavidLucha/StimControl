@@ -1,0 +1,18 @@
+{
+    "QST": ["TriggerDAQ","QST"],
+    "SingleCam": ["TriggerDAQ","Widefield1"],
+    "LED": ["TriggerDAQ","BlueStimLED"],
+    "Piezo": ["TriggerDAQ","Aurora"],
+    "MultiCam": ["TriggerDAQ","Widefield1","Widefield2"],
+    "AllCameras": ["TriggerDAQ","Widefield1","Widefield2"],
+    "Aurora": ["TriggerDAQ", "Aurora"],
+    "2Photon": ["TriggerDAQ", "2Photon"],
+    "BlueLED": ["TriggerDAQ", "BlueLED"],
+    "GreenLED": ["TriggerDAQ", "GreenLED"],
+    "Speaker": ["TriggerDAQ", "Speaker"],
+    "OpticalStim": ["TriggerDAQ", "OpticalStim"],
+    "FlashLED": ["TriggerDAQ", "FlashLED"],
+    "IRLED": ["TriggerDAQ", "IRLED"],
+    "VibrationMotor": ["TriggerDAQ", "VibrationMotor"],
+    "Heatpad": ["TriggerDAQ", "Heatpad"]
+}

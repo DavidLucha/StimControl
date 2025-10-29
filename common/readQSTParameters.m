@@ -286,38 +286,29 @@ if value<range(1) || value>range(2)
 end
 end
 
-function [t, g, stimuli] = ConvertToStimControlParameters(p, g)
+function [trialData, protocolData] = ConvertToStimControlParameters(p, g)
 % convert to StimControl parameters
 % OUTPUTS:
-% t(struct): a 1x4 struct array of trial information with fields 
+% g(struct): a struct with fields
+%       dPause: time between trials (s)
+%       nRuns: number of times trial should be run in a single protocol run
+%       rand: how to randomise trials within the experiment.
+% t(1xn TrialData array): where n is the number of trials in the protocol.
+%   TrialData has attributes:
+%       data (1xm cell array where m is the number of StimulusBlocks in each trial (always 1 in this case))
 %       tPre: time before stimulus start (ms)
 %       tPost: time to record after stimulus start (ms)
 %       nRuns: number of times trial should be run in a single protocol run
-%       Comments: if given, a descriptive comment for each trial
-% g(struct): a struct with fields
-%       dPause: time between trials (s)
-% 
-%       nRuns: number of times trial should be run in a single protocol run
-%       Comments: if given, a descriptive comment for each trial
-% s(cell array): 1 x n cell array where each entry is a 1 x m cell array.
-%       n is the number of trials in the protocol
-%       m is the number of StimulusBlocks in each trial (always 1 in this case)
-    t = struct( ...
-        'tPre', 0, ...
-        'tPost', 0, ...
-        'nRuns', 1, ...
-        'Comments', '');
-    t = repmat(t, [1, length(p)]);
-    [t.tPre] = deal(p.tPre);
-    [t.tPost] = deal(p.tPost);
-    [t.Comments] = deal(p.Comments);
-    [t.nRuns] = deal(p.nRepetitions);
+%       comment: if given, a descriptive comment for each trial
+    trialData = cell(1, length(p));
     
     % update fieldnames in g
     g.nProtRuns = g.nProtRep;
     g = rmfield(g, 'nProtRep');
     g.rand = g.randomize;
     g = rmfield(g, 'randomize');
+    protocolData = g;
+    g.targets = {"AllDevices"};
 
     thermodeStruct = struct(...
         'NeutralTemp',          32,...    
@@ -358,16 +349,45 @@ function [t, g, stimuli] = ConvertToStimControlParameters(p, g)
     cameraTriggerStruct = struct( ...
         'identifier', 'cameraTrigger', ....
         'type', 'trigger', ...
-        'targetDevices', {'AllCameras'}, ...
+        'targetDevices', {'MultiCam'}, ...
         'isAcquisitionTrigger', true, ...
         'freq', 20, ...
         'duration', 0, ...
         'amplitude', 0);
-    s = {{StimulusBlock('childIdxes', struct('tPre', )), StimulusBlock(), StimulusBlock()}};
-    s = repmat(s, [1, length(p)]);
-    for i = 1:length(p)
-        sb = s{i}{1};
+
+    for tNum = 1:length(p)
+        % fill in new datastruct
+        pt = p(tNum);
+        qs = QSTStimStruct;
+        qs.thermodeA = pt.thermodeA;
+        qs.thermodeB = pt.thermodeB;
+
+        ls = ledStimStruct;
+        ls.delay = pt.ledDelay;
+        ls.frequency = pt.ledFrequency;
+        ls.duration = pt.ledDuration;
+        ls.dutyCycle = pt.ledDutyCycle;
+
+        ps = piezoStimStruct;
+        ps.amplitude = pt.piezoAmp;
+        ps.duration = pt.piezoDur;
+        ps.frequency = pt.piezoFreq;
+        ps.stimNum = pt.piezoStimNum;
+        
+        % TrialData init.
+        td = TrialData;
+        td.tPre = pt.tPre;
+        td.tPost = pt.tPost;
+        td.comment = pt.Comments;
+        td.nRuns = pt.nRepetitions;
+        
+        s = {StimulusBlock('childIdxes', struct('tPre', 2, 'tPost', 3)), ... 
+            StimulusBlock('stimParams', struct('MultiCam', cameraTriggerStruct)), ...
+            StimulusBlock('stimParams', struct('QST', qs, 'LED', ls, 'Piezo', ps))};
+        td.data = s;
+        trialData{tNum} = td;
     end
+    trialData = [trialData{:}]; %cursed but functional :)
 end
 
 

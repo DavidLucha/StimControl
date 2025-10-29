@@ -6,12 +6,18 @@ function callbackLoadProtocol(obj, src, event)
 obj.indicateLoading('Loading protocol');
 obj.updateDateTime; % update the datetime for component savepaths
 
-if src ~= obj.h.protocolSelectDropDown
+if src == obj.h.SessionSelectDropDown
+    %TODO TEST
+    obj.path.SessionProtocolFile = event;
+    experimentID = strsplit(event, filesep);
+    experimentID = experimentID{end};
+    experimentID = strsplit(experimentID, '.');
+    obj.experimentID = experimentID{1}; %todo as below this may cause issues later
+
+elseif src ~= obj.h.protocolSelectDropDown
     % not implemented.
     return
-end
-
-if strcmpi(src.Value, 'Browse...')
+elseif strcmpi(src.Value, 'Browse...')
     warning("This will cause problems if you choose something outside the default protocol base path, " + ...
         "switch off, then switch back to it through the dropdown. Be careful!");
     [filename, dir] = uigetfile([obj.path.protocolBase], 'Select protocol');
@@ -30,9 +36,8 @@ if strcmpi(src.Value, 'Browse...')
 elseif ~strcmpi(src.Value, '')
     obj.experimentID = src.Value;
     obj.path.SessionProtocolFile = [obj.path.protocolBase filesep src.Value];
-end
 
-if strcmpi(src.Value, '')
+elseif strcmpi(src.Value, '')
     obj.h.trialInformationScroller.Value = '';
     obj.h.trialInformationScroller.FontColor = 'black';
     if ~isempty(obj.p)
@@ -65,19 +70,7 @@ obj.g = g;
 obj.idxStim = 1;
 obj.trialNum = 1;
 
-% TODO figure out if mapping stage is necessary and don't ask if not
-% TODO this is mostly for debugging anyway. Get rid of it when you're done
-% here.
-if ~isfield(obj.path, 'ComponentMapFile') ||  isempty(obj.path.ComponentMapFile) %TODO OR CHANGED
-    [filename, dir] = uigetfile([obj.path.componentMaps filesep '*.csv'], 'Select Stimulus Map');
-    if filename == 0
-        return
-    end
-    obj.path.ComponentMapFile = [dir filename];
-end
-
-tab = readtable(obj.path.ComponentMapFile, 'ReadRowNames', true);
-% TODO REMOVE ROWS FOR NON-INITIALISED HARDWARE?
+cpMap = obj.pids;
 
 if contains(obj.path.SessionProtocolFile, '.qst')
     df = p;

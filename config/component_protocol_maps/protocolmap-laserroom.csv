@@ -1,6 +1,0 @@
-﻿ProtocolName,ComponentID
-QST,TriggerDAQ QST
-SingleCam,TriggerDAQ Widefield1
-LED,TriggerDAQ BlueStimLED
-piezo,TriggerDAQ Aurora
-MultiCam,TriggerDAQ Widefield1 Widefield2

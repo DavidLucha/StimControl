@@ -1,5 +1,9 @@
 function callbackSaveConfig(obj, src, event)
     
+    [s, pcInfo] = system('vol');
+    pcInfo = strsplit(pcInfo, '\n');
+    pcID = pcInfo{2}(end-8:end);
+
     %% save Component Params
     filepath = [obj.path.setup.base filesep 'componentParams'];
     filename = ['params' obj.path.nameExtension '_' char(datetime)];
