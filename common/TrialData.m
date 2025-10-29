@@ -51,16 +51,8 @@ classdef (HandleCompatible) TrialData < handle &  matlab.mixin.indexing.Redefine
             % trialParams:
             %   targetID: 
             %       StimulusOrder: [list of indices that indicates the order in which to execute the stimuli], 
-            %       stimuli: {cell array of structs, each struct is the parameters for that stimulus.}
+            %       stimuli: {array of structs, each struct is the parameters for that stimulus.}
             % I THINK, ANYWAY.
-        end
-
-        function tData = getParamsForTarget(obj, targetName)
-            if ~contains(obj.targets, targetName)
-                error("%s not ")
-            end
-            rootNode = obj.rootNode;
-            tData = rootNode.getParamsForTarget(obj, targetName);
         end
 
         function set.data(obj, val)
