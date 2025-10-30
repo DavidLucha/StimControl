@@ -1,4 +1,8 @@
 function [p,g] = readProtocol(filename,varargin)
+
+% NB THINGS TO VALIDATE:
+% hardware is not targeted by two functions simultaneously
+
 %% DEBUG
 % if isempty(filename)
 %     filename = [pwd filesep 'StimControl' filesep 'protocolfiles' filesep 'TempandVibe.stim'];

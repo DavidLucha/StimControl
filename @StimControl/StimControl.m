@@ -415,8 +415,8 @@ methods
         if ~isfile(filepath)
             return
         end
-        obj.h.SessionConfigFilesList.Value = filename;
-        obj.callbackLoadConfig(obj.h.SessionConfigFilesList, '');
+        obj.h.SessionSelectDropDown.Value = filename;
+        obj.callbackLoadConfig(obj.h.SessionSelectDropDown, '');
     end
 end
 end

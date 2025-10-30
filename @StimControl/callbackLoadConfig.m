@@ -102,20 +102,23 @@ function obj = LoadSessionConfig(obj, filepath)
 end
 
 function obj = loadSessionHelper(obj, data, fieldName, defaultPath, fcnHandle)
-    if ~isfield(data, fieldName) || strcmpi(data.(fieldName), 'none') || strcmpi(data.(fieldName), '')
+    if ~isfield(data, fieldName) || all(strcmpi(data.(fieldName), 'none')) || all(strcmpi(data.(fieldName), ''))
         return
-    elseif contains(data.(fieldName), filesep)
-        filepath = data.(fieldName);
-    else
-        filepath = [defaultPath filesep data.(fieldName)];
     end
-
-    if strcmpi(fieldName, 'protocol')
-        %TODO UNTESTED
-        obj.callbackLoadProtocol(obj.h.SessionSelectDropDown, filepath);
-    elseif strcmpi(fieldName, 'activeHardware')
+    if strcmpi(fieldName, 'activeHardware')
         %TODO ACTIVE HARDWARE - SET FOR 'ALL' TOO
     else
-        obj = fcnHandle(obj, filepath);
+        if contains(data.(fieldName), filesep)
+            filepath = data.(fieldName);
+        else
+            filepath = [defaultPath filesep data.(fieldName)];
+        end
+    
+        if strcmpi(fieldName, 'protocol')
+            %TODO UNTESTED
+            obj.callbackLoadProtocol(obj.h.SessionSelectDropDown, filepath);
+        else
+            obj = fcnHandle(obj, filepath);
+        end
     end
 end

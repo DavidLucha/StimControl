@@ -6,7 +6,8 @@ classdef StimulusBlock
         repeatDelay = 0     % int, ms to wait between stim repeats
         startDelay  = 0;    % int, ms to wait after stim t=0 to start
         nStimRuns   = 1;    % int, number of times to run the stim within the block
-        stimParams  = [];   % struct of stimulus parameters in the format stimName: [params = struct], ...
+        stimParams  = [];   % struct of stimulus parameters. Only one stimulus can be given per parameter ...
+        targets     = {};   % target devices, by ProtocolID
         oddParams   = [];   % oddball params, only used if childRel == 'odd'
         childRel    = 'sim';% [char], relationship between children. 
                                 % one of: 
@@ -56,30 +57,50 @@ classdef StimulusBlock
             end
         end
 
-        function trialParams = constructTrialParams(obj)
-            % trialParams = [];
-            % if obj.isLeafNode
-            %     targets = obj.targets;
-            %     for target = targets
-            %         tData = obj.getParamsForTarget(target{1});
-            %         trialParams.(target{1}) = tData;
-            %     end
-            % else
-            %     match obj.childRel
-            %         case 'odd'
-            %             % construct the order the oddballs will be presented in, then construct the params for each.
-            %             % TODO
-            %         case 'sim'
-            %             % TODO
-            %         case 'seq'
-            %             % TODO
-            %     end
-            %     for child = obj.children'
-            %         childParams = child.constructTrialParams;
-            %         trialParams = mergeStructs(trialParams, childParams);
-            %     end 
-            % end
-            % end
+        function [executionOrder, startDelay, trialParams] = constructTrialParams(obj)
+            trialParams = [];
+            allTargets = obj.allTargets;
+            for t = allTargets
+
+                if obj.isLeafNode
+                    targetParams = obj.stimParams.(t);
+                else
+                    targetParams = [];
+                    for child = obj.children
+                        targetParams = [targetParams child.]
+                    end
+                end
+
+                trialParams.(t) = struct( ...
+                    'executionOrder', executionOrder, ...
+                    'delay', delay, ...
+                    'stimParams', targetParams);
+            end
+            if obj.isLeafNode
+                executionOrder = [];
+                stimParams = [];
+                for target = allTargets
+                    
+                end
+            else
+                % traverse through children, concatenating structs and
+                % rebuilding execution order
+            end
+        end
+
+        function [executionOrder, delay, trialParams] = getSelfTrialParams(obj)
+            executionOrder = [];
+            delay = [];
+            trialParams = [];
+            % get execution order and delays
+            if strcmpi(obj.childRel, 'sim')
+                executionOrder = ones([1, obj.nStimRuns]); 
+                delay = [obj.startDelay repmat(obj.repeatDelay, [1 obj.nStimRuns-1])];
+            elseif strcmpi(obj.childRel, 'seq')
+                executionOrder = linspace(1, length(obj.childIdxes), length(obj.childIdxes));
+            elseif strcmpi(obj.childRel, 'odd')
+                
+            end
         end
 
         function children = children(obj)
@@ -112,7 +133,7 @@ classdef StimulusBlock
             targets = {};
             if ~isempty(obj.stimParams)
                 for field = fields(obj.stimParams)'
-                    targets{end+1} = targets {obj.stimParams.(field).targetDevices};
+                    targets = [targets obj.stimParams.(field).targetDevices];
                 end
                 targets = unique(targets);
             end

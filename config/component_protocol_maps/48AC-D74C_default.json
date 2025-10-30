@@ -1,6 +1,6 @@
 {
-    "QST": ["TriggerDAQ","QST"],
-    "SingleCam": ["TriggerDAQ","Widefield1"],
+    "QST": ["TriggerDAQ"],
+    "Widefield1": ["TriggerDAQ","Widefield1"],
     "LED": ["TriggerDAQ","BlueStimLED"],
     "Piezo": ["TriggerDAQ","Aurora"],
     "MultiCam": ["TriggerDAQ","Widefield1","Widefield2"],
