@@ -1,1 +1,2 @@
-- Get legacy loading working on DAQ and QST.
+- Get legacy loading working
+- update the wiki on config files to reflect that we got rid of the map.
