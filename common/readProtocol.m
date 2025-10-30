@@ -2,6 +2,8 @@ function [p,g] = readProtocol(filename,varargin)
 
 % NB THINGS TO VALIDATE:
 % hardware is not targeted by two functions simultaneously
+% oddball params are valid: 
+    % with buffers, it's physically possible to leave a buffer of x stims at nstims y and swap ratio z
 
 %% DEBUG
 % if isempty(filename)

@@ -32,6 +32,7 @@ classdef (HandleCompatible) TrialData < handle &  matlab.mixin.indexing.Redefine
                 block = obj.StimulusBlocks{i};
                 block.treeHandle = obj;
                 block.idx = i;
+                obj.StimulusBlocks{i} = block;
             end
         end
         
@@ -61,6 +62,7 @@ classdef (HandleCompatible) TrialData < handle &  matlab.mixin.indexing.Redefine
                 block = obj.StimulusBlocks{i};
                 block.treeHandle = obj;
                 block.idx = i;
+                obj.StimulusBlocks{i} = block;
             end
         end
 
