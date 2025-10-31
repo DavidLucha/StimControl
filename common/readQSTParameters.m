@@ -388,6 +388,8 @@ function [trialData, protocolData] = ConvertToStimControlParameters(p, g)
             StimulusBlock('stimParams', ls), ...
             StimulusBlock('stimParams', ps)};
         td.data = s;
+        td.generateParamsSequence;
+        % todo td.Validate here!!
         trialData{tNum} = td;
     end
     trialData = [trialData{:}]; %cursed but functional :)

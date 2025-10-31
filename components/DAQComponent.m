@@ -118,17 +118,24 @@ function obj = InitialiseSession(obj, varargin)
     end
     
     %---channels---
-    if (islogical(params.ChannelConfig) && params.ChannelConfig) || ...
-            (~islogical(params.ChannelConfig) && ~isempty(params.ChannelConfig)) || ...
-            ~isempty(params.ActiveDeviceIDs)
-        % current value is default
+    if isempty(obj.ConnectedDevices)
         [s, pcInfo] = system('vol');
         pcInfo = strsplit(pcInfo, '\n');
         pcID = pcInfo{2}(end-8:end);
         filename = [pcID '_' obj.ComponentID '.csv'];
         if ~contains(obj.ConfigStruct.ChannelConfig, filename)
-            obj.ConfigStruct.ChannelConfig = [obj.ConfigStruct.ChannelConfig filesep filename];
+            if ~strcmpi(obj.ConfigStruct.ChannelConfig(end), filesep)
+                obj.ConfigStruct.ChannelConfig = [obj.ConfigStruct.ChannelConfig filesep filename];
+            else
+                obj.ConfigStruct.ChannelConfig = [obj.ConfigStruct.ChannelConfig filename];
+            end
         end
+        obj = obj.MapChannels(obj.ConfigStruct.ChannelConfig);
+    end
+    if (islogical(params.ChannelConfig) && params.ChannelConfig) || ...
+            (~islogical(params.ChannelConfig) && ~isempty(params.ChannelConfig)) || ...
+            ~isempty(params.ActiveDeviceIDs)
+        % current value is default
         obj = obj.CreateChannels(obj.ConfigStruct.ChannelConfig, params.ActiveDeviceIDs);
     end
 end
@@ -200,62 +207,65 @@ function SetParams(obj, paramsStruct)
     end
 end
 
-function daqStruct = GetParams(obj) %TODO this should all be handled in configstruct but I gotta check that works.
-    % Get current device parameters for saving          
-    daqs = daqlist().DeviceInfo;
-    correctIndex = -1;
-    for i = 1:length(daqs)
-        if strcmpi(obj.SessionHandle.Vendor.ID, daqs(i).Vendor.ID)
-            correctIndex = i;
-        end
-    end
-    if correctIndex == -1
-        warning('Unable to find DAQ in daqlist. ' + ...
-            'DAQ device settings not saved.'); %note this should NEVER happen
-    end
-    d = daqs(correctIndex);
-    daqStruct = struct();
-    daqStruct.Vendor = d.Vendor.ID;
-    daqStruct.Model = d.Model;
-    daqStruct.ID = d.ID;
-    daqStruct.Rate = obj.SessionHandle.Rate;
-    daqStruct.ComponentID = obj.ComponentID;
-end
+% function daqStruct = GetParams(obj) %TODO this should all be handled in configstruct but I gotta check that works.
+%     % Get current device parameters for saving          
+%     daqs = daqlist().DeviceInfo;
+%     correctIndex = -1;
+%     for i = 1:length(daqs)
+%         if strcmpi(obj.SessionHandle.Vendor.ID, daqs(i).Vendor.ID)
+%             correctIndex = i;
+%         end
+%     end
+%     if correctIndex == -1
+%         warning('Unable to find DAQ in daqlist. ' + ...
+%             'DAQ device settings not saved.'); %note this should NEVER happen
+%     end
+%     d = daqs(correctIndex);
+%     daqStruct = struct();
+%     daqStruct.Vendor = d.Vendor.ID;
+%     daqStruct.Model = d.Model;
+%     daqStruct.ID = d.ID;
+%     daqStruct.Rate = obj.SessionHandle.Rate;
+%     daqStruct.ComponentID = obj.ComponentID;
+% end
 
-function SaveAuxiliaryConfig(obj, filepath)
+% function SaveAuxiliaryConfig(obj, filepath)
     % Get channel parameters for saving. DAQ-specific.
+    % TODO (possible): re-implement this but only if oyu've also
+    % implemented a graphical way to change these parameters. Otherwise why bother
+
     % [s, out] = system('vol');
     %     out = strsplit(out, '\n');
     %     out = out{2}(end-8:end);
     %     if strcmpi(out, '48AC-D74C')
     %         filename = [out, '_', obj.ComponentID];
-    channels = obj.SessionHandle.Channels;
+    % channels = obj.SessionHandle.Channels;
     % channelData = {'portNum', 'channelName', 'ioType', 'signalType', 'TerminalConfig', 'Range', 'ProtType',  'ProtFunc', 'ProtID'};
-
-    channelData = {'deviceID' 'portNum' 'channelName' 'ioType' ...
-        'signalType' 'TerminalConfig' 'Range'};
-    nChans = size(channels);
-    nChans = nChans(2);
-    for i = 1:nChans
-        chan = channels(i);
-        deviceID = chan.Device.ID;
-        portNum = chan.ID;
-        name = chan.Name;
-        if contains(ch.Type, 'Output')
-            ioType = 'output';
-        elseif contains(ch.Type, 'Input')
-            ioType = 'input';
-        else
-            ioType = 'bidirectional';
-        end
-        signalType = chan.MeasurementType;
-        terminalConfig = chan.TerminalConfig;
-        range = ['[' char(string(chan.Range.Min)) ' ' char(string(ch.Range.Max)) ']'];
-        chanCell = {deviceID portNum name ioType signalType terminalConfig range};
-        channelData(i+1,:) = chanCell;
-    end
-    writetable(channelData, filepath);
-end
+    % 
+    % channelData = {'deviceID' 'portNum' 'channelName' 'ioType' ...
+    %     'signalType' 'TerminalConfig' 'Range'};
+    % nChans = size(channels);
+    % nChans = nChans(2);
+    % for i = 1:nChans
+    %     chan = channels(i);
+    %     deviceID = chan.Device.ID;
+    %     portNum = chan.ID;
+    %     name = chan.Name;
+    %     if contains(ch.Type, 'Output')
+    %         ioType = 'output';
+    %     elseif contains(ch.Type, 'Input')
+    %         ioType = 'input';
+    %     else
+    %         ioType = 'bidirectional';
+    %     end
+    %     signalType = chan.MeasurementType;
+    %     terminalConfig = chan.TerminalConfig;
+    %     range = ['[' char(string(chan.Range.Min)) ' ' char(string(ch.Range.Max)) ']'];
+    %     chanCell = {deviceID portNum name ioType signalType terminalConfig range};
+    %     channelData(i+1,:) = chanCell;
+    % end
+    % writetable(channelData, filepath);
+% end
 
 function PrintInfo(obj)
     % Print device information.
@@ -367,6 +377,8 @@ function LoadTrialFromParams(obj, componentTrialData, genericTrialData)
     if ~obj.SessionHandle.Running
         obj.SessionHandle.ScansAvailableFcn = @obj.plotData;
     end
+
+    % TODO EVERYTHING BELOW HERE NEEDS TO BE REWRITTEN
 
     fds = fields(componentTrialData);
     timeAxis = linspace(1/rate,tTotal,tTotal*rate)-tPre;
@@ -661,6 +673,22 @@ function out = GenerateDigitalStim(obj, stimType, stimLength, params)
 end
 
 %% DEVICE-SPECIFIC FUNCTIONS
+function obj = MapChannels(obj, filename)
+    % fills out DAQ's connected devices. 
+    if ~isfile(filename)
+        return
+    end
+    tab = readtable(filename);
+    s = size(tab);
+    for rowIdx = 1:s(1)
+        line = tab(rowIdx, :);
+        deviceName = line.('Device'){:};
+        if isempty(obj.ConnectedDevices) || ~any(contains(obj.ConnectedDevices, deviceName))
+            obj.ConnectedDevices = [obj.ConnectedDevices string(deviceName)];
+        end
+    end
+end
+
 function obj = CreateChannels(obj, filename, protocolIDs)
     % Create DAQ channels from filename.
     if isempty(obj.SessionHandle) || ~isvalid(obj.SessionHandle)

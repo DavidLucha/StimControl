@@ -10,8 +10,6 @@ if src == obj.h.SessionSelectDropDown
     basePath = obj.path.sessionBase;
 elseif src == obj.h.ComponentConfigDropDown
     basePath = obj.path.paramBase;
-elseif src == obj.h.ComponentMapDropDown
-    basePath = obj.path.componentMaps;
 end
 
 if strcmpi(src.Value, 'Browse...')
@@ -30,7 +28,7 @@ if src == obj.h.SessionSelectDropDown
 elseif src == obj.h.ComponentConfigDropDown
     obj = LoadComponentConfig(obj, filepath);
 elseif src == obj.h.ComponentMapDropDown
-    obj = LoadComponentProtocolMap(obj, filepath);
+    obj = MapComponents(obj, filepath);
 end
 % todo change display a la protocolSelect
 end
@@ -75,29 +73,12 @@ function LoadComponentConfig(obj, filepath)
     end
 end
 
-%% LOAD COMPONENT-PROTOCOL MAP
-function obj = LoadComponentProtocolMap(obj, filepath)
-    txt = fileread(filepath);
-    data = jsondecode(txt);
-    obj.pids = [];
-    for rowName = fields(data)'
-        rowName = rowName{:};
-        d = data.(rowName);
-        if height(d) > 1
-            d = d';
-        end
-        obj.pids.(rowName) = d;
-    end
-    % TODO REMOVE ROWS FOR NON-INITIALISED HARDWARE?
-end
-
 %% LOAD SESSION CONFIG
 function obj = LoadSessionConfig(obj, filepath)
     txt = fileread(filepath);
     data = jsondecode(txt);
     obj = loadSessionHelper(obj, data, 'componentParams', obj.path.paramBase, @LoadComponentConfig);
     obj = loadSessionHelper(obj, data, 'activeHardware', '', '');
-    obj = loadSessionHelper(obj, data, 'componentProtocolMap', obj.path.componentMaps, @LoadComponentProtocolMap);
     obj = loadSessionHelper(obj, data, 'protocol', obj.path.sessionBase, '');
 end
 

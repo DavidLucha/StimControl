@@ -5,9 +5,9 @@ ai3,Aurora Force OUT,input,Voltage,SingleEnded,,Aurora,force,,aurora,force,
 ai4,Aurora Length OUT,input,Voltage,SingleEnded,,Aurora,length,,aurora,length,
 ai5,DC Temperature Controller,input,Voltage,SingleEnded,,Heatpad,temp,,heatpad,record,
 port0/line1,TTL Thermode Onset,input,Digital,,,QST,onset,,thermode,onset,
-port0/line20,TTL ScanImage Res Galvo,input,Digital,,,2Photon,res,,galvo,res,
-port0/line21,TTL ScanImage Y Galvo,input,Digital,,,2Photon,y,,galvo,y,
-port0/line3,TTL ScanImage: Acq Start,output,Digital,,,2Photon,scanImage,,galvo,scanimage,
+port0/line20,TTL ScanImage Res Galvo,input,Digital,,,TwoPhoton,res,,galvo,res,
+port0/line21,TTL ScanImage Y Galvo,input,Digital,,,TwoPhoton,y,,galvo,y,
+port0/line3,TTL ScanImage: Acq Start,output,Digital,,,TwoPhoton,scanImage,,galvo,scanimage,
 port0/line4,TTL Basler: Frame Trigger,output,Digital,,,Widefield1,trigger,,camera,trigger,A
 port0/line23,TTL Basler: UNUSED,output,Digital,,,Widefield1,unused,,camera,unused,A
 port0/line0,BLUE LED,output,Digital,,,BlueLED,ttl,,led,stim,Blue

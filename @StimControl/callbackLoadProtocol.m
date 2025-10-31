@@ -72,91 +72,30 @@ obj.trialNum = 1;
 
 cpMap = obj.pids;
 
-if contains(obj.path.SessionProtocolFile, '.qst')
-    df = p;
-    protocols = p;
-    for f = {'Comments', 'tPre', 'tPost', 'nRepetitions'}
-        df = rmfield(df, f{:});
+allTargets = fields([obj.p(:).params]);
+% Construct appropriate trial for each device
+deviceParams = [];
+activeComponents = obj.d.Available(obj.d.Active);
+for di = 1:sum(obj.d.Active)
+    deviceParams.(activeComponents(di).ProtocolID) = [];
+end
+for fi = 1:length(allTargets)
+    targetName = allTargets{fi};
+    if ~isfield(obj.pids, targetName)
+        error("No connected device found for stimulus target %s", targetName);
     end
-    % create sub-maps for individual protocols as needed
-    % protocols = [];
-    fs = fields(p);
-    for fIdx = 1:length(fs)
-        if ~contains({'Comments', 'tPre', 'tPost', 'nRepetitions'}, fs{fIdx})
-            protocols = rmfield(protocols, fs{fIdx});
-            val = {p.(fs{fIdx})};
-            stimTokens = regexp(fs{fIdx}, "^([a-z]+)([A-Z][a-z]+)*([A-Z]?$)", "tokens", "once");
-            param = stimTokens{2};
-            stimID = [stimTokens{1} stimTokens{3}]; %add prefix (ThermodeA) if needed
-            if ~ismember(stimID, tab.Properties.RowNames)
-                error("unmapped ID: %s", stimID);
-            else
-                deviceNames = tab{stimID, :};
-                deviceNames = strsplit(deviceNames{:}, ' ');
-                % add protocols to each device
-                for iDev = 1:length(deviceNames)
-                    % extract information
-                    deviceLabel = strsplit(deviceNames{iDev}, '-');
-                    devType = deviceLabel{1};
-                    devID = deviceLabel{2};
-    
-                    % check mapped device exists & is valid for protocol.
-                    if ~isKey(obj.d.ProtocolIDMap, devID)
-                        msg = sprintf("No hardware assigned to Protocol ID %s. Please set an appropriate component's Protocol ID in the setup tab.", devID);
-                        obj.errorMsg(msg);
-                        continue %% TODO REMOVE: DEBUG ONLY
-                        error(msg);
-                    end
-                    targetDevice = obj.d.Available{obj.d.ProtocolIDMap(devID)};
-                    if ~contains(class(targetDevice), devType)
-                        msg = sprintf("Incorrect hardware type assigned to protocol ID %s. Class should be %sComponent but is %s.", devID, devType, class(targetDevice));
-                        obj.errorMsg(msg);
-                        error(msg);                   
-                    end
-    
-                    % fill out data structure
-                    if ~isfield(protocols, devID)
-                        [protocols(:).(devID)] = deal([]);
-                    end
-                    for i = 1:numel(protocols)
-                        if ~isfield(protocols(i).(devID), stimID)
-                            protocols(i).(devID).(stimID) = [];
-                        end
-                        if isempty(param)
-                            protocols(i).(devID).(stimID) = val{i};
-                        else
-                            protocols(i).(devID).(stimID).(param) = val{i};
-                            
-                            % add fields to maintain consistency with new protocol files
-                            if ~isfield(protocols(i).(devID).(stimID), 'tStart')
-                                % set the tStart - either tPre or tPost
-                                if any(contains({'thermode', 'stim', 'piezo'}, stimID))
-                                    tStartVal = 'tPost'; %it's a stimulus
-                                else
-                                    tStartVal = 'tPre'; %it's a recording
-                                end
-                                protocols(i).(devID).(stimID).tStart = tStartVal;
-                            end
-                            if ~isfield(protocols(i).(devID).(stimID), 'Type')
-                                % set the tStart - either tPre or tPost
-                                if regexpi(stimID, '^thermode[A-z]?')
-                                    type = 'thermode'; 
-                                elseif regexpi(stimID, '^piezo[A-z]?')
-                                    type = 'pulse';
-                                elseif regexpi(stimID, 'led[A-z]?')
-                                    type = 'pwm';
-                                end
-                                protocols(i).(devID).(stimID).('Type') = type;
-                            end
-                        end
-                    end
-                end
-            end
-        end
+    componentIDs = obj.pids.(targetName);
+    for ci = 1:length(componentIDs)
+        componentID = componentIDs(ci);
+        deviceParams.(componentIDs(ci)).targetName = []; %TODO FIGURE OUT 
+        % SAVE DEVICE PARAMS TO OBJ FOR LOADTRIAL
     end
-    obj.p = protocols;
-elseif  contains(obj.path.SessionProtocolFile, '.stim')
-    %TODO
+end
+
+for di = 1:sum(obj.d.Active)
+    component = activeComponents{di};
+    component.LoadTrialFromParams(blah)
+    deviceParams.(activeComponents(di).ProtocolID) = [];
 end
 
 if createChans || true %TODO REMOVE || TRUE

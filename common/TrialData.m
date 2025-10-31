@@ -20,6 +20,7 @@ classdef (HandleCompatible) TrialData < handle &  matlab.mixin.indexing.Redefine
         tPost
         nRuns
         comment
+        params
     end
 
     methods
@@ -60,16 +61,16 @@ classdef (HandleCompatible) TrialData < handle &  matlab.mixin.indexing.Redefine
             obj.treeTargets = targets;
         end
 
-        function trialParams = paramsSequence(obj)
+        function trialParams = generateParamsSequence(obj)
+            % generates full set of params for a trial in the format:
+            %   targetID: 
+            %       sequence [int]: the order in which to execute the stimuli
+            %       delay [double]: ms delay to wait between each parameter 
+            %       params: [struct] array of params for each struct. Order maps to sequence
             rootNode = obj.RootNode;
             allTargets = obj.targets;
-            trialParams = rootNode.buildParams;
-            % you want a data structure like this:
-            % trialParams:
-            %   targetID: 
-            %       StimulusOrder: [list of indices that indicates the order in which to execute the stimuli], 
-            %       stimuli: {array of structs, each struct is the parameters for that stimulus.}
-            % I THINK, ANYWAY.
+            trialParams = rootNode.buildParams;    
+            obj.params = rootNode.buildParams;
         end
 
         function set.data(obj, val)

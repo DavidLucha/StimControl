@@ -97,6 +97,7 @@ methods
         
         disp("loading previous session...");
         obj.loadDefaultSession;
+        obj.MapConnectedHardware;
         % obj.p2GUI;
         % obj.checkSync
         % StartPreviews(obj);
@@ -417,6 +418,26 @@ methods
         end
         obj.h.SessionSelectDropDown.Value = filename;
         obj.callbackLoadConfig(obj.h.SessionSelectDropDown, '');
+    end
+
+    function obj = MapConnectedHardware(obj)
+        for i = 1:length(obj.d.Available)
+            comp = obj.d.Available{i};
+            cid = comp.ConfigStruct.ProtocolID;
+            if ~isfield(obj.pids, cid)
+                obj.pids.(cid) = string(cid);
+            else
+                obj.pids.(cid) = [obj.pids.(cid) string(cid)];
+            end
+            for j = 1:length(comp.ConnectedDevices)
+                devName = comp.ConnectedDevices(j);
+                if ~isfield(obj.pids, devName)
+                    obj.pids.(devName) = string(cid);
+                else
+                    obj.pids.(devName) = [obj.pids.(devName) string(cid)];
+                end
+            end
+        end
     end
 end
 end

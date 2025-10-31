@@ -17,6 +17,7 @@ properties (Access = public)
     statusPanel = [];
     ComponentID
     TriggerTimer = [];
+    ConnectedDevices = [];
 end
 properties(Access=public, Dependent)
     SavePrefix
