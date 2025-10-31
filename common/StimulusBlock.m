@@ -27,6 +27,10 @@ properties
                             % seq (sequential, child1 starts after child2 finishes
 end
 
+properties (Access=private)
+    allTargetsCached = [];
+end
+
 methods
     function obj = StimulusBlock(varargin)
         % Construct an instance of StimulusBlock
@@ -75,7 +79,9 @@ methods
         % whether this node and all its children are valid.
         valid = obj.isValid;
         if ~obj.isLeafNode
-            for child = obj.children'
+            children = obj.children;
+            for i = 1:length(children)
+                child = children(i);
                 if ~child.allValid
                     valid = false;
                     return;
@@ -84,30 +90,92 @@ methods
         end
     end
 
-    function [sequence, delay, stims] = getTrialParams(obj)
-        stims = struct('sequence', [], 'delay', [], 'stims', []);
+    function trialParams = buildParams(obj)
+        % Builds a params sequence
+        singleStimParams = [];
+        params = struct('sequence', [], 'delay', [], 'params', []);
+        targets = obj.targets;
+        helperStruct = [];
+        for ti = 1:length(targets)
+            targetName = targets{ti};
+            singleStimParams.(targetName).sequence = [];
+            singleStimParams.(targetName).delay = [];
+            singleStimParams.(targetName).params = params;
+
+            % initalise helperstruct
+            helperStruct.(targetName) = [];
+            helperStruct.(targetName).idxOffset = 0;
+            helperStruct.(targetName).totalDelay = obj.startDelay;
+        end
+        trialParams = singleStimParams; % will be built out later.
+
         if obj.isLeafNode
-            sequence = ones([1, obj.nStimRuns]);
-            delay = [obj.startDelay rempat(obj.repeatDelay, [1, obj.nStimRuns-1])];
-            stims = obj.stimParams;
+            % only one stimulus. Easiest case.
+            tds = obj.stimParams.targetDevices;
+            for ti = 1:length(tds)
+                % TODO-OPTIMISATION: POSSIBILITY FOR A FAIR BIT OF REPLICATION HERE
+                targetName = tds(ti);
+                singleStimParams.(targetName).params = obj.stimParams;
+                singleStimParams.(targetName).delay = [obj.startDelay repmat(obj.repeatDelay, [1 obj.nStimRuns-1])];
+                singleStimParams.(targetName).sequence = ones([1, obj.nStimRuns]);
+                trialParams = singleStimParams;
+            end
             return
-        else %TODO ROOTNODE
-            sequence = [];
-            delay = [obj.startDelay repmat(obj.repeatDelay, [1 obj.nStimRuns-1])];
-            stims = [];
-            % get execution order and delays
-            if strcmpi(obj.childRel, 'sim')
-                sequence = ones([1, obj.nStimRuns]); 
-            elseif strcmpi(obj.childRel, 'seq')
+        end
+        % Traverse children
+        children = obj.children;
+        traversedParams = cell([1, length(children)]);
+        for ci = 1:length(children)
+            child = children(ci);
+            traversedParams{ci} = child.buildParams;
+        end
+        if strcmpi(obj.childRel, 'sim') 
+            % children occur simultaneously (the easiest case)
+            for ti = 1:length(traversedParams)
+                traversedParam = traversedParams{ti};
+                fds = fields(traversedParam);
+                for fi = 1:length(fds)
+                    fieldName = fds{fi};
+                    singleStimParams.(fieldName) = traversedParam.(fieldName);
+                    singleStimParams.(fieldName).delay = singleStimParams.(fieldName).delay + obj.startDelay;
+                end
+            end
+        else
+            % sequential or oddball. Build sequence and go from there.
+            if strcmpi(obj.childRel, 'seq')
                 sequence = linspace(1, length(obj.childIdxes), length(obj.childIdxes));
             elseif strcmpi(obj.childRel, 'odd')
                 sequence = obj.generateOddballOrder;
             end
-            maxExecutionIdx = 0;
-            for i = 1:length(obj.children)
-                child = obj.children(i);
-                [childExecution, childDel, childParams] = child.getTrialParams;
-                executionOrders = [sequence; child.executionOrder+maxExecutionIdx];
+            totalDelay = obj.startDelay;
+            for si = 1:length(sequence)
+                traversedParam = traversedParams{sequence(si)};
+                traversedParam = traversedParam{:};
+                child = children(sequence(si));
+                for f = fields(traversedParam)'
+                    % set params
+                    singleStimParams.(f).sequence = ...
+                        [singleStimParams.(f).sequence traversedParam.(f).sequence+helperStruct.(f).offsetIdx]; 
+                    singleStimParams.(f).delay = ...
+                        [singleStimParams.(f).delay traversedParam.(f).delay+(totalDelay-helperStruct.(f).offsetMs)];
+                    singleStimParams.(f).params = ...
+                        [singleStimParams.(f).params traversedParam.(f).params];
+                    % update helperstruct
+                    helperStruct.(f).idxOffset = helperStruct.(f).idxOffset + max(traversedParam.(f).sequence);
+                    helperStruct.(f).totalDelay = helperStruct.(f).totalDelay + child.durationMs;
+                end
+                totalDelay = totalDelay + child.durationMs;
+            end
+        end
+        
+        % build trial params out of single stim params
+        trialParams = singleStimParams;
+        if obj.nStimRuns > 1
+            for f = targets
+                for nRep = 2:obj.nStimRuns
+                    trialParams.(f).delay = [trialParams.(f).delay singleStimParams.(f).delay+obj.singleStimMs];
+                    trialParams.(f).sequence = [trialParams.(f).sequence singleStimParams.(f).sequence];
+                end
             end
         end
     end
@@ -122,30 +190,38 @@ methods
     end
 
     function isLeafNode = isLeafNode(obj)
-        isLeafNode = isempty(obj.childIdxes);
+        isLeafNode = length(obj.childIdxes)==0; %#ok<ISMT>
     end
 
-    function allTargets = allTargets(obj)
+    function allTargets = targets(obj)
+        % tree traversal to find all child targets
+        %TODO caching here would be SO HELPFUL but not a priority rn
         if ~obj.isLeafNode
             allTargets = {};
-            for child = obj.children'
-                allTargets = [allTargets, child.allTargets];
+            children = obj.children;
+            for i = 1:length(children)
+                child = children(i);
+                allTargets = [allTargets, child.targets]; %#ok<AGROW>
             end
         else
-            allTargets = obj.targets;
+            allTargets = obj.selfTargets;
         end
     end
 
     function childTargets = childTargets(obj)
+        % returns the list of the direct targets of the children.
         childTargets = [];
         if ~obj.isLeafNode
-            for child = obj.children'
+            children = obj.children;
+            for i = 1:length(children)
+                child = children(i);
                 childTargets = [childTargets child.targets];
             end
         end
     end
 
-    function targets = targets(obj)
+    function targets = selfTargets(obj)
+        % direct targets
         targets = {};
         if ~isempty(obj.stimParams)
             targets = obj.stimParams.targetDevices;
@@ -153,32 +229,35 @@ methods
     end
     
     function duration = durationMs(obj)
+        duration = obj.startDelay + obj.nStimRuns*(obj.singleStimMs + obj.repeatDelay);
+    end
+
+    function stimDur = singleStimMs(obj)
         if ~obj.isLeafNode
+            children = obj.children;
             if strcmpi(obj.childRel, 'sim') 
                 % children occur simultaneously - only count longest duration
-                maxChildDur = 0;
-                for child = obj.children'
-                    maxChildDur = max(child.durationMs, maxChildDur);
+                stimDur = 0;
+                for i = 1:length(children)
+                    stimDUr = max(stimDUr, children(i).durationMs);
                 end
-                duration = obj.startDelay + obj.nStimRuns*(maxChildDur + obj.repeatDelay) - obj.repeatDelay;
             elseif strcmpi(obj.childRel, 'seq')
                 % children occur sequentially. consider a single stim
-                duration = obj.startDelay;
-                seqChildDur = 0;
-                for child = obj.children'
-                    seqChildDur = seqChildDur + child.durationMs;
+                stimDUr = 0;
+                for i = 1:length(children)
+                    stimDur = stimDur + children(i).durationMs;
                 end
-                duration = obj.startDelay + obj.nStimRuns*(obj.repeatDelay + seqChildDur) - obj.repeatDelay;
             elseif strcmpi(obj.childRel, 'odd')
                 %TODO
                 error("not implemented.");
             end
         else
+            % leaf node.
             if strcmpi(obj.stimParams.type, 'serial')
                 if ~contains(obj.stimParams.targetDevices, 'QST')
                     stimDur = 0;
                 else
-                    stimDur = max(obj.stimParams.thermodeA.dStimulus, obj.stimParams.thermodeB.dStimulus);
+                    stimDur = max([obj.stimParams.thermodeA.dStimulus obj.stimParams.thermodeB.dStimulus]);
                 end
             elseif strcmpi(obj.stimParams.type, 'arbitrary')
                 %TODO
@@ -186,7 +265,6 @@ methods
             else
                 stimDur = obj.stimParams.duration;
             end
-            duration = obj.startDelay + obj.nStimRuns*(stimDur * obj.repeatDelay);
         end
     end
 end
@@ -230,6 +308,14 @@ methods(Access=private)
                     error("Not implemented");
                 end
             end
+        end
+    end
+
+    function out = childfcn(obj, fcnHandle)
+        out = [];
+        children = obj.children;
+        for i = 1:length(children)
+            out = [out child.fcnHandle];
         end
     end
 end

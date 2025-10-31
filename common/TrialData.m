@@ -6,6 +6,10 @@ classdef (HandleCompatible) TrialData < handle &  matlab.mixin.indexing.Redefine
     properties (Access=protected)
         StimulusBlocks (1,:) cell
     end
+
+    properties(Access=private)
+        treeTargets = []; % to be cached on first call of obj.targets
+    end
     
     properties (Dependent)
         data
@@ -36,18 +40,30 @@ classdef (HandleCompatible) TrialData < handle &  matlab.mixin.indexing.Redefine
             end
         end
         
-        function out = rootNode(obj)
+        function out = RootNode(obj)
             out = obj.StimulusBlocks{1};
         end
 
         function targets = targets(obj)
-            rootNode = obj.rootNode;
-            targets = rootNode.allTargets;
+            if isempty(obj.treeTargets)
+                rootNode = obj.RootNode;
+                targets = rootNode.targets;
+                obj.treeTargets = targets;
+            else
+                targets = obj.treeTargets;
+            end
         end
 
-        function trialParams = constructTrialParams(obj)
-            rootNode = obj.rootNode;
-            trialParams = rootNode.generateHardwareStim;
+        function targets = recalculateTargets(obj)
+            rootNode = obj.RootNode;
+            targets = rootNode.allTargets;
+            obj.treeTargets = targets;
+        end
+
+        function trialParams = paramsSequence(obj)
+            rootNode = obj.RootNode;
+            allTargets = obj.targets;
+            trialParams = rootNode.buildParams;
             % you want a data structure like this:
             % trialParams:
             %   targetID: 
