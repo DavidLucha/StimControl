@@ -12,20 +12,20 @@ obj.isRunning = true;
 
 
 % build/randomize sequence
-tmp = arrayfun(@(x,y) {ones(1,x)*y},[obj.p.nRepetitions],1:length(obj.p));
+tmp = arrayfun(@(x,y) {ones(1,x)*y},[obj.p.nRuns],1:length(obj.p));
 tmp = [tmp{:}];
-if obj.g.randomize > 0
-    if obj.g.randomize == 2
+if obj.g.rand > 0
+    if obj.g.rand == 2
         rng(0)
     else
         rng('shuffle')
     end
     seq = [];
-    for ii = 1:obj.g.nProtRep
+    for ii = 1:obj.g.nProtRuns
         seq = [seq tmp(randperm(length(tmp)))]; %#ok<AGROW>
     end
 else
-    seq = repmat(tmp,1,obj.g.nProtRep);
+    seq = repmat(tmp,1,obj.g.nProtRuns);
 end
 
 % create output directory

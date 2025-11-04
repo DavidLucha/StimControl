@@ -146,6 +146,8 @@ function StartTrial(obj)
     % Starts device with a preloaded session. 
     if ~isempty(obj.SavePath) || length(obj.SavePath) ~= 0
         % obj.SaveFID = fopen(strcat(obj.SavePath, filesep, obj.SavePrefix), 'w');
+        % TODO save channel names
+        
     end
     if ~isempty(obj.TriggerTimer) && isvalid(obj.TriggerTimer)
         % run stimulation on matlab timer
@@ -206,28 +208,6 @@ function SetParams(obj, paramsStruct)
         end
     end
 end
-
-% function daqStruct = GetParams(obj) %TODO this should all be handled in configstruct but I gotta check that works.
-%     % Get current device parameters for saving          
-%     daqs = daqlist().DeviceInfo;
-%     correctIndex = -1;
-%     for i = 1:length(daqs)
-%         if strcmpi(obj.SessionHandle.Vendor.ID, daqs(i).Vendor.ID)
-%             correctIndex = i;
-%         end
-%     end
-%     if correctIndex == -1
-%         warning('Unable to find DAQ in daqlist. ' + ...
-%             'DAQ device settings not saved.'); %note this should NEVER happen
-%     end
-%     d = daqs(correctIndex);
-%     daqStruct = struct();
-%     daqStruct.Vendor = d.Vendor.ID;
-%     daqStruct.Model = d.Model;
-%     daqStruct.ID = d.ID;
-%     daqStruct.Rate = obj.SessionHandle.Rate;
-%     daqStruct.ComponentID = obj.ComponentID;
-% end
 
 % function SaveAuxiliaryConfig(obj, filepath)
     % Get channel parameters for saving. DAQ-specific.
@@ -360,13 +340,12 @@ function LoadTrialFromParams(obj, componentTrialData, genericTrialData)
     if obj.SessionHandle.Running
         obj.SessionHandle.stop
     end
-    
     rate = obj.SessionHandle.Rate;
     if rate==0
-        % Software triggering required - only on-demand operations supported.
+        % Software triggering required - only on-demand operations
+        % supported. TODO
         rate = obj.ConfigStruct.Rate;
     end
-
     tPre     = genericTrialData.tPre  / 1000;
     tPost    = genericTrialData.tPost / 1000;
     tTotal   = tPre + tPost;
@@ -412,9 +391,9 @@ function LoadTrialFromParams(obj, componentTrialData, genericTrialData)
         for idx = outIdxes
             out(:,idx) = stim;
         end
-        % for idx = chIdxes
-        %     previewOut(:, idx) = stim;
-        % end
+        for idx = chIdxes
+            previewOut(:, idx) = stim;
+        end
     end
     obj.PreviewData = previewOut;
     obj.LoadTrial(out);

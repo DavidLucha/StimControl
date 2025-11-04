@@ -1,2 +1,6 @@
 - Get legacy loading working
 - update the wiki on config files to reflect that we got rid of the map.
+- dry runs and stress testing
+- fix the over-saving bug
+- fix the wrong save folder name bug
+- make a loader for collected data
