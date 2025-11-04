@@ -88,6 +88,7 @@ function obj = loadSessionHelper(obj, data, fieldName, defaultPath, fcnHandle)
     end
     if strcmpi(fieldName, 'activeHardware')
         %TODO ACTIVE HARDWARE - SET FOR 'ALL' TOO
+        obj.d.ActiveIDs = data.activeHardware;
     else
         if contains(data.(fieldName), filesep)
             filepath = data.(fieldName);

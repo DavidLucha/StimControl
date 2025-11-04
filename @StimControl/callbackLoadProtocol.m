@@ -74,10 +74,10 @@ cpMap = obj.pids;
 
 allTargets = fields([obj.p(:).params]);
 % Construct appropriate trial for each device
-deviceParams = [];
-activeComponents = obj.d.Available(obj.d.Active);
+deviceTargets = [];
+activeComponents = obj.d.Available(logical(obj.d.Active));
 for di = 1:sum(obj.d.Active)
-    deviceParams.(activeComponents(di).ProtocolID) = [];
+    deviceTargets.(activeComponents{di}.ConfigStruct.ProtocolID) = [];
 end
 for fi = 1:length(allTargets)
     targetName = allTargets{fi};
@@ -87,36 +87,34 @@ for fi = 1:length(allTargets)
     componentIDs = obj.pids.(targetName);
     for ci = 1:length(componentIDs)
         componentID = componentIDs(ci);
-        deviceParams.(componentIDs(ci)).targetName = []; %TODO FIGURE OUT 
-        % SAVE DEVICE PARAMS TO OBJ FOR LOADTRIAL
+        deviceTargets.(componentIDs(ci)) = [deviceTargets.(componentIDs(ci)) string(targetName)];
     end
 end
+obj.d.componentTargets = deviceTargets;
 
-for di = 1:sum(obj.d.Active)
-    component = activeComponents{di};
-    component.LoadTrialFromParams(blah)
-    deviceParams.(activeComponents(di).ProtocolID) = [];
-end
-
-if createChans || true %TODO REMOVE || TRUE
+if createChans
     % first time loading a trial. Initialise.
-    comps = obj.d.Available(logical(obj.d.Active));
-    activeIDs = [cellstr(keys(obj.d.ProtocolIDMap)); fields(obj.p(1).Trigger)]; %TODO this is an imperfect measure!!! and also you'll need to be able to select active hardware!
     for i = 1:length(obj.d.Available)
         if ~obj.d.Active(i) || ~isa(obj.d.Available{i}, 'DAQComponent')
             continue
         end
         comp = obj.d.Available{i};
-        comp = comp.InitialiseSession('ActiveDeviceIDs', activeIDs);
+        fprintf("Creating channels for %s...", comp.ConfigStruct.ProtocolID);
+        obj.d.Available{i} = comp.InitialiseSession('ActiveDeviceIDs', obj.d.ActiveIDs);
     end
 end
 
+% for di = 1:sum(obj.d.Active)
+%     component = activeComponents{di};
+%     component.LoadTrialFromParams(blah)
+%     deviceParams.(activeComponents(di).ProtocolID) = [];
+% end
 
 % refresh information scroller
 obj.h.trialInformationScroller.Value = '';
 
 %% calculate estimated time + rest time
-protocolTotalTimeSecs = ((obj.g.dPause(1) + ((sum([obj.p.tPre]) + sum([obj.p.tPost]))/1000))*obj.g.nProtRep) - obj.g.dPause(1);
+protocolTotalTimeSecs = ((obj.g.dPause(1) + (sum(([obj.p.tPre] + [obj.p.tPost]).*[obj.p.nRuns])))*obj.g.nProtRuns) - obj.g.dPause(1);
 protocolTimeMins = floor(protocolTotalTimeSecs/60);
 protocolTimeSecs = ceil(protocolTotalTimeSecs - (60*protocolTimeMins));
 obj.h.protocolTimeEstimate.Text = sprintf('0:00 / %d:%d', protocolTimeMins, protocolTimeSecs);

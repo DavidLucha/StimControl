@@ -378,8 +378,6 @@ function LoadTrialFromParams(obj, componentTrialData, genericTrialData)
         obj.SessionHandle.ScansAvailableFcn = @obj.plotData;
     end
 
-    % TODO EVERYTHING BELOW HERE NEEDS TO BE REWRITTEN
-
     fds = fields(componentTrialData);
     timeAxis = linspace(1/rate,tTotal,tTotal*rate)-tPre;
     obj.PreviewTimeAxis = timeAxis;
@@ -388,60 +386,39 @@ function LoadTrialFromParams(obj, componentTrialData, genericTrialData)
     % Preallocate all zeros
     previewOut = zeros(numel(timeAxis), length(obj.SessionHandle.Channels));
     out = zeros(numel(timeAxis), sum(contains({obj.SessionHandle.Channels.Type}, 'Output')));
-
+    
+    % TODO FROM HERE
+    keyboard
     for i = 1:length(fds)
         fieldName = fds{i};
-        fieldNames = fields(obj.ChannelMap);
-        chIdxes = {};
+        % targetNames = fields(obj.ChannelMap);
         % find all channel indexes associated with the stimulus type.
-        fieldIdxes = find(contains(fieldNames, fieldName));
-        if ~isempty(fieldIdxes)
-            chIdxes = obj.ChannelMap.(fieldNames{fieldIdxes});
-            chIdxes = [chIdxes{:,1}];
-        end
-        if isempty(chIdxes)
-            % possible the fieldName refers to a subtype
-            fieldID = regexpi(fieldName, "^([a-z]+)([A-Z][a-z]+)*([A-Z]$)", 'tokens', 'once');
-            fieldID = fieldID{1};
-            fieldIdxes = find(contains(fieldNames, fieldID));
-            if isempty(fieldIdxes)
-                chIdxes = [];
-            else
-                mapItems = obj.ChannelMap.(fieldNames{fieldIdxes});
-                % todo separate out A and B for thermodes.
-                chIdxes = [mapItems{:,1}];
-            end
-        end
-        outIdxes = [];
-        for i = 1:length(chIdxes)
-            ci = chIdxes(i);
-            outIdx = find(obj.OutChanIdxes == ci);
-            if ~isempty(outIdx)
-                outIdxes(end+1) = outIdx;
-            end
-        end
+        [outIdxes, labels] = obj.getDeviceOutIdxes(fieldName);
         if isempty(outIdxes)
             warning("No output channels assigned for stimulus %s in DAQ %s. Check the channel config file.", fieldName, obj.ComponentID);
             continue
         end
         % Generate Stimulus. Handle special cases.
-        if contains(fieldName, 'thermode')
-            % multiple outputs
-        else
-            % Generate Stimulus
-            stim = obj.GenerateStim(componentTrialData.(fieldName), fieldName, stimLength, tPreLength, chIdxes);
-            for i = 1:length(outIdxes)
-                idx = outIdxes(i);
-                if ~any(regexpi(obj.SessionHandle.Channels(idx).Type, 'Counter', 'ONCE'))
-                    % not a counter channel, can be pre-loaded
-                    out(:,idx) = stim;
-                end
-            end
-            for i = 1:length(chIdxes)
-                ci = chIdxes(i);
-                previewOut(:,ci) = stim';
-            end
-        end
+        stim = StimGenerator.GenerateStim(componentTrialData, genericTrialData);
+        
+
+        % if contains(fieldName, 'thermode')
+        %     % multiple outputs
+        % else
+        %     % Generate Stimulus
+        %     stim = obj.GenerateStim(componentTrialData.(fieldName), fieldName, stimLength, tPreLength, chIdxes);
+        %     for i = 1:length(outIdxes)
+        %         idx = outIdxes(i);
+        %         if ~any(regexpi(obj.SessionHandle.Channels(idx).Type, 'Counter', 'ONCE'))
+        %             % not a counter channel, can be pre-loaded
+        %             out(:,idx) = stim;
+        %         end
+        %     end
+        %     for i = 1:length(chIdxes)
+        %         ci = chIdxes(i);
+        %         previewOut(:,ci) = stim';
+        %     end
+        % end
     end
     obj.PreviewData = previewOut;
     obj.LoadTrial(out);
@@ -698,7 +675,7 @@ function obj = CreateChannels(obj, filename, protocolIDs)
         filename = obj.ConfigStruct.ChannelConfig;
     end
     % clear previous channels, if any
-    obj = obj.ClearChannels();
+    % obj = obj.ClearChannels();
     % obj.SessionHandle.
     tab = readtable(filename);
     s = size(tab);
@@ -711,19 +688,15 @@ function obj = CreateChannels(obj, filename, protocolIDs)
             line = tab(ii, :); %TODO CHECK FOR BLANKS
             % line.('deviceID') or line.(1);
             if ~isempty(protocolIDs) ...
-                && ~any(contains(protocolIDs, [line.('ProtType'){:} line.('ProtID'){:}])) ...
-                && ~any(contains([line.('ProtType'){:} line.('ProtID'){:}], protocolIDs))
+                && ~any(contains(protocolIDs, line.('Device'){:}))
                 % skip channels that aren't required for this protocol.
                 continue
             end
             tmp = strsplit(obj.ComponentID, '_');
             deviceID = tmp{1};
             portNum = line.('portNum'){1}; 
-            channelID = line.ProtType{:};
+            channelID = [line.Device{:} '-' line.Label{:}];
             % channelID = [line.ProtType{:} line.ProtID{:}];
-            if isempty(channelID)
-                channelID = line.('Note'){1};
-            end
             ioType = line.('ioType'){1};
             signalType = line.('signalType'){1};
             terminalConfig = line.('TerminalConfig');
@@ -764,12 +737,12 @@ function obj = CreateChannels(obj, filename, protocolIDs)
                 end
             end
             
-            if ~isfield(obj.ChannelMap, channelID)
-                obj.ChannelMap.(channelID) = {};
+            if ~isfield(obj.ChannelMap, line.Device{:})
+                obj.ChannelMap.(line.Device{:}) = [];
             end
-            obj.ChannelMap.(channelID){end+1, 1} = idx;
-            obj.ChannelMap.(channelID){end, 2} = line.ProtFunc{:};
-            obj.ChannelMap.(channelID){end, 3} = line.ProtID{:};
+            obj.ChannelMap.(line.Device{:}).(line.Label{:}).idx = idx;
+            obj.ChannelMap.(line.Device{:}).(line.Label{:}).ID = channelID;
+            obj.ChannelMap.(line.Device{:}).(line.Label{:}).ioType = ioType;
 
         catch exception
             disp(exception.message)
@@ -786,13 +759,13 @@ function obj = CreateChannels(obj, filename, protocolIDs)
 end
 
 function obj = ClearChannels(obj)
+    if length(obj.SessionHandle.Channels) ~= 0
+        removechannel(obj.SessionHandle, 1:length(obj.SessionHandle.Channels));
+    end
     obj.ChannelMap = struct();
     obj.OutChanIdxes = [];
     obj.InChanIdxes = [];
     obj.TrackedChannels = {};
-    if length(obj.SessionHandle.Channels) ~= 0
-        removechannel(obj.SessionHandle, 1:length(obj.SessionHandle.Channels));
-    end
 end
 end
 
@@ -876,6 +849,20 @@ function info = deviceInfo(obj)
     deviceID = obj.ConfigStruct.ID;
     daqs = daqlist;
     info = daqs(strcmpi(daqs.DeviceID, deviceID),:).DeviceInfo;
+end
+
+function [idxes, labels] = getDeviceOutIdxes(obj, targetName)
+    % get indexes of all 'out' channels for the device.
+    chans = fields(obj.ChannelMap.(targetName));
+    idxes = [];
+    labels = [];
+    for fidx = 1:length(chans)
+        labelName = chans{fidx};
+        if any(contains(["output", "bidirectional"], obj.ChannelMap.(targetName).(labelName).ioType))
+            idxes = [idxes obj.ChannelMap.(targetName).labelName.idx];
+            labels = [labels labelName];
+        end
+    end
 end
 
 

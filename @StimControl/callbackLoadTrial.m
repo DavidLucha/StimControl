@@ -21,19 +21,25 @@ elseif isempty(obj.p) || isempty(obj.g)
     obj.errorMsg('please select a protocol');
 end
 
+obj.d.componentTargets;
+
 trialData = obj.p(obj.trialNum);
 genericTrialData = struct( ...
-    'tPre', trialData(obj.trialIdx).tPre, ...
-    'tPost', trialData(obj.trialIdx).tPost, ...
-    'nRepetitions', trialData(obj.trialIdx).nRepetitions);
-fs = fields(trialData(obj.trialIdx));
-for fIdx = 1:length(fs)
-    f = fs{fIdx};
-    if any(strcmpi({'tPre', 'tPost', 'nRepetitions', 'Comments'}, f))
-        continue
+    'tPre', trialData.tPre, ...
+    'tPost', trialData.tPost, ...
+    'nRuns', trialData.nRuns);
+ct = fields(obj.d.componentTargets);
+for cIdx = 1:length(ct)
+    compID = ct{cIdx};
+    component = obj.d.Available{obj.d.ProtocolIDMap(compID)};
+    targets = obj.d.componentTargets.(compID);
+    componentData = [];
+    for f = 1:length(targets)
+        if isfield(trialData.params, targets{f})
+            componentData.(targets{f}) = trialData.params.(targets{f});
+        end
     end
-    component = obj.d.Available{obj.d.ProtocolIDMap(f)};
-    component.LoadTrialFromParams(trialData(obj.trialIdx).(f), genericTrialData);
+    component.LoadTrialFromParams(componentData, genericTrialData);
 end
 
 if src ~= obj.h.StartStopBtn
