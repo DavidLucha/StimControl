@@ -154,6 +154,10 @@ methods
                 child = children(sequence(si));
                 for f = fields(traversedParam)'
                     % set params
+                    % TODO this might be worse than just having an absolute
+                    % offset for each child, greater possibility of
+                    % miscalculating fi you're doing stim duration in two
+                    % places (here and StimGenerator: see TODO:SEQ)
                     singleStimParams.(f).sequence = ...
                         [singleStimParams.(f).sequence traversedParam.(f).sequence+helperStruct.(f).offsetIdx]; 
                     singleStimParams.(f).delay = ...

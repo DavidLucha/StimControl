@@ -99,7 +99,7 @@ if createChans
             continue
         end
         comp = obj.d.Available{i};
-        fprintf("Creating channels for %s...", comp.ConfigStruct.ProtocolID);
+        fprintf("Creating channels for %s...\n", comp.ConfigStruct.ProtocolID);
         obj.d.Available{i} = comp.InitialiseSession('ActiveDeviceIDs', obj.d.ActiveIDs);
     end
 end

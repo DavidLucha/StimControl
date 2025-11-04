@@ -1,92 +1,84 @@
 classdef StimGenerator
 
-methods (Static, Access=public)
+properties (Constant)
+    % Constants for use in calculations. May change depending on specific
+    % lab hardware.
+    Aurorasf = 52;
 
-
-function stimBlock = GenerateStimBlock(varargin)
-    %%IN PROGRESS
-
-    % Generates a stim block of given length
-    % PARAMS:
-    %     sampleRate (double=1000): sample rate of output array (Hz)
-    %     nStims (double = 1): number of times to repeat the stim within the block
-    %     stimParams
-    %     stims (exclusive with stimParams)
-    %     repDel
-    %     oddball bool true
-    %     display (logical, false)
-        % Generates a stimulus given arguments.
-    % PARAMS: 
-    %   stimulusData      (struct): 
-    %   blockData         (struct): 
-            % nStims
-            % repDel
-            % oddball
-            % tStart
-    %   genericData       (struct): 
-            % tPre
-            % tPost
-    %   fieldName         (string): 
-    %   sampleRate        (double): 
-    %   Aurorasf          (double): 
-        
-    p = inputParser();
-    addParameter(p, 'sampleRate', 1000, @(x) isnumeric(x));
-    addParameter(p, 'nStims', 1, @(x) isnumeric(x));
-    addParameter(p, 'stimParams', [], @(x) isstruct(x));
-    addParameter(p, 'repDel', 0, @(x) isnumeric(x) && x >=0);
-    addParameter(p, 'display', false, @(x) islogical(x));
-    parse(p, varargin{:});
-    params = p.Results;
-        % offset = delay + startTPost*tPreLength;
-
- % if isfield(params, 'RepDel')
-    %     repdelTicks = MsToTicks(params.RepDel);
-    %     nRepeats = params.rep;
-    % else
-    %     repdelTicks = 0;
-    %     nRepeats = 1;
-    % end
-    % totalDurTicks = (repdelTicks + durationTicks) * nRepeats;
-    % if length(stim) == length(stim)
-    %     stim = stim;
-    % elseif length(stim) > length(stim)
-    %     stim = stim(1:length(stim));
-    % else
-    %     maxLength = length(stim);
-    %     for i = offset:offset+totalDurTicks:durationTicks+maxLength
-    %         % if i + stimBlockLength - 1 <= stimLength
-    %         %     stim(i : i + stimBlockLength - 1) = singleStim;
-    %         % end
-    %         stim(i:i+numel(stim)-1) = stim;
-    %     end
-    % end
 end
 
-function stim = GenerateStim(varargin)
-    % Generates a stimulus given arguments.
-    % PARAMS: 
-    %   stimulusData      (struct): 
-    %   genericTrialData  (struct): 
-    %   fieldName         (string): 
-    %   sampleRate        (double): 
-    %   Aurorasf          (double): 
+methods (Static, Access=public)
 
-    p = inputParser();
-    addinput(p, stimulusData, [], @(x) isstruct(x));
-    addinput(p, genericTrialData, [], @(x) isstruct(x));
-    addinput(p, fieldName, [], @(x) ischar(x) || isstring(x));
-    addinput(p, sampleRate, 1000, @(x) isnumeric(x));
-    addinput(p, Aurorasf, 52, @(x) isnumeric(x));
-    p.parse(varargin{:});
-    params = p.Results;
+function stimTrain = GenerateStimTrain(componentTrialData, genericTrialData, sampleRate)
+    % Generates a stimulus train given arguments
+    seq = componentTrialData.sequence;
+    delays = componentTrialData.delay;
+    params = componentTrialData.params;
+    secsPre = genericTrialData.tPre  / 1000;
+    secsPost = genericTrialData.tPost / 1000;
+    secsTotal = secsPre + secsPost;
 
-    stimData = params.stimulusData;
-    trialData = params.trialData;
-    stimName = params.fieldName;
-    rate = params.sampleRate;
-    Aurorasf = params.Aurorasf;
+    timeAxis = linspace(1/sampleRate,secsTotal,secsTotal*sampleRate)-secsPre;
+    tPreLength = StimGenerator.MsToTicks(genericTrialData.tPre, sampleRate);
 
+    % Preallocate all zeros
+    stimTrain = zeros(numel(timeAxis), 1);
+
+    if params.isAcquisitionTrigger
+        stimTicks = numel(timeAxis);
+        startIdx = 1;
+    else
+        stimTicks = numel(timeAxis) - tPreLength;
+        startIdx = StimGenerator.MsToTicks(genericTrialData.tPre, sampleRate);
+    end
+    
+    for i = 1:length(componentTrialData.sequence)
+        stimIdx = componentTrialData.sequence(i);
+        preStimTicks = StimGenerator.MsToTicks(componentTrialData.delay(i), sampleRate);
+        stimParams = componentTrialData.params(stimIdx);
+        startIdx = startIdx + preStimTicks;
+
+        interimStim = StimGenerator.GenerateStim(stimParams, sampleRate, stimTicks-startIdx);
+        stimTrain(startIdx:startIdx+length(interimStim)-1) = interimStim; 
+
+        startIdx = startIdx + length(interimStim); %TODO:SEQ THIS AND IN StimulusBlock.BuildParams
+    end
+end
+
+function stim = GenerateStim(params, rate, maxDur)
+    % generates a single stim 
+    generatorFcn = @(h) h('sampleRate', rate, 'totalTicks', maxDur, 'paramsStruct', params);
+    generatorHandle = [];
+    switch(lower(params.type))
+        case 'pwm'
+            generatorHandle = @StimGenerator.pwm;
+        case 'digitalpulse'
+            generatorHandle = @StimGenerator.digitalPulse;
+        case 'analogpulse'
+            generatorHandle = @StimGenerator.analogPulse;
+        case 'sinewave'
+            generatorHandle = @StimGenerator.sineWave;
+        case 'analognoise'
+            generatorHandle = @StimGenerator.analogNoise;
+        case 'squarewave'
+            generatorHandle = @StimGenerator.squareWave;
+        case 'digitaltrigger'
+            generatorHandle = @StimGenerator.digitalTrigger;
+        case 'arbitraryStim'
+            generatorHandle = @StimGenerator.arbitraryStim;
+        case 'piezo'
+            generatorHandle = @StimGenerator.piezoStim;
+        case 'thermalpreview'
+            generatorHandle = @StimGenerator.thermalPreview;
+        case 'serial'
+            % trigger - special case. Hardcoded for now TODO
+            stim = StimGenerator.serialTrigger( ...
+                'sampleRate', rate, ...
+                'totalTicks', maxDur, ...
+                'duration', params.thermodeA.dStimulus);
+            return
+    end
+    stim = generatorFcn(generatorHandle);
 end
 
 function stim = pwm(varargin)
@@ -109,10 +101,21 @@ function stim = pwm(varargin)
     addParameter(p, 'rampDown', 0, @(x) isnumeric(x));
     addParameter(p, 'frequency', 30, @(x) isnumeric(x));
     addParameter(p, 'dutyCycle', 50, @(x) isnumeric(x));
-    addParameter(p, 'name', 'PWM stim');
     addParameter(p, 'display', false, @(x) islogical(x));
+    addParameter(p, 'paramsStruct', [], @(x) isstruct(x));
     parse(p, varargin{:});
     params = p.Results;
+
+    if ~isempty(params.paramsStruct)
+        sampleRate = params.sampleRate;
+        totalTicks = params.totalTicks;
+        display = params.display;
+        params = params.paramsStruct;
+        params.sampleRate = sampleRate;
+        params.totalTicks = totalTicks;
+        params.display = display;
+    end
+
     stim = StimGenerator.GetBase(params.totalTicks, params.duration, params.sampleRate);
     if (params.duration > 0 && params.rampUp + params.rampDown > params.duration) ...
         || (params.duration == -1 && (params.rampUp + params.rampDown > StimGenerator.TicksToMs(params.totalTicks, params.sampleRate)))
@@ -143,7 +146,6 @@ function stim = pwm(varargin)
             numOnTicks = onTicks;
         end
        stim(i:i+numOnTicks) = 1;
-       fprintf("%d %d %d \r\n", jj, i, numOnTicks);
        jj = jj+1; 
     end
     stim = stim(1:durationTicks);
@@ -152,7 +154,7 @@ function stim = pwm(varargin)
     end
 end
 
-function stim = digitalpulse(varargin)
+function stim = digitalPulse(varargin)
     % Generates a digital pulse stim of given length
     % PARAMS:
     %     sampleRate (double=1000): sample rate of output array (Hz)
@@ -164,8 +166,20 @@ function stim = digitalpulse(varargin)
     addParameter(p, 'sampleRate', 1000, @(x) isnumeric(x));
     addParameter(p, 'totalTicks', 1000, @(x) isnumeric(x));
     addParameter(p, 'duration', -1, @(x) isnumeric(x));
+    addParameter(p, 'paramsStruct', [], @(x) isstruct(x));
     parse(p, varargin{:});
     params = p.Results;
+
+    if ~isempty(params.paramsStruct)
+        sampleRate = params.sampleRate;
+        totalTicks = params.totalTicks;
+        display = params.display;
+        params = params.paramsStruct;
+        params.sampleRate = sampleRate;
+        params.totalTicks = totalTicks;
+        params.display = display;
+    end
+
     stim = StimGenerator.GetBase(params.totalTicks, params.duration, params.sampleRate);
     stim = ones(length(stim), 1);
     if params.display
@@ -173,7 +187,7 @@ function stim = digitalpulse(varargin)
     end
 end
 
-function stim = analogpulse(varargin)
+function stim = analogPulse(varargin)
  % Generates an analog pulse stim of given length
     % PARAMS:
     %     sampleRate (double=1000): sample rate of output array (Hz)
@@ -193,10 +207,21 @@ function stim = analogpulse(varargin)
     addParameter(p, 'rampDown', 0, @(x) isnumeric(x));
     addParameter(p, 'maxAmp', 5, @(x) isnumeric(x));
     addParameter(p, 'minAmp', 0, @(x) isnumeric(x));
-    addParameter(p, 'name', 'analogPulse');
     addParameter(p, 'display', false, @(x) islogical(x));
+    addParameter(p, 'paramsStruct', [], @(x) isstruct(x));
     parse(p, varargin{:});
     params = p.Results;
+
+    if ~isempty(params.paramsStruct)
+        sampleRate = params.sampleRate;
+        totalTicks = params.totalTicks;
+        display = params.display;
+        params = params.paramsStruct;
+        params.sampleRate = sampleRate;
+        params.totalTicks = totalTicks;
+        params.display = display;
+    end
+
     stim = StimGenerator.GetBase(params.totalTicks, params.duration, params.sampleRate);
     if (params.duration > 0 && params.rampUp + params.rampDown > params.duration) ...
         || (params.duration == -1 && (params.rampUp + params.RampDown > StimGenerator.TicksToMs(length(stim), params.sampleRate)))
@@ -214,7 +239,7 @@ function stim = analogpulse(varargin)
     end
 end
 
-function stim = sinewave(varargin)
+function stim = sineWave(varargin)
     % Generates an analog sinewave stim of given length
     % PARAMS:
     %     sampleRate (double=1000): sample rate of output array (Hz)
@@ -238,10 +263,21 @@ function stim = sinewave(varargin)
     addParameter(p, 'amplitude', 5, @(x) isnumeric(x));
     addParameter(p, 'constant', 0, @(x) isnumeric(x));
     addParameter(p, 'amplitudeMod', 1, @(x) isnumeric(x));
-    addParameter(p, 'name', 'sinewave');
     addParameter(p, 'display', false, @(x) islogical(x));
+    addParameter(p, 'paramsStruct', [], @(x) isstruct(x));
     parse(p, varargin{:});
     params = p.Results;
+
+    if ~isempty(params.paramsStruct)
+        sampleRate = params.sampleRate;
+        totalTicks = params.totalTicks;
+        display = params.display;
+        params = params.paramsStruct;
+        params.sampleRate = sampleRate;
+        params.totalTicks = totalTicks;
+        params.display = display;
+    end
+    
     if params.duration ~= -1
         N = params.duration * params.sampleRate;
         dur = params.duration;
@@ -260,7 +296,7 @@ function stim = sinewave(varargin)
     end
 end
 
-function stim = analognoise(varargin)
+function stim = analogNoise(varargin)
     % Generate analog noise.
     % PARAMS:
     %     sampleRate (double=1000): sample rate of output array (Hz)
@@ -277,10 +313,20 @@ function stim = analognoise(varargin)
     addParameter(p, 'maxAmplitude', 5, @(x) isnumeric(x));
     addParameter(p, 'minAmplitude', -5, @(x) isnumeric(x));
     addParameter(p, 'distribution', 'uniform', @(x) ischar(x) || isstring(x));
-    addParameter(p, 'name', 'noise');
     addParameter(p, 'display', false, @(x) islogical(x));
+    addParameter(p, 'paramsStruct', [], @(x) isstruct(x));
     parse(p, varargin{:});
     params = p.Results;
+
+    if ~isempty(params.paramsStruct)
+        sampleRate = params.sampleRate;
+        totalTicks = params.totalTicks;
+        display = params.display;
+        params = params.paramsStruct;
+        params.sampleRate = sampleRate;
+        params.totalTicks = totalTicks;
+        params.display = display;
+    end
     
     if params.duration ~= -1
         len = StimGenerator.MsToTicks(params.duration, params.sampleRate);
@@ -306,7 +352,7 @@ function stim = analognoise(varargin)
     end
 end
 
-function stim = squarewave(varargin)
+function stim = squareWave(varargin)
     % Generates a squarewave stim
     % PARAMS:
     %     sampleRate (double=1000): sample rate of output array (Hz)
@@ -323,12 +369,22 @@ function stim = squarewave(varargin)
     addParameter(p, 'frequency', 30, @(x) isnumeric(x) && x>0);
     addParameter(p, 'maxAmp', 5, @(x) isnumeric(x));
     addParameter(p, 'minAmp', 0, @(x) isnumeric(x));
-    addParameter(p, 'name', 'squareWave');
     addParameter(p, 'display', false, @(x) islogical(x));
+    addParameter(p, 'paramsStruct', [], @(x) isstruct(x));
     parse(p, varargin{:});
     params = p.Results;
 
-    stim = StimGenerator.GetBase(params.totalTicks, params.durationMs, params.sampleRate);
+    if ~isempty(params.paramsStruct)
+        sampleRate = params.sampleRate;
+        totalTicks = params.totalTicks;
+        display = params.display;
+        params = params.paramsStruct;
+        params.sampleRate = sampleRate;
+        params.totalTicks = totalTicks;
+        params.display = display;
+    end
+
+    stim = StimGenerator.GetBase(params.totalTicks, params.duration, params.sampleRate);
     pulseTicks = round(params.sampleRate/params.frequency);
     stim = stim+params.minAmp;
     for i = 1:pulseTicks:length(stim)
@@ -340,7 +396,7 @@ function stim = squarewave(varargin)
     end
 end
 
-function stim = digitaltrigger(varargin)
+function stim = digitalTrigger(varargin)
     % Generates a digital trigger stim
     % PARAMS:
     %     sampleRate (double=1000): sample rate of output array (Hz)
@@ -354,12 +410,21 @@ function stim = digitaltrigger(varargin)
     addParameter(p, 'totalTicks', 1000, @(x) isnumeric(x));
     addParameter(p, 'duration', -1, @(x) isnumeric(x));
     addParameter(p, 'frequency', 30, @(x) isnumeric(x) && x>0);
-    addParameter(p, 'name', 'digitalTrigger');
     addParameter(p, 'display', false, @(x) islogical(x));
+    addParameter(p, 'paramsStruct', [], @(x) isstruct(x));
     parse(p, varargin{:});
     params = p.Results;
 
-    stim = StimGenerator.GetBase(params.totalTicks, params.durationMs, params.sampleRate);
+    if ~isempty(params.paramsStruct)
+        sampleRate = params.sampleRate;
+        totalTicks = params.totalTicks;
+        display = params.display;
+        params = params.paramsStruct;
+        params.sampleRate = sampleRate;
+        params.totalTicks = totalTicks;
+        params.display = display;
+    end
+    stim = StimGenerator.GetBase(params.totalTicks, params.duration, params.sampleRate);
     pulseTicks = round(params.sampleRate/params.frequency);
 
     for i = 1:pulseTicks:length(stim)
@@ -372,7 +437,7 @@ function stim = digitaltrigger(varargin)
 
 end
 
-function stim = arbitrarystim(varargin)
+function stim = arbitraryStim(varargin)
     % Generates a digital trigger stim
     % PARAMS:
     %     sampleRate (double=1000): sample rate of output array (Hz)
@@ -389,10 +454,20 @@ function stim = arbitrarystim(varargin)
     addParameter(p, 'duration', -1, @(x) isnumeric(x));
     addParameter(p, 'interpolate', false, @(x) islogical(x));
     addParameter(p, 'filename', '', @(x) ischar(x) || isstring(x));
-    addParameter(p, 'name', 'arbitrary');
     addParameter(p, 'display', false, @(x) islogical(x));
+    addParameter(p, 'paramsStruct', [], @(x) isstruct(x));
     parse(p, varargin{:});
     params = p.Results;
+
+    if ~isempty(params.paramsStruct)
+        sampleRate = params.sampleRate;
+        totalTicks = params.totalTicks;
+        display = params.display;
+        params = params.paramsStruct;
+        params.sampleRate = sampleRate;
+        params.totalTicks = totalTicks;
+        params.display = display;
+    end
 
     stim = readmatrix(params.filename);
     if ~ismember('sampleRate', p.UsingDefaults) ...
@@ -421,7 +496,7 @@ function stim = arbitrarystim(varargin)
     end
 end
 
-function stim = piezostim(varargin)
+function stim = piezoStim(varargin)
     % Generates a digital trigger stim
     % PARAMS:
     %     sampleRate (double=1000): sample rate of output array (Hz)
@@ -441,22 +516,32 @@ function stim = piezostim(varargin)
     addParameter(p, 'duration', -1, @(x) isnumeric(x));
     addParameter(p, 'ramp', 20, @(x) isnumeric(x));
     addParameter(p, 'amplitude', 5, @(x) isnumeric(x));
-    addParameter(p, 'duration', 20, @(x) isnumeric(x));
+    % addParameter(p, 'duration', 20, @(x) isnumeric(x));
     addParameter(p, 'frequency', 20, @(x) isnumeric(x));
     addParameter(p, 'nStims', 1, @(x) isnumeric(x) && x>=0);
-    addParameter(p, 'name', 'piezo');
     addParameter(p, 'display', false, @(x) islogical(x));
+    addParameter(p, 'paramsStruct', [], @(x) isstruct(x));
     parse(p, varargin{:});
     params = p.Results;
 
-    stim = StimGenerator.GetBase(params.totalTicks, params.durationMs, params.sampleRate);
+    if ~isempty(params.paramsStruct)
+        sampleRate = params.sampleRate;
+        totalTicks = params.totalTicks;
+        display = params.display;
+        params = params.paramsStruct;
+        params.sampleRate = sampleRate;
+        params.totalTicks = totalTicks;
+        params.display = display;
+    end
+
+    stim = StimGenerator.GetBase(params.totalTicks, params.duration, params.sampleRate);
 
     ramp = params.ramp;
-    piezoAmp = params.amplitude * Aurorasf; piezoAmp = min([piezoAmp 9.5]);  %added a safety block here 2024.11.15
+    piezoAmp = params.amplitude * StimGenerator.Aurorasf; piezoAmp = min([piezoAmp 9.5]);  %added a safety block here 2024.11.15
     piezostimunitx = -ramp:ramp;
     piezostimunity = normpdf(piezostimunitx,0,3);
     piezostimunity = piezostimunity./max(piezostimunity);
-    piezohold = ones(1,piezoDur);
+    piezohold = ones(1,params.duration);
     piezostimunity = [piezostimunity(1:ramp) piezohold piezostimunity(ramp+1:end)];
     
     if params.nStims>0
@@ -469,7 +554,7 @@ function stim = piezostim(varargin)
     end
 end
 
-function stim = thermalpreview(varargin)
+function stim = thermalPreview(varargin)
     % Generates a thermal preview stim of given length
     % PARAMS:
     %     sampleRate (double=1000): sample rate of output array (Hz)
@@ -478,7 +563,7 @@ function stim = thermalpreview(varargin)
     %         When both are defined, duration will be limited to within totalTicks. 
     %     display     (logical=false): whether to display the generated stimulus
     % PARAMS (THERMAL):
-    %     pStruct   (struct): structure of parameters for thermal stimulus
+    %     paramsStruct   (struct): structure of parameters for thermal stimulus
     %        If provided, will override individual parameters (below)
     %     NeutralTemp (double=32): neutral temperature (°C)
     %     PacingRate  (double=300): pacing rate (ms)
@@ -496,8 +581,6 @@ function stim = thermalpreview(varargin)
     addParameter(p, 'duration', -1, @(x) isnumeric(x)); 
     addParameter(p, 'display', false, @(x) islogical(x));
 
-    addParameter(p, 'pStruct', [], @(x) isstruct(x));
-
     addParameter(p, 'NeutralTemp', 32, @(x) isnumeric(x));
     addParameter(p, 'PacingRate', 300, @(x) isnumeric(x));
     addParameter(p, 'ReturnSpeed', 300, @(x) isnumeric(x));
@@ -505,9 +588,19 @@ function stim = thermalpreview(varargin)
     addParameter(p, 'SurfaceSelect', [1 1 0 0 0], @(x) isnumeric(x) && isvector(x) && length(x) == 5);
     addParameter(p, 'dStimulus', 2000, @(x) isnumeric(x));
     addParameter(p, 'VibrationDuration', 0, @(x) isnumeric(x));
-
+    addParameter(p, 'paramsStruct', [], @(x) isstruct(x));
     parse(p, varargin{:});
     params = p.Results;
+
+    if ~isempty(params.paramsStruct)
+        sampleRate = params.sampleRate;
+        totalTicks = params.totalTicks;
+        display = params.display;
+        params = params.paramsStruct;
+        params.sampleRate = sampleRate;
+        params.totalTicks = totalTicks;
+        params.display = display;
+    end
 
     if ~contains(p.UsingDefaults, 'totalTicks')
         stim = StimGenerator.GetBaseFromTicks(params.totalTicks);
@@ -558,18 +651,49 @@ function stim = thermalpreview(varargin)
     end
 end
 
+function stim = serialTrigger(varargin)
+    % Generates a serial trigger stim of given length
+    % PARAMS:
+    %     sampleRate (double=1000): sample rate of output array (Hz)
+    %     duration   (double=1000): duration of output (ms)
+    %     totalTicks (double=1000): duration of output in total ticks. Alternative to duration. 
+    %         When both are defined, duration will be limited to within totalTicks. 
+    %     nTriggers (double = 1): 
+    %     stimDur   (double=1000): 
+    % paramsStruct
+    p = inputParser();
+    addParameter(p, 'display', false, @(x) islogical(x));
+    addParameter(p, 'sampleRate', 1000, @(x) isnumeric(x));
+    addParameter(p, 'totalTicks', 1000, @(x) isnumeric(x));
+    addParameter(p, 'duration', -1, @(x) isnumeric(x));
+    addParameter(p, 'paramsStruct', [], @(x) isstruct(x));
+    parse(p, varargin{:});
+    params = p.Results;
+
+    if ~isempty(params.paramsStruct)
+        sampleRate = params.sampleRate;
+        totalTicks = params.totalTicks;
+        display = params.display;
+        params = params.paramsStruct;
+        params.sampleRate = sampleRate;
+        params.totalTicks = totalTicks;
+        params.display = display;
+    end
+
+    stim = StimGenerator.GetBase(params.totalTicks, params.duration(1), params.sampleRate);
+    stim(1:length(stim)/2) = 1;
+
+    if params.display
+        StimGenerator.show(stim);
+    end
+end
+
 %% HELPER METHODS
 function out = MsToTicks(x, rate)
     out = round(x*rate/1000);
 end
 
 function out = TicksToMs(x, rate)
-    % p = inputParser;
-    % addrequired(p, 'ticks');
-    % addoptional(p, 'rate', 1000);
-    % p.parse(varargin{:});
-    % ticks = p.Results.ticks;
-    % rate = p.Results.rate;
     out = x*1000/rate;
 end
 
