@@ -9,13 +9,13 @@ end
 
 properties (Access = protected)
     SessionInfo = struct();
-    ChannelMap = struct();
+    ChannelMap = []; % primary key of connected device
+    PreviewChannels = []; 
+    PreviewTimeAxis = [];
     OutChanIdxes = [];
     InChanIdxes = [];
-    TrackedChannels = {};
     SaveFID = [];
     PreviewData = [];
-    PreviewTimeAxis = [];
     tiledLayout = [];
     tPrePost = [];
     idxData;
@@ -255,7 +255,7 @@ function PrintInfo(obj)
 end
 
 function StartPreview(obj)
-    % Dynamically visualise object output TODO FILTER FOR ONLY INFORMATIVE ONES
+    % Dynamically visualise object output
     if isempty(obj.PreviewPlot) || isempty(obj.SessionHandle)
         return
     end
@@ -289,7 +289,8 @@ function StartPreview(obj)
     %     plt.title = displayLabels(i);
     %     obj.charts{i} = plt;
     % end
-    obj.StackedPreview = stackedplot(obj.PreviewPlot.Parent, obj.PreviewTimeAxis, obj.PreviewData, ...
+    displayLabels = displayLabels(obj.PreviewChannels);
+    obj.StackedPreview = stackedplot(obj.PreviewPlot.Parent, obj.PreviewTimeAxis, obj.PreviewData(:,obj.PreviewChannels), ...
         'DisplayLabels', displayLabels, ...
         'Layout', obj.PreviewPlot.Layout, ...
         'Position', obj.PreviewPlot.Position);
@@ -372,13 +373,17 @@ function LoadTrialFromParams(obj, componentTrialData, genericTrialData)
         % find all channel indexes associated with the stimulus type.
         [chIdxes, labels] = obj.getDeviceChannelIdxes(fieldName);
         outIdxes = [];
+        chIdxesToRemove = [];
         for i = 1:length(chIdxes)
             ci = chIdxes(i);
             outIdx = find(obj.OutChanIdxes == ci);
             if ~isempty(outIdx)
                 outIdxes(end+1) = outIdx;
+            else
+                chIdxesToRemove = [chIdxesToRemove i];
             end
         end
+        chIdxes(chIdxesToRemove) = [];
         if isempty(outIdxes)
             warning("No output channels assigned for stimulus %s in DAQ %s. Check the channel config file.", fieldName, obj.ComponentID);
             continue
@@ -401,7 +406,7 @@ end
 
 %% DEVICE-SPECIFIC FUNCTIONS
 function obj = MapChannels(obj, filename)
-    % fills out DAQ's connected devices. 
+    % fills out DAQ's connected devices
     if ~isfile(filename)
         return
     end
@@ -442,6 +447,7 @@ function obj = CreateChannels(obj, filename, protocolIDs)
                 % skip channels that aren't required for this protocol.
                 continue
             end
+            obj.PreviewChannels(end+1) = logical(line.Preview);
             tmp = strsplit(obj.ComponentID, '_');
             deviceID = tmp{1};
             portNum = line.('portNum'){1}; 
@@ -512,10 +518,10 @@ function obj = ClearChannels(obj)
     if length(obj.SessionHandle.Channels) ~= 0
         removechannel(obj.SessionHandle, 1:length(obj.SessionHandle.Channels));
     end
-    obj.ChannelMap = struct();
+    obj.ChannelMap = [];
+    obj.PreviewChannels = [];
     obj.OutChanIdxes = [];
     obj.InChanIdxes = [];
-    obj.TrackedChannels = {};
 end
 end
 
@@ -530,6 +536,7 @@ function componentID = GetComponentID(obj)
 end
 
 function SoftwareTrigger(obj, ~, ~)
+    %TDO REWRITW NOW THAT 
     if obj.triggerIdx >= length(obj.PreviewData)
         write(obj.SessionHandle, obj.PreviewData(obj.triggerIdx,:))
     else

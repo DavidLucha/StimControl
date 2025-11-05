@@ -23,14 +23,18 @@ function stimTrain = GenerateStimTrain(componentTrialData, genericTrialData, sam
 
     % Preallocate all zeros
     stimTrain = zeros(numel(timeAxis), 1);
-
-    if params.isAcquisitionTrigger
-        stimTicks = numel(timeAxis);
-        startIdx = 1;
-    else
-        stimTicks = numel(timeAxis) - tPreLength;
-        startIdx = StimGenerator.MsToTicks(genericTrialData.tPre, sampleRate);
-    end
+    
+    stimTicks = numel(timeAxis);
+    startIdx = 0;
+    
+    %this is done on generation - startDelay is just tPre
+    % if params.isAcquisitionTrigger
+    %     stimTicks = numel(timeAxis);
+    %     startIdx = 0;
+    % else
+    %     stimTicks = numel(timeAxis) - tPreLength;
+    %     startIdx = tPreLength;
+    % end
     
     for i = 1:length(componentTrialData.sequence)
         stimIdx = componentTrialData.sequence(i);
@@ -39,9 +43,9 @@ function stimTrain = GenerateStimTrain(componentTrialData, genericTrialData, sam
         startIdx = startIdx + preStimTicks;
 
         interimStim = StimGenerator.GenerateStim(stimParams, sampleRate, stimTicks-startIdx);
-        stimTrain(startIdx:startIdx+length(interimStim)-1) = interimStim; 
+        stimTrain(startIdx+1:startIdx+length(interimStim)) = interimStim; 
 
-        startIdx = startIdx + length(interimStim); %TODO:SEQ THIS AND IN StimulusBlock.BuildParams
+        startIdx = startIdx + length(interimStim); %TODO:SEQ THIS AND IN StimulusBlock.BuildParams (explanation there)
     end
 end
 
