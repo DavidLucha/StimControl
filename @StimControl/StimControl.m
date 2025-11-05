@@ -4,7 +4,7 @@ properties (Access = protected)
     path = [];
 end
 
-properties %(Access = private)
+properties (Access = private)
     h           = []            % GUI handles
     d           = []            % HardwareComponent handles
     p           = []            % stimulation parameters/protocol

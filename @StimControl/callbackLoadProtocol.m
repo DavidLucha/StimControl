@@ -103,6 +103,7 @@ if createChans
         obj.d.Available{i} = comp.InitialiseSession('ActiveDeviceIDs', obj.d.ActiveIDs);
     end
 end
+disp("Protocol load completed. Loading trial.");
 
 % for di = 1:sum(obj.d.Active)
 %     component = activeComponents{di};

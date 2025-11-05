@@ -512,6 +512,7 @@ function obj = CreateChannels(obj, filename, protocolIDs)
     if ~isMATLABReleaseOlderThan('R2024b')
         obj.SessionHandle.Channels = channelList;
     end
+    obj.PreviewChannels = logical(obj.PreviewChannels);
 end
 
 function obj = ClearChannels(obj)

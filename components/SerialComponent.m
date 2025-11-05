@@ -82,7 +82,7 @@ end
 function StartTrial(obj)
     % Start trial. If there's no multi-trigger, then the data is already
     % pre-loaded, so do nothing.
-    if obj.multiTrigger
+    if obj.selfTrigger
         if isempty(obj.TriggerTimer) || ~isvalid(obj.TriggerTimer)
              obj.TriggerTimer = timer(...
                 'StartDelay',       0, ...
@@ -113,15 +113,22 @@ end
 
 % Dynamic visualisation of the object output
 function StartPreview(obj)
+
+    % get current parameters from thermode
+    ps = strsplit(obj.query('P'),'\r');
+    ps = ps{2:end};
+    
+    % process first line of parameter block
+    p = sscanf(ps{1},'N%d T%d I%d Y%d S%s');
+
+    previewData = StimGenerator.GenerateStim()
     % Start component preview. Copied from QSTcontrol, not tested yet.
     % idTherm = ['Thermode' char(64+nTherm)];
 
-    % % get current parameters from thermode
-    % ps = strsplit(obj.s(nTherm).query('P'),'\r');
-    % h  = obj.h.(idTherm);
+    
+    
 
-    % % process first line of parameter block
-    % p = sscanf(ps{1},'N%d T%d I%d Y%d S%s');
+    
     % h.edit.N.Value     = p(1)/10;
     % h.edit.N.String    = sprintf('%1.1f',h.edit.N.Value);
     % p = num2cell(p(5:end)'==49);
@@ -155,14 +162,15 @@ end
 
 % Preload a single trial
 function LoadTrialFromParams(obj, componentTrialData, genericTrialData)
+    componentTrialData = componentTrialData.QST; %TODO UN-HARDCODE
     obj.TrialData = componentTrialData;
     if contains(obj.ConfigStruct.ProtocolID, 'QST')
         preloadSingleQSTStim(obj, componentTrialData(1))
     end
-    obj.nStimsInTrial = genericTrialData.nRepetitions * length(componentTrialData);
+    obj.nStimsInTrial = genericTrialData.nRuns * length(componentTrialData);
     obj.idxStim = 1;
     if obj.nStimsInTrial > 1
-        obj.multiTrigger = true;
+        obj.selfTrigger = true;
         if ~isempty(obj.TriggerTimer)
             if isvalid(obj.TriggerTimer)
                 stop(obj.TriggerTimer);
@@ -176,7 +184,7 @@ function LoadTrialFromParams(obj, componentTrialData, genericTrialData)
             'TimerFcn',         @obj.multiTriggerTimer, ...
             'Name',             'SerialExecutionTimer');
     else
-        obj.multiTrigger = false;
+        obj.selfTrigger = false;
     end
 end
 end
@@ -194,8 +202,9 @@ function status = GetSessionStatus(obj)
 
     %TODO check the strings for this are consistent with the
     % strings for everything else. Not tested for serialport devices.
+    %TODO!!!!
     b = obj.battery;
-    status = obj.query('Og'); 
+    % status = obj.query('Og'); 
     if ~obj.isConnected
         status = "not connected";
     elseif ~strcmpi(obj.SessionHandle.TransferStatus, 'idle')
@@ -286,7 +295,7 @@ function varargout = query(obj, query, timeout)
     if ~exist('timeout','var')
         timeout = .03;
     end
-    if isMATLABReleaseOlderThan('R2024a')
+    if isMATLABReleaseOlderThan('R2023b')
         obj.fprintfd(query,.001)
         java.lang.Thread.sleep(timeout*1000)
         n = obj.SessionHandle.BytesAvailable;
@@ -300,19 +309,33 @@ function varargout = query(obj, query, timeout)
         end
     else
         timeout = timeout / 1000; % NB timeout in serialport is in seconds, while timeout in serial is in ms
-        % NOT IMPLEMENTED
+        write(obj.SessionHandle, query, 'uint8')
+        java.lang.Thread.sleep(timeout*1000)
+        n = obj.SessionHandle.NumBytesAvailable;
+        if n
+            varargout{1} = read(obj.SessionHandle,n,'char');
+            % varargout{1} = char(varargout{1}(2:end))';
+        elseif ~n && nargout
+            varargout{1} = '';
+        else
+            varargout = {};
+        end
     end
 end
 
  function out = queryN(obj,string,nBytes)
     obj.fprintfd(string,.001)
-    out = fread(obj.SessionHandle,nBytes+1,'char');
+    if isMATLABReleaseOlderThan('R2023b')
+        out = fread(obj.SessionHandle,nBytes+1,'char');
+    else
+        out = read(obj.SessionHandle,nBytes+1,'char');
+    end
     out = char(out(2:end))';
 end
 
 function fprintfd(obj,query,delay)
     % Write a command to the serial session handle.
-    if isMATLABReleaseOlderThan('R2024a')
+    if isMATLABReleaseOlderThan('R2023b')
         for ii = 1:length(query)
             tic
             fwrite(obj.SessionHandle,string(ii));
@@ -323,7 +346,15 @@ function fprintfd(obj,query,delay)
         end
         fwrite(obj.SessionHandle,'\n');
     else
-        % NOT IMPLEMENTED
+        for ii = 1:length(query)
+            tic
+            write(obj.SessionHandle,string(ii), 'uint8');
+            t = (delay-toc)*1000;
+            if t > 0
+                java.lang.Thread.sleep(t)
+            end
+        end
+        write(obj.SessionHandle,'\n', 'uint8');
     end
 end
 
@@ -379,7 +410,7 @@ end
 
 function bench(obj,query)
     % Benchmarking information. Tracks the time taken per byte sent.
-    if isMATLABReleaseOlderThan('R2024a')
+    if isMATLABReleaseOlderThan('R2023b')
         if ~exist('query','var')
             query = 'H';
         end
@@ -411,12 +442,20 @@ end
 
 function out = temperature(obj)
     % retrieve current device temperature
-    out = str2num(obj.queryN('E',23)); %#ok<ST2NM>
+    if isMATLABReleaseOlderThan('R2023b')
+        out = str2num(obj.queryN('E',23)); %#ok<ST2NM>
+    else
+        out = str2num(obj.query('E')); %#ok<ST2NM>
+    end
 end
 
 function out = battery(obj)
     % retrieve current device battery level
-    out = sscanf(obj.queryN('B',13),'%*fv %d%%');
+    if isMATLABReleaseOlderThan('R2023b')
+        out = sscanf(obj.queryN('B',13),'%*fv %d%%');
+    else
+        out = str2num(obj.query('B')); %#ok<ST2NM>
+    end
 end
 
 function help(obj)
@@ -437,16 +476,18 @@ end
 
 function obj = OpenSerialConnection(obj)
     % Open the component's serial connection, given an established ConfigStruct
-    if isMATLABReleaseOlderThan('R2024a')
+    if isMATLABReleaseOlderThan('R2023b')
         obj.SessionHandle = serial(obj.ConfigStruct.Port, ...
             'BaudRate', obj.ConfigStruct.BaudRate, ...
             'Terminator', obj.ConfigStruct.Terminator, ...
             'InputBufferSize', obj.ConfigStruct.InputBufferSize);
+        fopen(obj.SessionHandle); %todo try/catch here might cause problems later on
     else
         obj.SessionHandle = serialport(obj.ConfigStruct.Port, ...
             obj.ConfigStruct.BaudRate);
+        %TODO configure terminator, inputbuffersize. Not necessary for QST
     end
-    fopen(obj.SessionHandle); %todo try/catch here might cause problems later on
+    
 end
 
 function multiTriggerTimer(obj, ~, ~)
@@ -509,7 +550,7 @@ methods(Static, Access=public)
                 'Port', port);
             comp = SerialComponent('Initialise', p.Results.Initialise, ...
                 'ConfigStruct', initStruct);
-            if comp.isConnected %todo when swapping from QSTcontrol to StimControl the device needs to be restarted. 
+            if comp.isConnected
                 % is this circumventable??
                 components{end+1} = comp;
             else
@@ -542,11 +583,13 @@ methods(Static, Access=public)
         % clear any existing session on the target port.
         if isMATLABReleaseOlderThan('R2024a')
             tmp = instrfind('port', port);
+            if ~isempty(tmp)
+                fclose(tmp);
+                delete(tmp);
+            end
         else
             tmp = serialportfind(Port=port);
-        end
-        if ~isempty(tmp)
-            fclose(tmp);
+            clear(tmp);
             delete(tmp);
         end
         clear(port);
