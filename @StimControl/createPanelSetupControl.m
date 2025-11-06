@@ -105,7 +105,7 @@ function updateComponentTableCell(src, event, obj)
     property = src.Data.Properties.VariableNames(event.Indices(2));
     component = obj.d.Available{idxRow};
     if strcmpi(property, "Protocol ID")
-        component.SetParam("ProtocolID", event.NewData); 
+        component.SetParam("ProtocolID", event.NewData);
         % TODO REFRESH BUTTON
         obj.d.ProtocolIDMap = remove(obj.d.ProtocolIDMap, event.PreviousData);
         obj.d.ProtocolIDMap(event.NewData) = idxRow;

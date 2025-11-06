@@ -15,12 +15,12 @@ obj.h.ComponentConfig.SelectedComponentIndex = rowIndex;
 for pi = 1:length(obj.h.Setup.PreviewPanels)
     pan = obj.h.Setup.PreviewPanels{pi};
     if pi == rowIndex
-        pan.Box = 'on';
+        pan.Parent.Parent.BackgroundColor = '#FFCC99';
     else
-        pan.Box = 'off';
+        pan.Parent.Parent.BackgroundColor = [0.9400 0.9400 0.9400];
     end
 end
-
+    
 %% Enable confirmation and cancel buttons
 obj.h.ConfirmComponentConfigBtn.Enable = true;
 obj.h.CancelComponentConfigBtn.Enable = true;

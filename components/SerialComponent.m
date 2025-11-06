@@ -68,12 +68,11 @@ function obj = InitialiseSession(obj, varargin)
 
     % start the connection with the target port.
     obj = obj.OpenSerialConnection();
-    if contains(obj.ConfigStruct.ProtocolID, 'QST')
+    if contains(obj.ConfigStruct.ProtocolID, 'QST') && ~isempty(obj.SessionHandle)
         obj.query('F'); % disable temperature display
         obj.query('Ose'); % activate external triggering (required with newer QST devices). added 2024.10.30
         obj.query('Om550'); % enable 55deg stim. added 2025.05.08
     end
-
 end
 
 
@@ -205,6 +204,24 @@ function LoadTrialFromParams(obj, componentTrialData, genericTrialData)
     if obj.Previewing
         obj.StartPreview;
     end
+end
+
+function obj = CreateStatusDisplay(obj)
+    CreateStatusDisplay@HardwareComponent(obj);
+    % warnings that jcomponent is being deprecated - maybe this? https://au.mathworks.com/matlabcentral/fileexchange/14773-statusbar
+    obj.statusHandles.battery = ...
+        uicomponent(obj.statusHandles.grid,...
+            'Style',        'JProgressbar',...
+            'Value',        0,...
+            'StringPainted',1, ...
+            'Layout', matlab.ui.layout.GridLayoutOptions( ...
+                'Row', 2, ...
+                'Column', [1 2]));
+end
+
+function UpdateStatusDisplay(obj)
+    UpdateStatusDisplay@HardwareComponent(obj);
+    obj.statusHandles.battery.Value = str2num(obj.battery);
 end
 end
 
@@ -488,7 +505,10 @@ function out = queuedOutputs(obj)
 end
 
 function response = isConnected(obj)
-    %TODO this only works if this is 
+    if isempty(obj.SessionHandle)
+        response = false;
+        return;
+    end
     varargout = obj.query('H', 1);
     response = ~isempty(varargout);
 end
@@ -510,9 +530,13 @@ function obj = OpenSerialConnection(obj)
             % You can find the baud rate for the target port using 'mode'
             % in the windows command prompt, but that's cursed. Don't do
             % it. I did but you shouldn't.
-            obj.ConfigStruct.BaudRate = 115384;
-            obj.SessionHandle = serialport(obj.ConfigStruct.Port, ...
-                obj.ConfigStruct.BaudRate);
+            try
+                obj.ConfigStruct.BaudRate = 115384;
+                obj.SessionHandle = serialport(obj.ConfigStruct.Port, ...
+                    obj.ConfigStruct.BaudRate);
+            catch
+                return
+            end
         end
         %TODO configure terminator, inputbuffersize. Not necessary for QST
     end

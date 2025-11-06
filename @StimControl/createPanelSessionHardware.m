@@ -14,4 +14,5 @@ for i = 1:numComponents
         'Column', i));
     component.CreateStatusDisplay;
 end
+obj.h.SessionHardwareGrid = grid;
 end

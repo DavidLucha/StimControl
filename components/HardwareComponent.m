@@ -15,14 +15,30 @@ properties (Access = public)
     PreviewPlot = []
     Previewing = false
     statusPanel = [];
-    statusContent = [];
     ComponentID
     TriggerTimer = [];
     ConnectedDevices = [];
 end
+
 properties(Access=public, Dependent)
     SavePrefix
 end
+
+properties(Access=protected)
+    statusHandles = [];
+end
+
+properties(Constant, Access=protected)
+    StatusColourMap = struct( ...
+        'abstract', '#C0C0C0',...
+        'connected', '#008080', ...
+        'unconnected', '#808080', ...
+        'ready', '#00FF00', ...
+        'running', '#FFA500', ...
+        'error', '#A80000', ...
+        'misc', '#FF66B2');
+end
+
 
 methods(Access=public)
 
@@ -117,7 +133,7 @@ function status = GetStatus(obj)
 % Gets current device status. 
 % Possible statuses:
 %   abstract        not associated with a device
-%   not connected   device session not initialised
+%   unconnected   device session not initialised
 %   connected       device session initialised; not ready to start trial
 %   ready           device session initialised, trial loaded
 %   running         currently running a trial
@@ -125,7 +141,7 @@ function status = GetStatus(obj)
     if obj.Abstract
         status = 'abstract';
     elseif isempty(obj.SessionHandle) || ~isvalid(obj.SessionHandle)
-        status = 'not connected';
+        status = 'unconnected';
     else
         status = obj.GetSessionStatus();
     end
@@ -148,17 +164,38 @@ function componentID = SanitiseComponentID(obj, componentID)
     end
 end
 
-function statusPanel = CreateStatusDisplay(obj)
-    %TODO
+function CreateStatusDisplay(obj)
     % Creates the status visualiser for the HardwareComponent. 
     % Assumes a smallish squareish GUI object for the parent
-    % statusPanel = uipanel(parentGUIElement);
-    % grid = uigridlayout(panel);
-    obj.statusContent = uilabel(obj.statusPanel, 'Text', obj.GetStatus);
+    % Assumes obj.statusPanel is set
+
+    obj.statusPanel.Title = obj.ConfigStruct.ProtocolID;
+
+    obj.statusHandles.grid = uigridlayout(obj.statusPanel, ...
+        'RowHeight', {'1x', '1x'}, ...
+        'ColumnWidth', {'0.2x', '1x'}, ...
+        'Padding', [0 0 0 0], ...
+        'RowSpacing', 2);
+    obj.statusHandles.lamp = uilamp(obj.statusHandles.grid, ...
+        'Layout', matlab.ui.layout.GridLayoutOptions( ...
+            'Row', 1, ...
+            'Column', 1));
+    obj.statusHandles.label = uilabel(obj.statusHandles.grid, ...
+        "Text", obj.GetStatus, ...
+        'Layout', matlab.ui.layout.GridLayoutOptions( ...
+            'Row', 1, ...
+            'Column', 2), ...
+        'HorizontalAlignment', 'left', ...
+        'VerticalAlignment', 'center');
 end
 
 function UpdateStatusDisplay(obj)
-    obj.statusContent.Text = obj.GetStatus;
+    status = obj.GetStatus;
+    obj.statusHandles.label.Text = status;
+    if ~isfield(obj.StatusColourMap, status)
+        status = 'misc';
+    end
+    obj.statusHandles.lamp.Color = obj.StatusColourMap.(status);
 end
 
 

@@ -1,6 +1,5 @@
 function callbackChangeTab(obj, src, event)
 if strcmpi(event.NewValue.Title, 'Experiment')
-    %% TODO HOW DO I CONFIRM THEY WANT TO DO ALL THIS - BIG BUTTON???
     % move components over
     for i = 1:length(obj.d.Available)
         component = obj.d.Available{i};
@@ -16,6 +15,7 @@ if strcmpi(event.NewValue.Title, 'Experiment')
     end
     % update preview panel with final count of active components.
     obj.createPanelSessionPreview(obj.h.Session.Preview.panel.params);
+    obj.createPanelSessionHardware(obj.h.Session.HardwareStatus.panel.params);
 elseif strcmpi(event.NewValue.Title, 'Setup')
     % move component previews back
     for i = 1:length(obj.d.Available)
