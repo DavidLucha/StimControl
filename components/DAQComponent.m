@@ -626,28 +626,38 @@ function plotData(obj, ~,event)
     % manage persistent variables
     persistent emptyCount
     if obj.idxData > size(obj.StackedPreview.YData)
-        % cut off the end of the data
+        % cut off the end of the data? TODO CHECK THIS IS DESIRED BEHAVIOUR
         disp("we have too much data??");
         return
     end
 
-    data = read(event.Source);
+    eventData = read(event.Source);
     % check data exists.
-    
-    % scale data from thermodes TODO
-    % dat = event.Data;
-    % % dat(:,idxData(1:2)) = dat(:,idxData(1:2)) * 17.0898 - 5.0176;
-    % dat(:,idxData(1:2)) = dat(:,idxData(1:2)) * 12  - 2; % PB 20241219
-    % dat(:,idxData(3:4)) = (dat(:,idxData(3:4))*10 + 32) ;
-    % ylim([12 50])
-    if ~isempty(data)
-        targetIdx = obj.idxData:data.NumScans+obj.idxData-1;
-        obj.PreviewData(targetIdx, obj.InChanIdxes) = data.Data;
+    if ~isempty(eventData)
+        targetIdx = obj.idxData:eventData.NumScans+obj.idxData-1;
+        data = eventData.Data;
+        % scale data from thermodes and aurora, if relevant. TODO could be less hardcoded but this will do for now.
+        if isfield(obj.ChannelMap, 'QST')
+            % % dat(:,idxData(1:2)) = dat(:,idxData(1:2)) * 17.0898 - 5.0176;
+            qstIdxes = [obj.ChannelMap.QST.thermodeA.idx obj.ChannelMap.QST.thermodeB.idx];
+            for i = qstIdxes
+                data(:,i) = data(:,i) * 12  - 2; % PB 20241219
+            end
+        end
+        if isfield(obj.ChannelMap, 'Aurora')
+            auroraIdxes = [obj.ChannelMap.Aurora.force.idx obj.ChannelMap.Aurora.length.idx];
+            for i = auroraIdxes
+                data(:,i) = data(:,i)*10 + 32;
+            end
+        end
+        obj.PreviewData(targetIdx, obj.InChanIdxes) = data;
         warning('off');
-        obj.StackedPreview.YData(targetIdx, obj.InChanIdxes) = data.Data; %todo fix this but I'm going to have to fix it by changing the plot function
+        displayLabels = obj.StackedPreview.DisplayLabels;
+        obj.StackedPreview.YData(targetIdx, obj.InChanIdxes) = data; %todo fix this but I'm going to have to fix it by changing the plot function
+        obj.StackedPreview.DisplayLabels = displayLabels;
         warning('on');
         try
-            writematrix([data.Timestamps-obj.tPrePost(1),obj.PreviewData(targetIdx,:)], ...
+            writematrix([eventData.Timestamps-obj.tPrePost(1),obj.PreviewData(targetIdx,:)], ...
             strcat(obj.SavePath, filesep, obj.SavePrefix, '.csv'), ...
             'WriteMode', 'append');
             % fwrite(obj.SaveFID,[data.Timestamps-obj.tPrePost(1),obj.PreviewData(targetIdx)'],'double');
@@ -655,7 +665,7 @@ function plotData(obj, ~,event)
             keyboard;
             rethrow(e);
         end
-        obj.idxData = obj.idxData + data.NumScans;
+        obj.idxData = obj.idxData + eventData.NumScans;
         emptyCount = 0;
     else
         if isempty(emptyCount)

@@ -15,6 +15,8 @@ classdef (HandleCompatible) SerialComponent < HardwareComponent
 % transition guide: https://au.mathworks.com/help/instrument/transition-your-code-to-serialport-interface.html 
 % Good luck, brave soldier. - MS
 
+% TODO this is very QST-specific. Genericise when you have time.
+
 properties(Constant, Access = public)
     ComponentProperties = SerialComponentProperties;
 end
@@ -113,46 +115,60 @@ end
 
 % Dynamic visualisation of the object output
 function StartPreview(obj)
-
+    % Start preview based on current thermode parameters.
     % get current parameters from thermode
+    if isempty(obj.TrialData)
+        obj.Previewing = true;
+        return;
+    end
     ps = strsplit(obj.query('P'),'\r');
-    ps = ps{2:end};
-    
+
     % process first line of parameter block
-    p = sscanf(ps{1},'N%d T%d I%d Y%d S%s');
+    p = sscanf(ps{2},'N%d T%d I%d Y%d S%s');
+    thermP = cell2mat(cellfun(@(x) {sscanf(x,'C%d V%d R%d D%d')},ps(3:end)));
+    % startDelay = obj.TrialData.delay(1); 
+    sampleRate = 1000;
+    S = str2num([char(p(5:end))]); %#ok     % Selected surfaces
+    N = p(1)/10;                            % Neutral temp (C)
+    C = thermP(1,:)/10;                     % SetPoint Temp (C)
+    D = thermP(4,:)/1000;                   % Duration (sec)
+    V = thermP(2,:)/10;                     % Pacing Rate (C/sec)
+    R = thermP(3,:)/10;                     % Return Speed (C/sec)
+    stimTicks = (obj.TrialData.tPre + obj.TrialData.tPost) * sampleRate / 1000;
+    tPost = obj.TrialData.tPost;
+    % TODO it's different???
 
-    previewData = StimGenerator.GenerateStim()
-    % Start component preview. Copied from QSTcontrol, not tested yet.
-    % idTherm = ['Thermode' char(64+nTherm)];
+    tax = linspace(1/sampleRate, stimTicks/sampleRate, stimTicks) - obj.TrialData.tPre/1000;
+    stim = ones(length(tax),5) * N;
+    [~,t0] = min(abs(tax));
+    labels = [];
 
-    
-    
-
-    
-    % h.edit.N.Value     = p(1)/10;
-    % h.edit.N.String    = sprintf('%1.1f',h.edit.N.Value);
-    % p = num2cell(p(5:end)'==49);
-    % [h.toggle.S.Value] = p{:};
-
-    % % process remaining lines of parameter block
-    % p = cell2mat(cellfun(@(x) {sscanf(x,'C%d V%d R%d D%d')},ps(2:end)));
-    % p(1:3,:) = p(1:3,:) / 10;
-    % f        = {'C','V','R','D'};
-    % format   = {'%0.1f','%0.1f','%0.1f','%d'};
-    % for ii = 1:4
-    %     tmp = num2cell(p(ii,:));
-    %     h.check.(f{ii}).Value   = isequal(tmp{:});
-    %     [h.edit.(f{ii}).Value]  = tmp{:};   
-    %     tmp = cellfun(@(x) {sprintf(format{ii},x)},tmp);
-    %     [h.edit.(f{ii}).String] = tmp{:};
-    % end
+    for ii = find(S')
+        dP    = D(ii)*sampleRate-1;
+        pulse = ones(dP,1);
+        dV    = round(abs(C(ii)-N)/V(ii)*sampleRate);
+        dR    = round(abs(C(ii)-N)/R(ii)*sampleRate);
+        tmp   = linspace(0,1,dV)';
+        pulse(1:min([dV dP])) = tmp((1:min([dV dP])));
+        pulse = [pulse; linspace(pulse(end),0,dR)'] * (C(ii)-N) + N;
         
+        tmp   = min([round(tPost*sampleRate)+1 length(pulse)]);
+        stim(t0+(1:tmp)-1,ii) = pulse(1:tmp);
+        labels = [labels string(['Thermode' char(64+ii)])]; %#ok
+    end
     
+    plot(obj.PreviewPlot, tax, stim);
+    obj.PreviewPlot.XLim = [min(tax) max(tax)];
+    obj.PreviewPlot.YLim = [0 65];
+    obj.Previewing = true;
+    xline(obj.PreviewPlot, 0, '--r');
+    xticks(obj.PreviewPlot, round(min(tax)):0.5:round(max(tax)));
+    yticks(obj.PreviewPlot, 0:10:65);
 end
 
 % Dynamic visualisation of the object output
 function StopPreview(obj)
-
+    obj.Previewing = false;
 end
 
 % Print device information
@@ -164,13 +180,14 @@ end
 function LoadTrialFromParams(obj, componentTrialData, genericTrialData)
     componentTrialData = componentTrialData.QST; %TODO UN-HARDCODE
     obj.TrialData = componentTrialData;
+    obj.TrialData.tPre = genericTrialData.tPre;
+    obj.TrialData.tPost = genericTrialData.tPost;
     if contains(obj.ConfigStruct.ProtocolID, 'QST')
         preloadSingleQSTStim(obj, componentTrialData(1))
     end
     obj.nStimsInTrial = genericTrialData.nRuns * length(componentTrialData);
     obj.idxStim = 1;
     if obj.nStimsInTrial > 1
-        obj.selfTrigger = true;
         if ~isempty(obj.TriggerTimer)
             if isvalid(obj.TriggerTimer)
                 stop(obj.TriggerTimer);
@@ -183,8 +200,10 @@ function LoadTrialFromParams(obj, componentTrialData, genericTrialData)
             'ExecutionMode',    'fixedDelay', ...
             'TimerFcn',         @obj.multiTriggerTimer, ...
             'Name',             'SerialExecutionTimer');
-    else
-        obj.selfTrigger = false;
+        % TODO THIS: CHECK PROPERTIES OF SERIAL DEVICE, THERE'S A TIMER ATTACHED???
+    end
+    if obj.Previewing
+        obj.StartPreview;
     end
 end
 end
@@ -207,8 +226,8 @@ function status = GetSessionStatus(obj)
     % status = obj.query('Og'); 
     if ~obj.isConnected
         status = "not connected";
-    elseif ~strcmpi(obj.SessionHandle.TransferStatus, 'idle')
-        status = 'running';
+    % elseif ~strcmpi(obj.SessionHandle.TransferStatus, 'idle')
+    %     status = 'running';
     else
         if strcmpi(obj.SessionHandle.Status, 'open')
             status = 'connected';
@@ -308,7 +327,7 @@ function varargout = query(obj, query, timeout)
             varargout = {};
         end
     else
-        timeout = timeout / 1000; % NB timeout in serialport is in seconds, while timeout in serial is in ms
+        % NB timeout in serialport is in seconds, while timeout in serial is in ms
         write(obj.SessionHandle, query, 'uint8')
         java.lang.Thread.sleep(timeout*1000)
         n = obj.SessionHandle.NumBytesAvailable;
@@ -481,10 +500,20 @@ function obj = OpenSerialConnection(obj)
             'BaudRate', obj.ConfigStruct.BaudRate, ...
             'Terminator', obj.ConfigStruct.Terminator, ...
             'InputBufferSize', obj.ConfigStruct.InputBufferSize);
-        fopen(obj.SessionHandle); %todo try/catch here might cause problems later on
+        fopen(obj.SessionHandle); 
     else
-        obj.SessionHandle = serialport(obj.ConfigStruct.Port, ...
-            obj.ConfigStruct.BaudRate);
+        try
+            obj.SessionHandle = serialport(obj.ConfigStruct.Port, ...
+                obj.ConfigStruct.BaudRate);
+        catch
+            %TODO this is cursed. I need to update the drivers. 
+            % You can find the baud rate for the target port using 'mode'
+            % in the windows command prompt, but that's cursed. Don't do
+            % it. I did but you shouldn't.
+            obj.ConfigStruct.BaudRate = 115384;
+            obj.SessionHandle = serialport(obj.ConfigStruct.Port, ...
+                obj.ConfigStruct.BaudRate);
+        end
         %TODO configure terminator, inputbuffersize. Not necessary for QST
     end
     

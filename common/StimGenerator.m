@@ -596,32 +596,36 @@ function stim = thermalPreview(varargin)
     parse(p, varargin{:});
     params = p.Results;
 
-    if ~isempty(params.paramsStruct)
-        sampleRate = params.sampleRate;
-        totalTicks = params.totalTicks;
-        display = params.display;
-        params = params.paramsStruct;
-        params.sampleRate = sampleRate;
-        params.totalTicks = totalTicks;
-        params.display = display;
-    end
+    % if ~isempty(params.paramsStruct)
+    %     sampleRate = params.sampleRate;
+    %     totalTicks = params.totalTicks;
+    %     display = params.display;
+    %     params = params.paramsStruct;
+    %     params.sampleRate = sampleRate;
+    %     params.totalTicks = totalTicks;
+    %     params.display = display;
+    % end
 
     if ~contains(p.UsingDefaults, 'totalTicks')
         stim = StimGenerator.GetBaseFromTicks(params.totalTicks);
-    elseif params.duration ~= -1
-        stim = StimGenerator.GetBaseFromDuration(params.duration, params.SampleRate);
+    elseif params.duration ~= -1 
+        stim = StimGenerator.GetBase(params.totalTicks, params.duration, params.sampleRate);
+    elseif ~contains(p.UsingDefaults, 'paramsStruct')
+        stim = StimGenerator.GetBase(params.totalTicks, max(params.paramsStruct.dStimulus), params.sampleRate);
+    elseif ~contains(p.UsingDefaults, 'dStimulus')
+        stim = StimGenerator.GetBase(params.totalTicks, max(params.dStimulus), params.sampleRate);
     else
         error('please specify either the total stimulus ticks or the stimulus duration')
     end
 
     fs = params.sampleRate;
-    if ~isempty(pStruct)
-        N = params.pStruct.NeutralTemp;
-        C = params.pStruct.SetpointTemp;
-        D = params.pStruct.dStimulus;
-        V = params.pStruct.PacingRate;
-        R = params.pStruct.ReturnSpeed;
-        S = params.pStruct.SurfaceSelect;
+    if ~isempty(params.paramsStruct)
+        N = params.paramsStruct.NeutralTemp;
+        C = params.paramsStruct.SetpointTemp;
+        D = params.paramsStruct.dStimulus;
+        V = params.paramsStruct.PacingRate;
+        R = params.paramsStruct.ReturnSpeed;
+        S = params.paramsStruct.SurfaceSelect;
     else
         N = params.NeutralTemp;
         C = params.SetpointTemp;
