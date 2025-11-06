@@ -70,8 +70,6 @@ obj.g = g;
 obj.idxStim = 1;
 obj.trialNum = 1;
 
-cpMap = obj.pids;
-
 allTargets = fields([obj.p(:).params]);
 % Construct appropriate trial for each device
 deviceTargets = [];
@@ -115,7 +113,7 @@ disp("Protocol load completed. Loading trial.");
 obj.h.trialInformationScroller.Value = '';
 
 %% calculate estimated time + rest time
-protocolTotalTimeSecs = ((obj.g.dPause(1) + (sum(([obj.p.tPre] + [obj.p.tPost]).*[obj.p.nRuns])))*obj.g.nProtRuns) - obj.g.dPause(1);
+protocolTotalTimeSecs = (obj.g.dPause(1)*(obj.g.nProtRuns-1) + ((sum(([obj.p.tPre] + [obj.p.tPost]).*[obj.p.nRuns])))*obj.g.nProtRuns/1000);
 protocolTimeMins = floor(protocolTotalTimeSecs/60);
 protocolTimeSecs = ceil(protocolTotalTimeSecs - (60*protocolTimeMins));
 obj.h.protocolTimeEstimate.Text = sprintf('0:00 / %d:%d', protocolTimeMins, protocolTimeSecs);
