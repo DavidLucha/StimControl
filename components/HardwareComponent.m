@@ -15,6 +15,7 @@ properties (Access = public)
     PreviewPlot = []
     Previewing = false
     statusPanel = [];
+    statusContent = [];
     ComponentID
     TriggerTimer = [];
     ConnectedDevices = [];
@@ -147,17 +148,17 @@ function componentID = SanitiseComponentID(obj, componentID)
     end
 end
 
-function statusPanel = GetStatusVis(obj, parentGUIElement)
+function statusPanel = CreateStatusDisplay(obj)
     %TODO
     % Creates the status visualiser for the HardwareComponent. 
     % Assumes a smallish squareish GUI object for the parent
     % statusPanel = uipanel(parentGUIElement);
     % grid = uigridlayout(panel);
+    obj.statusContent = uilabel(obj.statusPanel, 'Text', obj.GetStatus);
 end
 
-function UpdateStatusVis(obj, parentGUIElement)
-    %TODO
-    status = obj.GetStatus();
+function UpdateStatusDisplay(obj)
+    obj.statusContent.Text = obj.GetStatus;
 end
 
 

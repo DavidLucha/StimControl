@@ -145,15 +145,17 @@ function StartTrial(obj)
     obj.idxData = 1;
     % Starts device with a preloaded session. 
     if ~isempty(obj.SavePath) || length(obj.SavePath) ~= 0
-        % obj.SaveFID = fopen(strcat(obj.SavePath, filesep, obj.SavePrefix), 'w');
-        % TODO save channel names
-        
+        % save channel names
+        filename = [obj.ConfigStruct.ProtocolID '_channelNames.csv'];
+        channelNames = {obj.SessionHandle.Channels.Name};
+        filepath = [obj.SavePath filesep filename];
+        writecell(channelNames, filepath);        
     end
     if ~isempty(obj.TriggerTimer) && isvalid(obj.TriggerTimer)
         % run stimulation on matlab timer
         start(obj.TriggerTimer);
         try
-            wait(obj.TriggerTimer,obj.timeoutWait)       % wait for data acquisition
+            wait(obj.TriggerTimer,obj.timeoutWait)% wait for data acquisition
         catch me
             warning(me.identifier,'%s',...      % rethrow timeout error as warning
                 me.message); 
@@ -537,7 +539,7 @@ function componentID = GetComponentID(obj)
 end
 
 function SoftwareTrigger(obj, ~, ~)
-    %TDO REWRITW NOW THAT 
+    %TDO REWRITE NOW THAT 
     if obj.triggerIdx >= length(obj.PreviewData)
         write(obj.SessionHandle, obj.PreviewData(obj.triggerIdx,:))
     else
@@ -650,6 +652,7 @@ function plotData(obj, ~,event)
                 data(:,i) = data(:,i)*10 + 32;
             end
         end
+        % TODO DC TEMPERATURE CONTROLLER ALSO NEEDS CALIBRATION - FHC DC TEMPERATURE CONTROLLER
         obj.PreviewData(targetIdx, obj.InChanIdxes) = data;
         warning('off');
         displayLabels = obj.StackedPreview.DisplayLabels;

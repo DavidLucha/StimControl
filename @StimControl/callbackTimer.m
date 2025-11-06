@@ -184,6 +184,10 @@ else
         obj.errorMsg(tmp);
         keyboard % see what's going on
     end
+    for i = 1:length(obj.activeComponents)
+        component = obj.activeComponents{i};
+        component.UpdateStatusDisplay;
+    end
 end
 end
 

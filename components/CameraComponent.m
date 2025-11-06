@@ -151,6 +151,7 @@ end
 
 % Start device
 function StartTrial(obj)
+    flushdata(obj.SessionHandle)
     if isempty(obj.SessionHandle)
         return
     end
