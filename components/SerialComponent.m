@@ -143,7 +143,9 @@ function StartPreview(obj)
         return;
     end
     ps = strsplit(obj.query('P'),'\r');
-
+    if length(ps) < 2
+        return
+    end
     % process first line of parameter block
     p = sscanf(ps{2},'N%d T%d I%d Y%d S%s');
     thermP = cell2mat(cellfun(@(x) {sscanf(x,'C%d V%d R%d D%d')},ps(3:end)));

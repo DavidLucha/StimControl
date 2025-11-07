@@ -4,7 +4,7 @@ obj.t.start;
 keyboard;
 qst = obj.d.Available{end};
 % q.query('Og')
-d = obj.d.Available{1};
+d = obj.d.activeComponents{1};
 disp("DEBUG");
 return
 obj = ResetAllHardware(obj);

@@ -559,9 +559,16 @@ function status = GetSessionStatus(obj)
     %   connected       device session initialised; not ready to start trial
     %   ready           device session initialised, trial loaded
     %   running         currently running a trial
+    
+    % persistent lastScanAcquired;
     status = '';
     if obj.SessionHandle.Running
         status = 'running'; % DAQ running
+        % if obj.SessionHandle.NumScansAvailable == 0
+        % 
+        % else
+        %     lastScanAcquired = tic;
+        % end
     elseif ~isempty(obj.TriggerTimer) && isvalid(obj.TriggerTimer) && obj.TriggerTimer.Running
         status = 'running'; % Software triggered timer running
     elseif obj.SessionHandle.NumScansQueued ~= 0
