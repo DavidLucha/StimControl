@@ -34,7 +34,10 @@ obj.h.Session.FullscreenPreviewAxes.Title.String = "Preview";
 doNothing = @(x, y, z) true;
 for i = 1:numRows
     for j = 1:numCols
-        componentIdx = ((i-1) * numRows) + j;
+        componentIdx = ((i-1) * numCols) + j;
+        if length(obj.activeComponents) < componentIdx
+            return
+        end
         panel = uipanel(obj.h.Session.PreviewGrid, ...
             'CreateFcn', doNothing,...
             'Layout', matlab.ui.layout.GridLayoutOptions( ...

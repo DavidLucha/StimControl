@@ -27,6 +27,7 @@ properties (Access = public)
     nStimsInTrial;  % number of stims in trial
     trialStartedTic; % time trial started
     selfTrigger = false; % whether to trigger using self triggers.
+    tStimStarted = []; % for multiple triggers
 end
 
 methods(Access=public)
@@ -210,10 +211,9 @@ function obj = CreateStatusDisplay(obj)
     CreateStatusDisplay@HardwareComponent(obj);
     % warnings that jcomponent is being deprecated - maybe this? https://au.mathworks.com/matlabcentral/fileexchange/14773-statusbar
     obj.statusHandles.battery = ...
-        uicomponent(obj.statusHandles.grid,...
-            'Style',        'JProgressbar',...
-            'Value',        0,...
-            'StringPainted',1, ...
+        uilabel(obj.statusHandles.grid,...
+            "Text", "0%", ...
+            'HorizontalAlignment', 'center', ...
             'Layout', matlab.ui.layout.GridLayoutOptions( ...
                 'Row', 2, ...
                 'Column', [1 2]));
@@ -221,7 +221,7 @@ end
 
 function UpdateStatusDisplay(obj)
     UpdateStatusDisplay@HardwareComponent(obj);
-    obj.statusHandles.battery.Value = str2num(obj.battery);
+    obj.statusHandles.battery.Text = sprintf('%d %',obj.battery);
 end
 end
 
@@ -235,23 +235,30 @@ function status = GetSessionStatus(obj)
     %   connected       device session initialised; not ready to start trial
     %   ready           device session initialised, trial loaded
     %   running         currently running a trial
+    persistent prevTemp;
+    persistent prevTested;
+    stat = sscanf(obj.query('Og'), '%d+%d+%d+%d+%d+%d\n%d');
+    temps = stat(2:5);
+    if isempty(prevTemp)
+        prevTemp = sum(temps);
+        prevTested = tic;
+    end
+    btn = stat(end);
 
-    %TODO check the strings for this are consistent with the
-    % strings for everything else. Not tested for serialport devices.
-    %TODO!!!!
-    b = obj.battery;
-    % status = obj.query('Og'); 
-    if ~obj.isConnected
-        status = "not connected";
-    % elseif ~strcmpi(obj.SessionHandle.TransferStatus, 'idle')
-    %     status = 'running';
-    else
-        if strcmpi(obj.SessionHandle.Status, 'open')
-            status = 'connected';
-            %TODO how to check if it has loaded data for 'ready'
-        else
-            status = 'unknown';
+    if strcmpi(obj.SessionHandle.Status, 'open')
+        status = 'connected';
+        if btn~= 0 || ...
+                (abs(prevTemp - sum(temps)) > 10 && toc(prevTested < seconds(1)))
+            % temperature is changing or button is pressed
+            if isempty(obj.tStimStarted)
+                obj.tStimStarted = tic;
+            end
+            status = 'running';
+        elseif ~isempty(obj.TrialData)
+            status = 'ready';
         end
+    else
+        status = "unconnected";
     end
 end
 
@@ -481,7 +488,7 @@ function out = temperature(obj)
     if isMATLABReleaseOlderThan('R2023b')
         out = str2num(obj.queryN('E',23)); %#ok<ST2NM>
     else
-        out = str2num(obj.query('E')); %#ok<ST2NM>
+        out = sscanf(obj.query('E'), '%d+%d+%d+%d+%d+%d');
     end
 end
 
@@ -490,7 +497,7 @@ function out = battery(obj)
     if isMATLABReleaseOlderThan('R2023b')
         out = sscanf(obj.queryN('B',13),'%*fv %d%%');
     else
-        out = str2num(obj.query('B')); %#ok<ST2NM>
+        out = sscanf(obj.query('B'), '%*fv %d%%'); %#ok<ST2NM>
     end
 end
 
@@ -522,30 +529,22 @@ function obj = OpenSerialConnection(obj)
             'InputBufferSize', obj.ConfigStruct.InputBufferSize);
         fopen(obj.SessionHandle); 
     else
-        try
-            obj.SessionHandle = serialport(obj.ConfigStruct.Port, ...
-                obj.ConfigStruct.BaudRate);
-        catch
-            %TODO this is cursed. I need to update the drivers. 
-            % You can find the baud rate for the target port using 'mode'
-            % in the windows command prompt, but that's cursed. Don't do
-            % it. I did but you shouldn't.
-            try
-                obj.ConfigStruct.BaudRate = 115384;
-                obj.SessionHandle = serialport(obj.ConfigStruct.Port, ...
-                    obj.ConfigStruct.BaudRate);
-            catch
-                return
-            end
-        end
-        %TODO configure terminator, inputbuffersize. Not necessary for QST
+        obj.SessionHandle = serialport(obj.ConfigStruct.Port, ...
+            obj.ConfigStruct.BaudRate);
     end
-    
+    %TODO configure terminator, inputbuffersize. Not necessary for QST
 end
 
 function multiTriggerTimer(obj, ~, ~)
-    timeout = obj.TrialData(obj.idxStim);
-    timeTrialStarted = obj.trialStartedTic;
+    timeoutMs = obj.TrialData(obj.idxStim).params.thermodeA.dStimulus;
+    if isempty(obj.trialStartedTic)
+        return
+    else
+        if seconds(toc(obj.trialStartedTic)) > seconds(timeoutMs/1000)
+            obj.PreloadSingleQSTStim
+            obj.trialStartedTic = [];
+        end
+    end
 end
 
 %% QSTControl METHODS

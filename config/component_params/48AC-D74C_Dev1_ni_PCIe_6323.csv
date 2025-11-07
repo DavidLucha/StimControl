@@ -19,4 +19,4 @@ port0/line29,LED,output,Digital,,,FlashLED,ttl,0
 port0/line30,IRLED_BaslerImaging,output,Digital,,,IRLED,ttl,0
 port0/line2,Vibration,output,Digital,,,VibrationMotor,out,0
 port0/line7,Thermode Trigger,output,Digital,,,QST,trigger,1
-ao0,Aurora Force Command Voltage,output,Voltage,SingleEnded,[0 10],Aurora,out,0
+ao0,Aurora Force Command Voltage,output,Voltage,SingleEnded,[-10 10],Aurora,out,0

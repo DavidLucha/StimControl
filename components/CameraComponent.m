@@ -340,7 +340,7 @@ function LoadTrialFromParams(obj, componentTrialData, genericTrialData)
             start(obj.SessionHandle);
         end
         if obj.TriggerTimer
-
+            %TODO
         end
         if ~isrunning(obj.SessionHandle)
             error("failed to start CameraComponent %s", obj.ComponentID);
