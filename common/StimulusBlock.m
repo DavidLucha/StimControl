@@ -261,7 +261,7 @@ methods
                 if ~contains(obj.stimParams.targetDevices, 'QST')
                     stimDur = 0;
                 else
-                    stimDur = max([obj.stimParams.thermodeA.dStimulus obj.stimParams.thermodeB.dStimulus]);
+                    stimDur = max([obj.stimParams.commands.dStimulus]);
                 end
             elseif strcmpi(obj.stimParams.type, 'arbitrary')
                 %TODO

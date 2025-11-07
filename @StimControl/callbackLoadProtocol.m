@@ -73,9 +73,8 @@ obj.trialNum = 1;
 allTargets = fields([obj.p(:).params]);
 % Construct appropriate trial for each device
 deviceTargets = [];
-activeComponents = obj.d.Available(logical(obj.d.Active));
 for di = 1:sum(obj.d.Active)
-    deviceTargets.(activeComponents{di}.ConfigStruct.ProtocolID) = [];
+    deviceTargets.(obj.d.activeComponents{di}.ConfigStruct.ProtocolID) = [];
 end
 for fi = 1:length(allTargets)
     targetName = allTargets{fi};
@@ -97,17 +96,11 @@ if createChans
             continue
         end
         comp = obj.d.Available{i};
-        fprintf("Creating channels for %s...\n", comp.ConfigStruct.ProtocolID);
+        obj.indicateLoading("Creating channels...");
         obj.d.Available{i} = comp.InitialiseSession('ActiveDeviceIDs', obj.d.ActiveIDs);
     end
 end
-disp("Protocol load completed. Loading trial.");
-
-% for di = 1:sum(obj.d.Active)
-%     component = activeComponents{di};
-%     component.LoadTrialFromParams(blah)
-%     deviceParams.(activeComponents(di).ProtocolID) = [];
-% end
+obj.indicateLoading("Protocol load completed. Loading trial.");
 
 % refresh information scroller
 obj.h.trialInformationScroller.Value = '';

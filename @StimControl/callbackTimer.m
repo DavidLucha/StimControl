@@ -76,8 +76,8 @@ else
                 obj.f.stopTrial = false;
                 obj.f.startTrial = false;
                 obj.f.passive = false;
-                for idx = 1:sum(obj.d.Active)
-                    component = obj.activeComponents{idx};
+                for idx = 1:obj.d.nActive
+                    component = obj.d.activeComponents{idx};
                     component.Stop();
                 end
                 obj.h.StatusCountdownLabel.Text = '-0:00';
@@ -119,12 +119,12 @@ else
                     else
                         updatePassiveGuiTimer(obj, startTic, false);
                     end
-                    if ~any(cellfun(@(c) strcmpi(c.GetStatus(), 'running'), obj.activeComponents))
+                    if ~any(cellfun(@(c) strcmpi(c.GetStatus(), 'running'), obj.d.activeComponents))
                         obj.f.trialFinished = true;
                     end
                 end
             case 'awaiting trigger'
-                if any(cellfun(@(c) strcmpi(c.GetStatus(), 'running'), obj.activeComponents))
+                if any(cellfun(@(c) strcmpi(c.GetStatus(), 'running'), obj.d.activeComponents))
                     startTic = tic;
                     updatePassiveGuiTimer(obj, startTic, false);
                     obj.status = 'running';
@@ -185,8 +185,8 @@ else
         keyboard % see what's going on
     end
     % update component status display
-    for i = 1:length(obj.activeComponents)
-        component = obj.activeComponents{i};
+    for i = 1:obj.d.nActive
+        component = obj.d.activeComponents{i};
         component.UpdateStatusDisplay;
     end
 end
@@ -210,16 +210,16 @@ function startTrial(obj)
     
     % Set filepath params
     savePrefix = sprintf("%05d_stim%05d", obj.trialIdx, obj.trialNum);
-    for i = 1:sum(obj.d.Active)
-        component = obj.activeComponents{i};
+    for i = 1:obj.d.nActive
+        component = obj.d.activeComponents{i};
         component.SavePath = obj.dirExperiment;
         component.SavePrefix = savePrefix;
     end
     updateInteractivity(obj, 'on');
 
     % COMPONENTS: ACTIVATE
-    for ci = 1:sum(obj.d.Active)
-        component = obj.activeComponents{ci};
+    for ci = 1:obj.d.nActive
+        component = obj.d.activeComponents{ci};
         component.StartTrial;
     end
     obj.f.trialLoaded = false;
@@ -239,16 +239,16 @@ function startPassive(obj)
     if ~isfolder([obj.dirExperiment '_Basler'])
         mkdir([obj.dirExperiment '_Basler']);
     end
-    for i = 1:sum(obj.d.Active)
-        component = obj.activeComponents{i};
+    for i = 1:obj.d.nActive
+        component = obj.d.activeComponents{i};
         component.SavePath = [obj.dirExperiment '_Basler'];
         component.SavePrefix = savePrefix;
     end
     updateInteractivity(obj, 'on');
 
     % COMPONENTS: ACTIVATE
-    for ci = 1:sum(obj.d.Active)
-        component = obj.activeComponents{ci};
+    for ci = 1:obj.d.nActive
+        component = obj.d.activeComponents{ci};
         component.StartTrial;
     end
 end
@@ -336,8 +336,8 @@ end
 
 function stopTrial(obj)
 % Stops all components, regardless of whether they're finished or not.
-    for i = 1:length(obj.activeComponents)
-        component = obj.activeComponents{i};
+    for i = 1:length(obj.d.activeComponents)
+        component = obj.d.activeComponents{i};
         component.Stop();
     end
 end

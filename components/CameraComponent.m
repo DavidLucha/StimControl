@@ -15,7 +15,7 @@ properties (Access = protected)
 end
 
 methods(Static, Access=public)
-    function Clear()
+    function ClearAll()
         imaqreset;
     end
 
@@ -179,6 +179,18 @@ function Stop(obj)
         stop(obj.TriggerTimer);
         delete(obj.TriggerTimer);
     end
+end
+
+function Close(obj)
+    %todo doesn't clear the session. Not needed right now
+    obj.StopPreview();
+    if ~isempty(obj.SessionHandle)
+        stop(obj.SessionHandle);
+        flushdata(obj.SessionHandle);
+        delete(obj.SessionHandle);
+        % clear(obj.SessionHandle);
+    end
+    obj.SessionHandle = [];
 end
 
 % Start device preview

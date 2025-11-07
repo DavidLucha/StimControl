@@ -58,10 +58,6 @@ function p = GetBaseParser(obj)
     % Initialise    (logical, true)     if true, session with hardware will be
     %                                   immediately started upon object creation.
     %                                   If false, can be initialised later using obj.Configure
-    % AlternativesOk(logical, false)    [NOT IMPLEMENTED YET] Whether to search for alternative
-    %                                   available hardware of the same type if
-    %                                   the defined hardware component isn't
-    %                                   available. May lead to unpredictable behaviour.
     p = inputParser;
     strValidate = @(x) ischar(x) || isstring(x);
     handleValidate = @(x) (contains(class(x), obj.HandleClass)) || isempty(x);
@@ -280,7 +276,7 @@ end
 
 methods(Static, Abstract, Access=public)
     % Complete reset. Clear device and all handles of device type.
-    Clear()
+    ClearAll()
 
     % Finds all available hardware components of the given type.
     components = FindAll(varargin)
@@ -318,6 +314,9 @@ PrintInfo(obj)
 
 % Preload a single trial
 LoadTrialFromParams(obj, componentTrialData, genericTrialData)
+
+% Close connection to the hardware session
+Close(obj)
 end
 
 methods(Abstract, Access=protected)

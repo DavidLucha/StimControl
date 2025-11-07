@@ -66,6 +66,9 @@ function obj = InitialiseSession(obj, varargin)
 
     % close and delete all serial port objects on the target port
     SerialComponent.ClearPort(obj.ConfigStruct.Port);
+    if ~isempty(obj.SessionHandle)
+        obj.Close();
+    end
 
     % start the connection with the target port.
     obj = obj.OpenSerialConnection();
@@ -105,6 +108,24 @@ function Stop(obj)
             stop(obj.TriggerTimer);
             delete(obj.TriggerTimer);
         end
+    end
+end
+
+function Close(obj)
+    % Closes connection to the port.
+    if isMATLABReleaseOlderThan('R2023b')
+        try
+            fclose(obj.ConfigStruct.Port);
+            delete(obj.ConfigStruct.Port);
+        catch err
+            dbstack
+            warning(err.message)
+            % probably already closed?
+        end
+    else
+        clear(obj.ConfigStruct.Port);
+        delete(obj.SessionHandle);
+        obj.SessionHandle = [];
     end
 end
 
@@ -213,7 +234,7 @@ function obj = CreateStatusDisplay(obj)
     obj.statusHandles.battery = ...
         uilabel(obj.statusHandles.grid,...
             "Text", "0%", ...
-            'HorizontalAlignment', 'center', ...
+            'HorizontalAlignment', 'left', ...
             'Layout', matlab.ui.layout.GridLayoutOptions( ...
                 'Row', 2, ...
                 'Column', [1 2]));
@@ -221,7 +242,7 @@ end
 
 function UpdateStatusDisplay(obj)
     UpdateStatusDisplay@HardwareComponent(obj);
-    obj.statusHandles.battery.Text = sprintf('%d %',obj.battery);
+    obj.statusHandles.battery.Text = sprintf('battery: %dpct',obj.battery);
 end
 end
 
@@ -248,7 +269,7 @@ function status = GetSessionStatus(obj)
     if strcmpi(obj.SessionHandle.Status, 'open')
         status = 'connected';
         if btn~= 0 || ...
-                (abs(prevTemp - sum(temps)) > 10 && toc(prevTested < seconds(1)))
+                (abs(prevTemp - sum(temps)) > 10 && seconds(toc(prevTested)) < seconds(1))
             % temperature is changing or button is pressed
             if isempty(obj.tStimStarted)
                 obj.tStimStarted = tic;
@@ -265,53 +286,45 @@ end
 function preloadSingleQSTStim(obj, stimStruct)
     %QSTControl p2Serial
     %TODO flush previous
-    for ii = 1:length(fields(stimStruct))
-        idTherm = sprintf('thermode%s',64+ii);
-        if ~isfield(stimStruct,idTherm)
-            continue
+    % build command stack
+    stack = {};
+    for param = fieldnames(stimStruct.params.commands)'
+        val = stimStruct.params.commands.(param{:});
+        switch param{:}
+            case 'NeutralTemp'
+                cmd = sprintf('N%03d',round(val*10));
+            case 'SurfaceSelect'
+                cmd = sprintf('S%d%d%d%d%d',val>0);
+            case 'SetpointTemp'
+                cmd = helper('C%d%03d',round(val*10));
+            case 'PacingRate'
+                cmd = helper('V%d%04d',round(val*10));
+            case 'ReturnSpeed'
+                cmd = helper('R%d%04d',round(val*10));
+            case 'dStimulus'
+                cmd = helper('D%d%05d',round(val));
+            case 'nTrigger'
+                cmd = sprintf('T%03d',round(val));
+            case 'integralTerm'
+                cmd = sprintf('I%d',round(val));
         end
-        
-        % build command stack
-        % TODO this doesn't handle multiple thermodes with different behaviour. 
-        % in QSTcontrol this is handled using different serial sessions I think?
-        stack = {};
-        for param = fieldnames(stimStruct.(idTherm))'
-            val = stimStruct.(idTherm).(param{:});
-            switch param{:}
-                case 'NeutralTemp'
-                    cmd = sprintf('N%03d',round(val*10));
-                case 'SurfaceSelect'
-                    cmd = sprintf('S%d%d%d%d%d',val>0);
-                case 'SetpointTemp'
-                    cmd = helper('C%d%03d',round(val*10));
-                case 'PacingRate'
-                    cmd = helper('V%d%04d',round(val*10));
-                case 'ReturnSpeed'
-                    cmd = helper('R%d%04d',round(val*10));
-                case 'dStimulus'
-                    cmd = helper('D%d%05d',round(val));
-                case 'nTrigger'
-                    cmd = sprintf('T%03d',round(val));
-                case 'integralTerm'
-                    cmd = sprintf('I%d',round(val));
-            end
-            stack = [stack cmd]; %#ok<AGROW>
-        end
-        
-        % send command stack to thermode
-        tmp = [stack; repmat({' '},size(stack))];
-        obj.query([tmp{:}]);
+        stack = [stack cmd]; %#ok<AGROW>
+    end
+    
+    % send command stack to thermode
+    tmp = [stack; repmat({' '},size(stack))];
+    obj.query([tmp{:}]);
 
 
-        function out = helper(format,val)
-            if all(val==val(1))
-                out = sprintf(format,0,val(1));
-            else
-                out = cell(1,sum(~isnan(val)));
-                for idx = find(~isnan(val))
-                    out{idx} = sprintf(format,idx,val(idx));
-                end
+    function out = helper(format,val)
+        if all(val==val(1))
+            out = sprintf(format,0,val(1));
+        else
+            out = cell(1,sum(~isnan(val)));
+            for idx = find(~isnan(val))
+                out{idx} = sprintf(format,idx,val(idx));
             end
+        end
     end
 end
 
@@ -536,7 +549,7 @@ function obj = OpenSerialConnection(obj)
 end
 
 function multiTriggerTimer(obj, ~, ~)
-    timeoutMs = obj.TrialData(obj.idxStim).params.thermodeA.dStimulus;
+    timeoutMs = obj.TrialData(obj.idxStim).params.commands.dStimulus;
     if isempty(obj.trialStartedTic)
         return
     else
@@ -578,9 +591,9 @@ end
 end
 
 methods(Static, Access=public)
-    function Clear()
+    function ClearAll()
         % Complete reset. Clear device and all handles of device type.
-        for port = SerialComponent.FindPorts'
+        for port = SerialComponent.FindPorts
             SerialComponent.ClearPort(port);
         end
     end

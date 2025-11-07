@@ -5,3 +5,6 @@
 - make a loader for collected data
 
 refresh button
+
+
+add hardwaremanager class to track all handles in a clean way

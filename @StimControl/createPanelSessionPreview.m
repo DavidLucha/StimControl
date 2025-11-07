@@ -1,6 +1,6 @@
 function createPanelSessionPreview(obj, hPanel, ~)
 
-numComponents = length(obj.activeComponents);
+numComponents = obj.d.nActive;
 numRows = floor(sqrt(numComponents));
 numCols = ceil(numComponents/numRows);
 
@@ -35,7 +35,7 @@ doNothing = @(x, y, z) true;
 for i = 1:numRows
     for j = 1:numCols
         componentIdx = ((i-1) * numCols) + j;
-        if length(obj.activeComponents) < componentIdx
+        if obj.d.nActive < componentIdx
             return
         end
         panel = uipanel(obj.h.Session.PreviewGrid, ...
@@ -54,7 +54,7 @@ for i = 1:numRows
             'XTickLabel', [], ...
             'YTick', [], ...
             'YTickLabel', []);
-        component = obj.activeComponents{componentIdx};
+        component = obj.d.activeComponents{componentIdx};
         panel.Title = component.ConfigStruct.ProtocolID;
         obj.h.Session.PreviewPanels{end+1} = ax;
         if updatePlots

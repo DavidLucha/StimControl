@@ -28,7 +28,7 @@ properties(Access = private)
 end
 
 methods (Access = public, Static)
-    function Clear()
+    function ClearAll()
         % Complete reset. Clear device.
         daqreset;
     end
@@ -181,6 +181,12 @@ function Stop(obj)
         %file already closed. Do nothing.
     end
     flush(obj.SessionHandle);
+end
+
+function Close(obj)
+    % safely close the session
+    Stop(obj);
+    %todo disconnect
 end
 
 % Change device parameters TODO ALL OF THESE REQUIRE A RESTART I THINK

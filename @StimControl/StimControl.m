@@ -35,14 +35,11 @@ properties (Dependent)
     dirAnimal
     dirExperiment
     status
-    activeComponents
 end
 
 methods
     function obj = StimControl(varargin)
         % close all
-        daqreset
-        imaqreset
         obj.path.base = pwd;
         if ~contains(pwd, 'StimControl')
             obj.path.base = [pwd filesep 'StimControl'];
@@ -53,6 +50,10 @@ methods
         addpath(genpath(fullfile(obj.path.base,'@StimControl', 'icons')))
         clc
         disp('Welcome to StimControl')
+
+        %% Initialise component manager
+        obj.d = ComponentManager();
+        obj.d.ClearAll();
         
         %% Initialise Path
         obj.path.dirData = fullfile(getenv('UserProfile'),'Desktop','logs');
@@ -79,7 +80,7 @@ methods
 
         %% Find available hardware
         disp("Initialising Available Hardware...")
-        obj = obj.findAvailableHardware();
+        obj.d = obj.d.FindAvailableHardware();
 
         %% Create figure and get things going
         disp("Creating figure...")
@@ -92,6 +93,7 @@ methods
             'ExecutionMode',    'fixedDelay', ...
             'StartFcn',         @obj.callbackTimer, ...
             'TimerFcn',         @obj.callbackTimer, ...
+            'ErrorFcn',         @obj.restartTimer, ...
             'Name',             'StateMachineTimer');
         start(obj.t)
         
@@ -140,40 +142,39 @@ methods (Access = private)
     callbackTimer(obj, ~, ~)
 
     %% Inline functions
-    function obj = findAvailableHardware(obj)
-        %% Find available hardware
-        obj.d.Available = {};
-        obj.d.Active = [];
-        obj.d.IDComponentMap = configureDictionary('string', 'uint32');
-        obj.d.ProtocolIDMap = configureDictionary('string', 'uint32');
-        
-        tmpPlur = ["", "s"];
-        pluralStr = @(input) tmpPlur(double(length(input)~=1)+1);
-        daqs = DAQComponent.FindAll();
-        fprintf("\t Found %d DAQ%s\n", length(daqs), pluralStr(daqs));
-        cameras = CameraComponent.FindAll();
-        fprintf("\t Found %d camera%s\n", length(cameras), pluralStr(cameras));
-        serials = SerialComponent.FindAll();
-        fprintf("\t found %d serial device%s\n", length(serials), pluralStr(serials));
-        components = [daqs cameras serials];
-
-        for ci = 1:length(components)
-            comp = components{ci};
-            obj.d.IDComponentMap(comp.ComponentID) = ci;
-            obj.d.ProtocolIDMap(comp.ConfigStruct.ProtocolID) = ci;
-            obj.d.Available{end+1} = comp;
-            obj.d.Active(end+1) = true;
-        end
-    end
-
-    function StartPreviews(obj)
-        for i = 1:length(obj.d.Available)
-            obj.d.Available{i}.StartPreview();
-        end
-    end
+    % function obj = findAvailableHardware(obj)
+    %     %% Find available hardware
+    %     obj.d.Available = {};
+    %     obj.d.Active = [];
+    %     obj.d.IDComponentMap = configureDictionary('string', 'uint32');
+    %     obj.d.ProtocolIDMap = configureDictionary('string', 'uint32');
+    % 
+    %     tmpPlur = ["", "s"];
+    %     pluralStr = @(input) tmpPlur(double(length(input)~=1)+1);
+    %     daqs = DAQComponent.FindAll();
+    %     fprintf("\t Found %d DAQ%s\n", length(daqs), pluralStr(daqs));
+    %     cameras = CameraComponent.FindAll();
+    %     fprintf("\t Found %d camera%s\n", length(cameras), pluralStr(cameras));
+    %     serials = SerialComponent.FindAll();
+    %     fprintf("\t found %d serial device%s\n", length(serials), pluralStr(serials));
+    %     components = [daqs cameras serials];
+    % 
+    %     for ci = 1:length(components)
+    %         comp = components{ci};
+    %         obj.d.IDComponentMap(comp.ComponentID) = ci;
+    %         obj.d.ProtocolIDMap(comp.ConfigStruct.ProtocolID) = ci;
+    %         obj.d.Available{end+1} = comp;
+    %         obj.d.Active(end+1) = true;
+    %     end
+    % end
 end
 
 methods
+    function restartTimer(obj, ~, ~)
+        obj.t.stop;
+        obj.t.start;
+    end
+
     function filepath = get.dirAnimal(obj)
         filepath = fullfile(obj.path.dirData,obj.animalID);
         if ~exist(filepath,'dir')
@@ -349,10 +350,6 @@ methods
 
     function val = get.status(obj)
         val = lower(obj.h.statusLabel.Text);
-    end
-
-    function activeComponents = get.activeComponents(obj)
-        activeComponents = obj.d.Available(obj.d.Active == 1);
     end
     
     function set.trialNum(obj, value)
