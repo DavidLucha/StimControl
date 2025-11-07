@@ -1,6 +1,7 @@
 function callbackDebug(obj, src, event)    
 keyboard;
 qst = obj.d.Available{end};
+q.query('Og')
 d = obj.d.Available{1};
 disp("DEBUG");
 return

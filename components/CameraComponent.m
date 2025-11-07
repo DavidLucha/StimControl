@@ -170,7 +170,8 @@ end
 % Stop device
 function Stop(obj)
     obj.StopPreview();
-    if ~isempty(obj.SessionHandle) && isrunning(obj.SessionHandle)
+    if ~isempty(obj.SessionHandle) && isrunning(obj.SessionHandle) ...
+            && strcmpi(obj.ConfigStruct.TriggerMode, 'automatic') %only stop stop the camera if it's self-driven
         stop(obj.SessionHandle);
     end
     if ~isempty(obj.TriggerTimer) ...

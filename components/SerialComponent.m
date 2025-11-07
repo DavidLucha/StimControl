@@ -244,7 +244,7 @@ function status = GetSessionStatus(obj)
         prevTested = tic;
     end
     btn = stat(end);
-
+    % disp(stat')
     if strcmpi(obj.SessionHandle.Status, 'open')
         status = 'connected';
         if btn~= 0 || ...
@@ -301,7 +301,7 @@ function preloadSingleQSTStim(obj, stimStruct)
         % send command stack to thermode
         tmp = [stack; repmat({' '},size(stack))];
         obj.query([tmp{:}]);
-    end
+
 
         function out = helper(format,val)
             if all(val==val(1))

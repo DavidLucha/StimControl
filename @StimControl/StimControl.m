@@ -118,6 +118,7 @@ methods (Access = private)
     % app control callbacks
     callbackChangeTab(obj, src, event)
     callbackDebug(obj, src, event)
+    callbackReload(obj, src, event)
     
     % experiment control callbacks
     callbackLoadProtocol(obj, src, event)
@@ -225,7 +226,7 @@ methods
         if length(tmp) < 2
             out = tmp{:};
         else
-            out = tmp{2};
+            out = tmp{1};
         end
     end
 

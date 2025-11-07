@@ -11,6 +11,7 @@ delete(obj.t)
 delete(gcp('nocreate'))
 daqreset
 imaqreset
+% Todo I suspect this doesn't work
 for port = SerialComponent.FindPorts
     SerialComponent.ClearPort(port);
 end

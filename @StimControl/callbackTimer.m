@@ -184,13 +184,10 @@ else
         obj.errorMsg(tmp);
         keyboard % see what's going on
     end
-    try
-        for i = 1:length(obj.activeComponents)
-            component = obj.activeComponents{i};
-            component.UpdateStatusDisplay;
-        end
-    catch err
-        keyboard
+    % update component status display
+    for i = 1:length(obj.activeComponents)
+        component = obj.activeComponents{i};
+        component.UpdateStatusDisplay;
     end
 end
 end
@@ -203,8 +200,8 @@ function startTrial(obj)
     if ~obj.f.trialLoaded
         obj.callbackLoadTrial([]);
     end
-    if isfield(obj.p, 'Comments')
-        comment = obj.p(obj.trialNum).Comments;
+    if isfield(obj.p, 'Comment')
+        comment = obj.p(obj.trialNum).Comment;
     else
         comment = '';
     end
