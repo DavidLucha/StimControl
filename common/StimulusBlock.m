@@ -156,7 +156,7 @@ methods
                     % set params
                     % TODO this might be worse than just having an absolute
                     % offset for each child, greater possibility of
-                    % miscalculating fi you're doing stim duration in two
+                    % miscalculating if you're doing stim duration in two
                     % places (here and StimGenerator: see TODO:SEQ)
                     singleStimParams.(f).sequence = ...
                         [singleStimParams.(f).sequence traversedParam.(f).sequence+helperStruct.(f).offsetIdx]; 
@@ -287,12 +287,12 @@ methods(Access=private)
         end
 
         % swap in oddballs
-        if strcmpi(obj.oddParams.distributionMethod, 'even')
+        if strcmpi(obj.oddParams.distributionMethod, 'even') %evenly distributed
             swapIdxes = round(linspace(1, length(order), nSwaps));
-        elseif strcmpi(obj.oddParams.distributionMethod, 'random')
+        elseif strcmpi(obj.oddParams.distributionMethod, 'random') %randomly distributed
             
         else
-            if ~contains(obj.oddParams.distributionMethod, 'semirandom')
+            if ~contains(obj.oddParams.distributionMethod, 'semirandom') %randomly distributed with minimum swap distance
                 error("Invalid distribution method: %s", obj.oddParams.distributionMethod);
             end
             minPostOddDefaults = str2double(obj.oddParams.distributionMethod(11:end)); % warning: cursed

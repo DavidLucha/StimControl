@@ -423,10 +423,21 @@ function obj = MapChannels(obj, filename)
     for rowIdx = 1:s(1)
         line = tab(rowIdx, :);
         deviceName = line.('Device'){:};
-        if isempty(obj.ConnectedDevices) || ~any(contains(obj.ConnectedDevices, deviceName))
+        if ~isempty(deviceName) && ...
+            (isempty(obj.ConnectedDevices) || ~any(contains(obj.ConnectedDevices, deviceName)))
             obj.ConnectedDevices = [obj.ConnectedDevices string(deviceName)];
         end
     end
+end
+
+function info = deviceInfo(obj)
+    if isempty(obj.SessionHandle)
+        info = [];
+        return
+    end
+    deviceID = obj.ConfigStruct.ID;
+    daqs = daqlist;
+    info = daqs(strcmpi(daqs.DeviceID, deviceID),:).DeviceInfo;
 end
 
 function obj = CreateChannels(obj, filename, protocolIDs)
@@ -612,16 +623,6 @@ function name = FindDaqName(obj, deviceID, vendorID, model)
         correctIndex = x;
     end
     name = daqs(correctIndex).Vendor.ID;
-end
-
-function info = deviceInfo(obj)
-    if isempty(obj.SessionHandle)
-        info = [];
-        return
-    end
-    deviceID = obj.ConfigStruct.ID;
-    daqs = daqlist;
-    info = daqs(strcmpi(daqs.DeviceID, deviceID),:).DeviceInfo;
 end
 
 function [idxes, labels] = getDeviceChannelIdxes(obj, targetName)
