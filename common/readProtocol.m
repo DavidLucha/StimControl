@@ -39,9 +39,9 @@ trial = struct( ...
     'tPre',                 1000, ...
     'tPost',                5000);
 stimBlock = struct( ...
-    nStims,                 1, ...
-    repDel,                 0, ...
-    startDel,               0);
+    'nStims',               1, ...
+    'repDel',               0, ...
+    'startDel',             0);
 
 % function st1 = mergeStructs(st1, st2)
 %     fs = fields(st2);
@@ -164,101 +164,16 @@ oddballParams = struct(...
     'swapRatio', 0.5, ...
     'oddballRel', 'rand'); % rand / seq - | or |> 
 
-
-%% Count and initialise with names
-%TODO maybe only do this if nTherm nAna nDig nPwm nCam and nArb are
-%undefined?
-standardRegexSuffix = '[A-z]*(\d*)[A-Z]?'; %TODO VIBRATION IS DIGITAL!! Piezo IS analog
-regexTherm = 'V\d{5}[A-Z]?';
-regexTherm = '(I[01]|[NT]\d{3}|C\d{4}|S[01]{5}|[VR]\d{5}|D\d{6})[A-Z]?';
-regexAna = ['((Ana)|(Vib)|(Piezo))', standardRegexSuffix];
-regexDig = ['(Dig)', standardRegexSuffix]; 
-regexPwm = ['((PWM)|(LED))', standardRegexSuffix];
-regexCam = ['(Cam)', standardRegexSuffix];
-regexArb = '[A-z]*\:(([A-z]*_*)+\/*)+\.((txt)|(csv)|(astim))';
-regexStrings = {regexTherm, regexAna, regexDig, regexPwm, regexCam, regexArb};
-for regexString = regexStrings
-    occs = cellfun(@(x) regexpi(x, regexString, 'match'), lines);
-    if ~any(~isempty(horzcat(occs{:})))
-        continue
-    end
-    if strcmp(regexString, regexTherm)
-        % specific thermode parsing
-        occs = cellfun(@(x) regexpi(x, '\d[A-Z]', 'match'), horzcat(occs{:}), 'UniformOutput', false);
-        occs = cellfun(@(x) extract(x, lettersPattern), unique(horzcat(occs{:})));
-        ids = unique(horzcat(occs));
-        if length(ids) <= 1 && any(cellfun(@(x) ~isempty(x), occs))
-            % only one thermode
-            p.('Thermode') = thrm;
-            g.('nTherm') = 1;
-            continue
-        end
-    elseif strcmp(regexString, regexArb)
-        % specific arbitrary stimulus parsing
-        occs = cellfun(@(x) regexpi(x, '[A-Z]+(?=\:)', 'match'), ...
-            horzcat(occs{:}), 'UniformOutput', false);
-        ids = unique(horzcat(occs{:}));
-    else
-        % parsing for everything else
-        minireg = regexString{1}(1:end-length(standardRegexSuffix));
-        occs = cellfun(@(x) strcat(regexpi(x, [minireg, '(?=[A-Z]+[a-z]+\d+)'], 'match'), x(end)), ...
-                unique(horzcat(occs{:})), 'UniformOutput', false);
-        occs = cellfun(@(x) regexpi(x, '[A-Z]*', 'match'), unique(horzcat(occs{:})), 'UniformOutput', false);
-        ids = unique(horzcat(occs{:}));  %TODO this currently treats, e.g. AnaB and Anab as two different things. Might be fine?
-    end 
-    for n = 1:length(ids)
-        skip = false;
-        if strcmp(regexString, regexTherm)
-            name = ['Thermode' upper(ids{n})];
-            p.(name) = thrm;
-            g.('nTherm') = g.('nTherm')+1;
-        else
-            name = lower(ids{n});
-            for m = ids
-                % remove, e.g., Vib when VibA and VibB are defined
-                m2 = lower(m{:});
-                if contains(m2, name) && ~strcmp(m, ids{n})
-                    skip = true;
-                    if length(name) == length(m2) && upper(name(end)) == ids{n}(end)
-                        skip = false;
-                    end
-                end
-            end
-            if skip
-                continue
-            end
-            if contains(name, 'ana') || contains(name, 'vib') || contains(name, 'piezo')
-                p.(ids{n}) = ana; %TODO this recapitalises but it maybe shouldn't?
-                g.('nAna') = g.('nAna') + 1;
-            elseif contains(name, 'dig')
-                p.(ids{n}) = dig;
-                g.('nDig') = g.('nDig') + 1;
-            elseif contains(name, 'pwm') || contains(name, 'led')
-                p.(ids{n}) = pwm;
-                g.('nPwm') = g.('nPwm') + 1;
-            elseif contains(name, 'cam')
-                p.(ids{n}) = cam;
-                g.('nCam') = g.('nCam') + 1;
-            elseif strcmp(regexString, regexArb)
-                p.(ids{n}) = arb;
-                g.('nArb') = g.('nArb') + 1;
-            else
-                error("Unknown Input Type %s", name);
-            end
-        end
-    end
-end
-
-%% Finish initialising.
-p = repmat(p,1,1000);
+% %% Finish initialising.
+% p = repmat(p,1,1000);
 
 %% parse general specs - on first line only
 if regexpi(lines{1},'(nProtRep)|(randomize)|(dPause)')
-    remain      = lines{1};
-    [remain,~]  = strtok(remain,'%');
-    remain      = strtrim(remain);
-    while ~isempty(remain)
-        [token,remain] = strtok(remain); %#ok<STTOK>
+    line      = lines{1};
+    [line,~]  = strtok(line,'%');
+    line      = strtrim(line);
+    while ~isempty(line)
+        [token,line] = strtok(line); %#ok<STTOK>
         tmp = regexpi(token,'^([a-z]+)(-?\d+)$','once','tokens');
         if ~isempty(tmp)
             val = str2double(tmp(2));
@@ -287,18 +202,18 @@ end
 
 %% parse stimulus definitions
 for idxStim = 1:length(lines)
-    remain = lines{idxStim};
+    line = lines{idxStim};
     
     % clip comments (indicated by '%')
-    [remain,tmp] = strtok(remain,'%');
+    [line,tmp] = strtok(line,'%');
     if ~isempty(tmp)
         p(idxStim).Comments = cell2mat(regexp(tmp,'^[\s%]*(.*?)\s*$','tokens','once'));
-        remain = strtrim(remain);
+        line = strtrim(line);
     end
     
-    while ~isempty(remain)
+    while ~isempty(line)
         % obtain the next token
-        [token,remain] = strtok(remain); %#ok<STTOK>
+        [token,line] = strtok(line); %#ok<STTOK>
         % Switch to appropriate subroutine for provided token.  
         if regexpi(token,'^(I[01]|[NT]\d{3}|C\d{4}|S[01]{5}|[VR]\d{5}|D\d{6})[A-Z]?$','once')
             % Thermode
