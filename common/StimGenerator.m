@@ -198,19 +198,19 @@ function stim = analogPulse(varargin)
     %     duration   (double=1000): duration of output (ms)
     %     totalTicks (double=1000): duration of output in total ticks. Alternative to duration. 
     %         When both are defined, duration will be limited to within totalTicks. 
-    %     rampUp     (double=0): duration of any up ramping (ms), must fall within total duration
-    %     rampDown   (double=0): duration of any down ramping (ms), must fall within total duration
-    %     maxAmp     (double=5): maximum amplitude of the pulse, V
-    %     minAmp     (double=0): minimum of the pulse, V
+    %     rampOn     (double=0): duration of any up ramping (ms), must fall within total duration
+    %     rampOff   (double=0): duration of any down ramping (ms), must fall within total duration
+    %     pulseAmp     (double=5): maximum amplitude of the pulse, V
+    %     baseAmp     (double=0): baseline from which to pulse, V
 
     p = inputParser();
     addParameter(p, 'sampleRate', 1000, @(x) isnumeric(x));
     addParameter(p, 'totalTicks', 1000, @(x) isnumeric(x));
     addParameter(p, 'duration', -1, @(x) isnumeric(x));
-    addParameter(p, 'rampUp', 0, @(x) isnumeric(x));
-    addParameter(p, 'rampDown', 0, @(x) isnumeric(x));
-    addParameter(p, 'maxAmp', 5, @(x) isnumeric(x));
-    addParameter(p, 'minAmp', 0, @(x) isnumeric(x));
+    addParameter(p, 'rampOn', 0, @(x) isnumeric(x));
+    addParameter(p, 'rampOff', 0, @(x) isnumeric(x));
+    addParameter(p, 'baseAmp', 5, @(x) isnumeric(x));
+    addParameter(p, 'pulseAmp', 0, @(x) isnumeric(x));
     addParameter(p, 'display', false, @(x) islogical(x));
     addParameter(p, 'paramsStruct', [], @(x) isstruct(x));
     parse(p, varargin{:});
@@ -227,16 +227,16 @@ function stim = analogPulse(varargin)
     end
 
     stim = StimGenerator.GetBase(params.totalTicks, params.duration, params.sampleRate);
-    if (params.duration > 0 && params.rampUp + params.rampDown > params.duration) ...
-        || (params.duration == -1 && (params.rampUp + params.RampDown > StimGenerator.TicksToMs(length(stim), params.sampleRate)))
+    if (params.duration > 0 && params.rampOn + params.rampOff > params.duration) ...
+        || (params.duration == -1 && (params.rampOn + params.RampDown > StimGenerator.TicksToMs(length(stim), params.sampleRate)))
         error('invalid parameters for stimulus: ramp duration must fit within overall duration');
     end
 
-    rampUpTicks = StimGenerator.MsToTicks(params.rampUp, params.sampleRate);
-    rampDownTicks = StimGenerator.MsToTicks(params.rampDown, params.sampleRate);
-    stim(1:rampUpTicks+1) = linspace(params.minAmp, params.maxAmp, rampUpTicks);
-    stim(rampUpTicks+1:length(stim)-rampDownTicks) = params.maxAmp;
-    stim(end-rampDownTicks:end) = linspace(params.maxAmp, params.minAmp, rampDownTicks);
+    rampUpTicks = StimGenerator.MsToTicks(params.rampOn, params.sampleRate);
+    rampDownTicks = StimGenerator.MsToTicks(params.rampOff, params.sampleRate);
+    stim(1:rampUpTicks+1) = linspace(params.baseAmp, params.pulseAmp, rampUpTicks);
+    stim(rampUpTicks+1:length(stim)-rampDownTicks) = params.pulseAmp;
+    stim(end-rampDownTicks:end) = linspace(params.pulseAmp, params.minAmp, rampDownTicks);
 
     if params.display
         StimGenerator.show(stim);
@@ -253,7 +253,7 @@ function stim = sineWave(varargin)
     %     amplitude  (double=5): peak-peak amplitude of the signal (V)
     %     frequency  (double=30): wave frequency
     %     phase      (double=0): phase shift, radians
-    %     constant   (double or vector = 0): constant term over course of sample. 
+    %     verticalShift (double or vector = 0): constant term over course of sample. 
     %                       Must be of length totalTicks or a double
     %     amplitudeMod (vector = 1): modifications for amplitude over the course of the sample. 
     %                       Must be of length totalTicks.
@@ -265,7 +265,7 @@ function stim = sineWave(varargin)
     addParameter(p, 'frequency', 30, @(x) isnumeric(x));
     addParameter(p, 'phase', 0, @(x) isnumeric(x));
     addParameter(p, 'amplitude', 5, @(x) isnumeric(x));
-    addParameter(p, 'constant', 0, @(x) isnumeric(x));
+    addParameter(p, 'verticalShift', 0, @(x) isnumeric(x));
     addParameter(p, 'amplitudeMod', 1, @(x) isnumeric(x));
     addParameter(p, 'display', false, @(x) islogical(x));
     addParameter(p, 'paramsStruct', [], @(x) isstruct(x));
@@ -292,7 +292,7 @@ function stim = sineWave(varargin)
     tax = linspace(0, dur, N);
     stim = sin(2*pi*params.frequency*tax + params.phase);
     stim = stim * params.amplitude;
-    stim = stim + params.constant;
+    stim = stim + params.verticalShift;
     stim = stim .* params.amplitudeMod;
 
     if params.display
