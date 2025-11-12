@@ -20,7 +20,7 @@ properties (Access = private)
     isRunning   = false;
     isPaused    = false;
     hardwareParams
-    trialIdx    = 1;
+    trialIdx    = 1;            % index of trial in trial sequence.
     tLastStatusChange = 0;      % for timers
     tOffset     = 0;            % for pausing
     taskPool    = [];
@@ -31,7 +31,7 @@ end
 properties (Dependent)
     animalID
     experimentID
-    trialNum
+    trialNum                    % number of trial as defined in protocol file
     dirAnimal
     dirExperiment
     status

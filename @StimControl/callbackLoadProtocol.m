@@ -67,7 +67,7 @@ createChans = isempty(obj.p);
 
 obj.p = p;
 obj.g = g;
-obj.idxStim = 1;
+obj.trialIdx = 1;
 obj.trialNum = 1;
 
 allTargets = fields([obj.p(:).params]);
@@ -113,13 +113,50 @@ obj.h.protocolTimeEstimate.Text = sprintf('0:00 / %d:%d', protocolTimeMins, prot
 obj.h.trialInformationScroller.Value = '';
 obj.h.trialInformationScroller.FontColor = 'black';
 
+%% Update paths
 obj.updateDateTime; 
-% TODO SET TRIAL LOADED HERE AND UNLOADED AT COMPONENT.START AND LOAD NEW
-% PROTOCOL
+obj.g.sequence = generateSequence(obj);
+createOutputDir(obj);
 
 %% Load first trial
 obj.callbackLoadTrial(src, event);
 
-%% update status (GUI updates handled in here)
 obj.status = 'ready';
+end
+
+function seq = generateSequence(obj)
+tmp = arrayfun(@(x,y) {ones(1,x)*y},[obj.p.nRuns],1:length(obj.p));
+tmp = [tmp{:}];
+if obj.g.rand > 0
+    if obj.g.rand == 2
+        rng(0)
+    else
+        rng('shuffle')
+    end
+    seq = [];
+    for ii = 1:obj.g.nProtRuns
+        seq = [seq tmp(randperm(length(tmp)))]; %#ok<AGROW>
+    end
+else
+    seq = repmat(tmp,1,obj.g.nProtRuns);
+end
+end
+
+function createOutputDir(obj)
+% create output directory if it doesn't already exist
+if ~isfolder(obj.dirExperiment)
+    mkdir(obj.dirExperiment)
+end
+
+% copy protocol file to output directory
+[~,tmp1,tmp2] = fileparts(obj.path.SessionProtocolFile);
+copyfile(obj.path.SessionProtocolFile,fullfile(obj.dirExperiment,[tmp1 tmp2]))
+
+% % copy channel information to output directory TODO this is copied from
+% QSTcontrol 
+% fid = fopen(fullfile(dirOut,'channels.txt'),'w');
+% tmp = evalc('disp(obj.DAQ.Channels)');
+% tmp = regexprep(tmp,'\n','\r\n');
+% fprintf(fid,'%s',tmp);
+% fclose(fid);
 end

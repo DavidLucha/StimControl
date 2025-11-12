@@ -297,7 +297,7 @@ InitialiseSession(obj, varargin)
 % self-triggered devices and 
 StartTrial(obj)
 
-% Stop device
+% Stop device during trial and flush any remaining data.
 Stop(obj)
 
 % Change device parameters

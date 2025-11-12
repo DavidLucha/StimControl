@@ -29,6 +29,7 @@ else
             case 'not initialised'
                 % do nothing
             case 'no protocol loaded'
+                %% No protocol loaded
                 if obj.f.passive
                     startTic = tic;
                     obj.trialIdx = 1;
@@ -42,13 +43,14 @@ else
                     %UNNECESSARY GENERATION AT END
                 end
             case 'ready'
+                %% Ready
                 if obj.f.startTrial
                     % start the trial
                     startTic = tic;
+                    nTrials = length(obj.g.sequence);
+                    trialNums = obj.g.sequence;
                     if obj.f.runningExperiment
-                        trialNums = buildTrialSequence(obj);
-                        nTrials = length(trialNums);
-                        if trialNums(nTrials) ~= obj.trialNum
+                        if trialNums(1) ~= obj.trialNum
                             obj.trialNum = trialNums(1);
                             obj.callbackLoadTrial([]);
                         end
@@ -72,6 +74,7 @@ else
                     obj.status = 'running';
                 end
             case 'stopping'
+                %% Stopping a trial
                 % stop the trial (interrupt)
                 obj.f.stopTrial = false;
                 obj.f.startTrial = false;
@@ -84,11 +87,13 @@ else
                 updateGUITimers(obj, tic, true);
                 updateInteractivity(obj, 'on');
                 if ~isempty(obj.p)
-                    obj.status = 'ready';
-                else
-                    obj.status = 'no protocol loaded';
+                    obj.h.protocolSelectDropDown.Value = '';
+                    obj.callbackLoadProtocol(obj.h.protocolSelectDropDown, []);
+                    cellfun(@(c) c.Stop(), obj.d.activeComponents);
                 end
+                obj.status = 'no protocol loaded';
             case 'running'
+                %% Trial running
                 if obj.f.stopTrial
                     obj.status = 'stopping';
                 elseif obj.f.trialFinished
@@ -110,12 +115,17 @@ else
                         pauseOffset = 0;
                         obj.h.StatusCountdownLabel.Text = strcat('-', string(duration(seconds(obj.g.dPause)), 'mm:ss'));
                         updateGUITimers(obj, startTic, true);
-                        obj.callbackLoadTrial([]); % load next trial
                     end
                 else
                     % monitor trial
                     if ~obj.f.passive
-                        updateGUITimers(obj, startTic, false);
+                        timeoutReached = updateGUITimers(obj, startTic, false);
+                        if timeoutReached
+                            % stop all devices 
+                            cellfun(@(c) c.Stop(), obj.d.activeComponents);
+                            obj.f.trialFinished = true;
+                        end
+                        % TODO HERE: set time limit on things, 
                     else
                         updatePassiveGuiTimer(obj, startTic, false);
                     end
@@ -124,6 +134,7 @@ else
                     end
                 end
             case 'awaiting trigger'
+                %% Passive acquisition mode
                 if any(cellfun(@(c) strcmpi(c.GetStatus(), 'running'), obj.d.activeComponents))
                     startTic = tic;
                     updatePassiveGuiTimer(obj, startTic, false);
@@ -134,6 +145,7 @@ else
                     updatePassiveGuiTimer(obj, startTic, false);
                 end
             case 'inter-trial'
+                %% Inter-trial
                 if obj.f.pause
                     % pause inter-trial timer
                     pauseOffset = obj.g.dPause - (toc(startTic) + pauseOffset);
@@ -143,8 +155,16 @@ else
                 elseif obj.f.stopTrial
                     obj.status = 'stopping';
                 else
-                    %update GUI
+                    % update GUI
                     updateGUITimers(obj, startTic, false);
+
+                    % if < 10sec left in inter-trial interval and no trial is loaded, load new trial
+                    if toc(startTic) >= obj.g.dPause - (pauseOffset+10) ...
+                        && ~obj.f.trialLoaded 
+                        obj.callbackLoadTrial([]); % load next trial
+                    end
+
+                    % if inter-trial interval is finished, start next trial
                     if toc(startTic) >= obj.g.dPause - pauseOffset
                         startTic = tic;
                         startTrial(obj);
@@ -152,6 +172,7 @@ else
                     end
                 end
             case 'paused'
+                %% Paused
                 if obj.f.resume
                     % resume inter-trial timer
                     obj.f.resume = false;
@@ -162,14 +183,7 @@ else
                     obj.status = 'stopping';
                 end
             case 'error'
-                % DEBUG: TODO REMOVE THE LINE BELOW
-                obj.f.passive = 1;
-                if obj.f.passive
-                    obj.status = 'no protocol loaded';
-                elseif obj.f.startTrial
-                    obj.status = 'ready';                    
-                end
-                return
+                obj.status = 'stopping';
         end
     % catch errors during protocol execution
     catch err
@@ -182,6 +196,7 @@ else
         obj.f.passive = false;
         % errordlg('Protocol execution incomplete. See error.log for more information.')
         obj.errorMsg(tmp);
+        obj.status = 'stopping';
         keyboard % see what's going on
     end
     % update component status display
@@ -236,8 +251,8 @@ function startPassive(obj)
     % Set filepath params
     savePrefix = sprintf("%s_stim_passive_%s", num2str(obj.trialIdx, '%05.f'), obj.path.time);
     % todo this may be redundant but it's useful for right now
-    if ~isfolder([obj.dirExperiment '_Basler'])
-        mkdir([obj.dirExperiment '_Basler']);
+    if ~isfolder([obj.dirExperiment '_PassiveAcquisition'])
+        mkdir([obj.dirExperiment '_PassiveAcquisition']);
     end
     for i = 1:obj.d.nActive
         component = obj.d.activeComponents{i};
@@ -281,7 +296,7 @@ function updatePassiveGuiTimer(obj, startTic, reset)
         string(duration(totalSecs + seconds(tElapsed), 'Format', 'mm:ss')));
 end
 
-function updateGUITimers(obj, startTic, reset)
+function timeoutReached = updateGUITimers(obj, startTic, reset)
     persistent trialSecs;
     persistent intervalSecs;
     persistent experimentSecs;
@@ -313,31 +328,6 @@ function updateGUITimers(obj, startTic, reset)
         string(duration(seconds(experimentStartSecs+tElapsed), 'Format', 'mm:ss')), ...
         string(duration(seconds(experimentSecs), 'Format', 'mm:ss')));
     end
-end
 
-function seq = buildTrialSequence(obj)
-% builds a sequences of indices from a list of trialNums.
-    tmp = arrayfun(@(x,y) {ones(1,x)*y},[obj.p.nRuns],1:length(obj.p));
-    tmp = [tmp{:}];
-    if obj.g.rand > 0
-        if obj.g.rand == 2
-            rng(0)
-        else
-            rng('shuffle')
-        end
-        seq = [];
-        for ii = 1:obj.g.nProtRuns
-            seq = [seq tmp(randperm(length(tmp)))]; %#ok<AGROW>
-        end
-    else
-        seq = repmat(tmp,1,obj.g.nProtRuns);
-    end
-end
-
-function stopTrial(obj)
-% Stops all components, regardless of whether they're finished or not.
-    for i = 1:length(obj.d.activeComponents)
-        component = obj.d.activeComponents{i};
-        component.Stop();
-    end
+    timeoutReached = tElapsed > trialSecs + 2; %2 second buffer
 end

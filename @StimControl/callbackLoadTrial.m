@@ -12,6 +12,8 @@ elseif src == obj.h.nextTrialBtn
     else
         obj.trialNum = obj.trialNum + 1;
     end
+elseif isfield(obj.g, 'sequence')
+    obj.trialNum = obj.g.sequence(obj.trialIdx);
 end
 
 % Load a trial
@@ -20,8 +22,6 @@ if sum(obj.d.Active) == 0
 elseif isempty(obj.p) || isempty(obj.g)
     obj.errorMsg('please select a protocol');
 end
-
-obj.d.componentTargets;
 
 trialData = obj.p(obj.trialNum);
 genericTrialData = struct( ...

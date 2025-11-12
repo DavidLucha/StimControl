@@ -176,11 +176,11 @@ function Stop(obj)
         delete(obj.TriggerTimer);
     end
     try
+        flush(obj.SessionHandle);
         fclose(obj.SaveFID);
     catch
         %file already closed. Do nothing.
     end
-    flush(obj.SessionHandle);
 end
 
 function Close(obj)
