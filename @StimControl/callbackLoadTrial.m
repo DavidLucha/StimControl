@@ -1,5 +1,6 @@
 function callbackLoadTrial(obj, src, ~)
 % Sets trial number if changed, and preloads trial data into   
+obj.indicateLoading("Loading trial");
 if src == obj.h.prevTrialBtn
     if obj.trialNum == 1
         obj.trialNum = length(obj.p);

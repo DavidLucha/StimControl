@@ -8,6 +8,11 @@ persistent pauseOffset;
 if isempty(startTic)
     startTic = tic;
 end
+if isempty(pauseOffset)
+    pauseOffset = 0;
+end
+
+%%TODO: CHECK LOGIC FOR SINGLE STIM
 
 if strcmpi(obj.h.tabs.SelectedTab.Title, 'Setup')
     % update GUI in setup tab
@@ -20,7 +25,7 @@ else
         previousStatus = obj.status;
     end
     if ~strcmpi(previousStatus, obj.status)
-        disp(obj.status);
+        % disp(obj.status);
         previousStatus = obj.status;
     end
     % state handling
@@ -105,7 +110,7 @@ else
                         obj.trialIdx = obj.trialIdx + 1;
                         startPassive(obj); % pre-loading
                         obj.status = 'awaiting trigger';
-                    elseif obj.trialIdx == nTrials
+                    elseif obj.trialIdx >= nTrials
                         obj.status = 'ready';
                         obj.f.runningExperiment = false;
                     else
@@ -125,7 +130,6 @@ else
                             cellfun(@(c) c.Stop(), obj.d.activeComponents);
                             obj.f.trialFinished = true;
                         end
-                        % TODO HERE: set time limit on things, 
                     else
                         updatePassiveGuiTimer(obj, startTic, false);
                     end
@@ -150,7 +154,7 @@ else
                     % pause inter-trial timer
                     pauseOffset = obj.g.dPause - (toc(startTic) + pauseOffset);
                     obj.status = 'paused';
-                    obj.f.pause = false;
+                    obj.f.pause = false;    
                     obj.f.resume = false;
                 elseif obj.f.stopTrial
                     obj.status = 'stopping';
@@ -162,6 +166,7 @@ else
                     if toc(startTic) >= obj.g.dPause - (pauseOffset+10) ...
                         && ~obj.f.trialLoaded 
                         obj.callbackLoadTrial([]); % load next trial
+                        obj.status = 'inter-trial'; %clear loading symbol
                     end
 
                     % if inter-trial interval is finished, start next trial
@@ -207,19 +212,14 @@ else
 end
 end
 
-
 function startTrial(obj)
     updateInteractivity(obj, 'off');
+    % obj.updateDateTime;
     obj.indicateLoading('Loading trial data');
-    obj.updateDateTime;
     if ~obj.f.trialLoaded
         obj.callbackLoadTrial([]);
     end
-    if isfield(obj.p, 'Comment')
-        comment = obj.p(obj.trialNum).Comment;
-    else
-        comment = '';
-    end
+    comment = obj.p(obj.trialNum).comment;
     obj.h.trialInformationScroller.Value{end+1} = ...
         char(sprintf("%d(%d): %s", obj.trialIdx, obj.trialNum, comment));
     
@@ -329,5 +329,5 @@ function timeoutReached = updateGUITimers(obj, startTic, reset)
         string(duration(seconds(experimentSecs), 'Format', 'mm:ss')));
     end
 
-    timeoutReached = tElapsed > trialSecs + 2; %2 second buffer
+    timeoutReached = tElapsed > trialSecs + 5; %2 second buffer
 end

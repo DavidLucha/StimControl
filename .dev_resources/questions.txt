@@ -1,3 +1,15 @@
-- In QST commands, what does trigger number mean?
-- how does the QST behave when fed multiple queries to start with?
-- pacing rate, 
+ADVICE
+- DAQ randomly acting weird, seems completely undocumented?
+    - timeout for stop command is running out
+
+- cameras also sometimes acting weird with no warning?
+    - breaking because they're out of space - shouldn't ever happen
+
+
+PREFERENCES
+- new folder per trial or per protocol?
+    - does this change for passive vs active acquisition
+
+- un-load protocol once it's finished or re-load at t=0?
+- desired behaviour for single stim? should you be able to do it indefinitely? unload after one?
+- what's the data MEANT to look like when it comes out? - check

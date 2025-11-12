@@ -287,7 +287,7 @@ function StartPreview(obj)
     comb = {names{:}; ids{:}}';
     fmt = ['%s' newline '%s'];
     displayLabels = compose(fmt, string(comb));
-    % obj.charts = gobjects(length(displayLabels), 1);    
+    % obj.charts = gobjects(length(displayLabels), 1);
     % for i = 1:length(names)
     %     plt = plot(obj.PreviewTimeAxis, obj.PreviewData(:,i));
     %     % set(plt, 'XDataSource', obj.PreviewTimeAxis);
@@ -302,6 +302,17 @@ function StartPreview(obj)
         'DisplayLabels', displayLabels, ...
         'Layout', obj.PreviewPlot.Layout, ...
         'Position', obj.PreviewPlot.Position);
+    if isfield(obj.ChannelMap, 'QST')
+        % manually scale y data for QST
+        % TODO un hardcode this? add channel scaling file somewhere.
+        idxFirstAxes = length(displayLabels) + 2;
+        thermodeIdxes = cellfun(@(c) contains(c, 'thermode'), displayLabels);
+        tmp = linspace(idxFirstAxes, idxFirstAxes+length(thermodeIdxes)-1, length(thermodeIdxes));
+        tmp = tmp(thermodeIdxes);
+        for i = tmp
+            obj.StackedPreview.NodeChildren(i).YLim = [10 60];
+        end
+    end
     % obj.dataLink = linkdata(obj.StackedPreview); %todo deal with this when causes bugs later :)
     obj.PreviewPlot.Visible = 'off';
 end
@@ -336,7 +347,7 @@ function LoadTrial(obj, out)
 
     elseif any(contains({obj.SessionHandle.Channels.Type}, 'Output'))
         % normal DAQ things hell yeah
-        preload(obj.SessionHandle, out); % (1:1000,:) TODO remove the indexing - limiting numscans for debug purposes.
+        preload(obj.SessionHandle, out); 
     end
 
     if ~isempty(obj.PreviewPlot) % show preview data
@@ -470,7 +481,7 @@ function obj = CreateChannels(obj, filename, protocolIDs)
             tmp = strsplit(obj.ComponentID, '_');
             deviceID = tmp{1};
             portNum = line.('portNum'){1}; 
-            channelID = [line.Device{:} '-' line.Label{:}];
+            channelID = [line.Device{:} '_' line.Label{:}];
             % channelID = [line.ProtType{:} line.ProtID{:}];
             ioType = line.('ioType'){1};
             signalType = line.('signalType'){1};
@@ -667,10 +678,10 @@ function plotData(obj, ~,event)
             end
         end
         % TODO DC TEMPERATURE CONTROLLER ALSO NEEDS CALIBRATION - FHC DC TEMPERATURE CONTROLLER
-        obj.PreviewData(targetIdx, obj.InChanIdxes) = data;
+        obj.PreviewData(targetIdx, obj.InChanIdxes) = data;  
         warning('off');
         displayLabels = obj.StackedPreview.DisplayLabels;
-        obj.StackedPreview.YData(targetIdx, obj.InChanIdxes) = data; %todo fix this but I'm going to have to fix it by changing the plot function
+        obj.StackedPreview.YData = obj.PreviewData(:,obj.PreviewChannels); %todo fix this it's VERY SLOW but I'm going to have to fix it by changing the plot function
         obj.StackedPreview.DisplayLabels = displayLabels;
         warning('on');
         try

@@ -4,7 +4,6 @@ function callbackLoadProtocol(obj, src, event)
 % eventually this will be more intelligent and able to handle ambiguity, but for now
 % the mapping files need to be perfectly aligned to the protocol.
 obj.indicateLoading('Loading protocol');
-obj.updateDateTime; % update the datetime for component savepaths
 
 if src == obj.h.SessionSelectDropDown
     %TODO TEST
