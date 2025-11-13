@@ -179,7 +179,7 @@ function StartPreview(obj)
         stim(t0+(1:tmp)-1,ii) = pulse(1:tmp);
         labels = [labels string(['Thermode' char(64+ii)])]; %#ok
     end
-    
+
     plot(obj.PreviewPlot, tax, stim);
     obj.PreviewPlot.XLim = [min(tax) max(tax)];
     obj.PreviewPlot.YLim = [0 65];
@@ -199,13 +199,20 @@ function PrintInfo(obj)
     disp(obj.temperature);
 end
 
+function LoadTrial(obj, out)
+    if isempty(out)
+        out = obj.TrialData(obj.IdxStim);
+    end
+    preloadSingleQSTStim(obj, out);
+end
+
 % Preload a single trial
-function LoadTrialFromParams(obj, componentTrialData, genericTrialData)
+function LoadTrialFromParams(obj, componentTrialData, genericTrialData, preloadDevice)
     componentTrialData = componentTrialData.QST; %TODO UN-HARDCODE
     obj.TrialData = componentTrialData;
     obj.TrialData.tPre = genericTrialData.tPre;
     obj.TrialData.tPost = genericTrialData.tPost;
-    if contains(obj.ConfigStruct.ProtocolID, 'QST')
+    if contains(obj.ConfigStruct.ProtocolID, 'QST') && preloadDevice
         preloadSingleQSTStim(obj, componentTrialData(1))
     end
     obj.nStimsInTrial = genericTrialData.nRuns * length(componentTrialData);
@@ -640,7 +647,9 @@ methods(Static, Access=public)
     function out = FindPorts()
         % Find all a computer's available ports.
         if isMATLABReleaseOlderThan('R2020a')
+            % warning('off', 'instrument:seriallist:FunctionToBeRemoved');
             out = seriallist; %#ok<*SERLL>
+            % warning('on', 'instrument:seriallist:FunctionToBeRemoved');
         else
             out = serialportlist;
         end

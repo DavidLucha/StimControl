@@ -334,6 +334,9 @@ end
 function LoadTrial(obj, out)
     % Loads a trial from a matrix of size c x s where c is the number of
     % output channels and s is the number of samples in the trial.
+    if isempty(out)
+        out = obj.PreviewData(obj.OutChanIdxes,:);
+    end
     
     % release session (in case the previous run was incomplete)
     stop(obj.SessionHandle);
@@ -355,7 +358,7 @@ function LoadTrial(obj, out)
     end
 end
 
-function LoadTrialFromParams(obj, componentTrialData, genericTrialData)
+function LoadTrialFromParams(obj, componentTrialData, genericTrialData, preloadDevice)
     % release session (in case the previous run was incomplete)
     if obj.SessionHandle.Running
         obj.SessionHandle.stop
@@ -420,7 +423,9 @@ function LoadTrialFromParams(obj, componentTrialData, genericTrialData)
         end
     end
     obj.PreviewData = previewOut;
-    obj.LoadTrial(out);
+    if preloadDevice
+        obj.LoadTrial(out);
+    end
 end
 
 %% DEVICE-SPECIFIC FUNCTIONS
@@ -656,6 +661,9 @@ function plotData(obj, ~,event)
         % cut off the end of the data? TODO CHECK THIS IS DESIRED BEHAVIOUR
         disp("we have too much data??");
         return
+    end
+    if ~isfolder(obj.SavePath)
+        mkdir(obj.SavePath)
     end
 
     eventData = read(event.Source);

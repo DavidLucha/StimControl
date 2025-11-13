@@ -140,7 +140,7 @@ function obj = InitialiseSession(obj, varargin)
         if isempty(obj.ConfigStruct.ROIPosition)
             vidRes = get(vidObj,'VideoResolution');
             obj.ConfigStruct.ROIPosition = num2str([0 0 vidRes]);
-        elseif ~isempty(params.ConfigStruct.ROIPosition)
+        elseif ~isfield(params.ConfigStruct, 'ROIPosition')
             set(vidObj,'ROIposition',str2num(obj.ConfigStruct.ROIPosition));
         end
         for attr = ["TriggerFrameDelay", "FrameGrabInterval", "TriggerRepeat"]
@@ -215,8 +215,9 @@ function StartPreview(obj)
     else
         obj.PreviewPlot = imshow(zeros(vidRes(2),vidRes(1),nbands),[]);
     end
-    preview(obj.SessionHandle, obj.PreviewPlot.Children);
+    preview(obj.SessionHandle, obj.PreviewPlot.Children); %warning: linesource property adjusted to 0 by the camera?
     axis(obj.PreviewPlot, "tight");
+
     % Commented the below out because colourmap can't be applied to multiple imaq previews at once
     % Workarounds seem computationally expensive - consider revisiting.
     % maxRange = floor(256*0.7); %limit intensity to 70% of dynamic range to avoid ceiling effects
@@ -353,7 +354,11 @@ function GetInspector(obj)
     inspect(obj.ConfigStruct);
 end
 
-function LoadTrialFromParams(obj, componentTrialData, genericTrialData)
+function LoadTrial(obj, out)
+    % do nothing - should be loaded from params.
+end
+
+function LoadTrialFromParams(obj, componentTrialData, genericTrialData, preloadDevice)
     if strcmpi(obj.ConfigStruct.TriggerMode, 'hardware') || ...
         strcmpi(obj.ConfigStruct.TriggerMode, 'manual')
         if isrunning(obj.SessionHandle)
@@ -449,6 +454,9 @@ end
 
 function ReceiveFrame(obj, src, vidObj)
     % try
+        if ~isfolder(obj.SavePath)
+            mkdir(obj.SavePath)
+        end
         filepath = strcat(obj.SavePath, filesep, obj.SavePrefix, '_', obj.ConfigStruct.ProtocolID);
         if ~isfolder(filepath)
             mkdir(filepath)

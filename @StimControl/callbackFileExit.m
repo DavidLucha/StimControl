@@ -1,14 +1,18 @@
 function callbackFileExit(obj,~,~)
 
 % stop and delete timer
-stop(obj.t)
-delete(obj.t)
+try
+    stop(obj.t)
+    delete(obj.t)
+catch err
+    disp(err)
+end
     
 try
     obj.d.CloseAll();
     obj.d.ClearAll();
 catch err
-    disp(err);
+    disp(err)
 end
 
 % delete the figure

@@ -313,7 +313,7 @@ StopPreview(obj)
 PrintInfo(obj)
 
 % Preload a single trial
-LoadTrialFromParams(obj, componentTrialData, genericTrialData)
+LoadTrialFromParams(obj, componentTrialData, genericTrialData, preloadDevice)
 
 % Close connection to the hardware session
 Close(obj)

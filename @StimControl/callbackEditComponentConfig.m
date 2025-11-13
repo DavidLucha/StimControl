@@ -15,7 +15,7 @@ obj.h.ComponentConfig.SelectedComponentIndex = rowIndex;
 for pi = 1:length(obj.h.Setup.PreviewPanels)
     pan = obj.h.Setup.PreviewPanels{pi};
     if pi == rowIndex
-        pan.Parent.Parent.BackgroundColor = '#FFCC99';
+        pan.Parent.Parent.BackgroundColor = '#ADD8E6';
     else
         pan.Parent.Parent.BackgroundColor = [0.9400 0.9400 0.9400];
     end

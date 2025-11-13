@@ -40,7 +40,7 @@ for cIdx = 1:length(ct)
             componentData.(targets{f}) = trialData.params.(targets{f});
         end
     end
-    component.LoadTrialFromParams(componentData, genericTrialData);
+    component.LoadTrialFromParams(componentData, genericTrialData, false);
 end
 
 if src ~= obj.h.StartStopBtn

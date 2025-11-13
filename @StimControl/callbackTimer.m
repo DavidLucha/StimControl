@@ -21,11 +21,14 @@ if strcmpi(obj.h.tabs.SelectedTab.Title, 'Setup')
         obj.h.AvailableHardwareTable.Data.Status{i} = component.GetStatus;
     end
 else
+    obj.h.TimerStatusLamp.Color = '#FFED29';
+    obj.h.TimerStatusLabel.Text = obj.status;
+    obj.h.TimerLastUpdatedLabel.Text = string(datetime);
     if isempty(previousStatus)
         previousStatus = obj.status;
     end
     if ~strcmpi(previousStatus, obj.status)
-        % disp(obj.status);
+        disp(obj.status);
         previousStatus = obj.status;
     end
     % state handling
@@ -42,7 +45,7 @@ else
                     updatePassiveGuiTimer(obj, startTic, true);
                     obj.h.trialInformationScroller.Value = '';
                     obj.h.trialInformationScroller.FontColor = 'black';
-                    startPassive(obj);
+                    StartPassiveTrial(obj);
                     obj.status = 'awaiting trigger';
                     %TODO DOUBLE CREATION OF FOLDERS AT START PASSIVE PLUS
                     %UNNECESSARY GENERATION AT END
@@ -75,7 +78,7 @@ else
                     obj.h.trialInformationScroller.Value = '';
                     obj.h.trialInformationScroller.FontColor = 'black';
                     updatePassiveGuiTimer(obj, startTic, true);
-                    startPassive(obj); %TODO MAKE THIS SO THAT IT DOESN'T ACTIVELY START, E.G, DAQs
+                    StartPassiveTrial(obj); %TODO MAKE THIS SO THAT IT DOESN'T ACTIVELY START, E.G, DAQs
                     obj.status = 'running';
                 end
             case 'stopping'
@@ -108,7 +111,7 @@ else
                         startTic = tic;
                         updatePassiveGuiTimer(obj, startTic, false);
                         obj.trialIdx = obj.trialIdx + 1;
-                        startPassive(obj); % pre-loading
+                        StartPassiveTrial(obj); % pre-loading
                         obj.status = 'awaiting trigger';
                     elseif obj.trialIdx >= nTrials
                         obj.status = 'ready';
@@ -165,7 +168,11 @@ else
                     % if < 10sec left in inter-trial interval and no trial is loaded, load new trial
                     if toc(startTic) >= obj.g.dPause - (pauseOffset+10) ...
                         && ~obj.f.trialLoaded 
-                        obj.callbackLoadTrial([]); % load next trial
+                        obj.callbackLoadTrial([]); % load next trial to memory
+                        for i = 1:obj.d.nActive
+                            component = obj.d.activeComponents{i};
+                            component.LoadTrial([]);
+                        end
                         obj.status = 'inter-trial'; %clear loading symbol
                     end
 
@@ -209,6 +216,7 @@ else
         component = obj.d.activeComponents{i};
         component.UpdateStatusDisplay;
     end
+    obj.h.TimerStatusLamp.Color = '#00FF00';
 end
 end
 
@@ -240,7 +248,8 @@ function startTrial(obj)
     obj.f.trialLoaded = false;
 end
 
-function startPassive(obj)
+%% TODO FIX LOGIC HERE!!
+function StartPassiveTrial(obj)
     updateInteractivity(obj, 'off');
     obj.indicateLoading('Loading trial data');
     obj.updateDateTime;
@@ -251,12 +260,11 @@ function startPassive(obj)
     % Set filepath params
     savePrefix = sprintf("%s_stim_passive_%s", num2str(obj.trialIdx, '%05.f'), obj.path.time);
     % todo this may be redundant but it's useful for right now
-    if ~isfolder([obj.dirExperiment '_PassiveAcquisition'])
-        mkdir([obj.dirExperiment '_PassiveAcquisition']);
-    end
+    % if ~isfolder([obj.dirExperiment '_PassiveAcquisition'])
+    %     mkdir([obj.dirExperiment '_PassiveAcquisition']);
+    % end
     for i = 1:obj.d.nActive
         component = obj.d.activeComponents{i};
-        component.SavePath = [obj.dirExperiment '_Basler'];
         component.SavePrefix = savePrefix;
     end
     updateInteractivity(obj, 'on');
