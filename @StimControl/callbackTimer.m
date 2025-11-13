@@ -12,8 +12,6 @@ if isempty(pauseOffset)
     pauseOffset = 0;
 end
 
-%%TODO: CHECK LOGIC FOR SINGLE STIM
-
 if strcmpi(obj.h.tabs.SelectedTab.Title, 'Setup')
     % update GUI in setup tab
     for i = 1:height(obj.h.AvailableHardwareTable)
@@ -47,8 +45,6 @@ else
                     obj.h.trialInformationScroller.FontColor = 'black';
                     StartPassiveTrial(obj);
                     obj.status = 'awaiting trigger';
-                    %TODO DOUBLE CREATION OF FOLDERS AT START PASSIVE PLUS
-                    %UNNECESSARY GENERATION AT END
                 end
             case 'ready'
                 %% Ready
@@ -174,6 +170,7 @@ else
                             component.LoadTrial([]);
                         end
                         obj.status = 'inter-trial'; %clear loading symbol
+                        obj.f.trialLoaded = true;
                     end
 
                     % if inter-trial interval is finished, start next trial
@@ -199,8 +196,6 @@ else
         end
     % catch errors during protocol execution
     catch err
-        %TODO pretty big logic error that lets you click start when there's
-        %no protocol loaded. For now, fixing by making it passive. 
         fid = fopen(fullfile(obj.path.dirData, filesep,'error.log'),'a+');
         tmp = regexprep(err.getReport('extended','hyperlinks','off'),'\n','\r\n');
         fprintf(fid,'%s',tmp);
@@ -222,7 +217,6 @@ end
 
 function startTrial(obj)
     updateInteractivity(obj, 'off');
-    % obj.updateDateTime;
     obj.indicateLoading('Loading trial data');
     if ~obj.f.trialLoaded
         obj.callbackLoadTrial([]);
@@ -248,6 +242,7 @@ function startTrial(obj)
         component = obj.d.activeComponents{ci};
         component.StartTrial;
     end
+    obj.f.trialLoaded = false;
 end
 
 function StartPassiveTrial(obj)

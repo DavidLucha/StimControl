@@ -16,6 +16,7 @@ elseif src == obj.h.StartStopBtn || src == obj.h.StartSingleTrialBtn
     createOutputDir(obj);
     if src == obj.h.StartStopBtn
         obj.f.runningExperiment = true;
+        obj.trialIdx = 1;
     end
     for i = 1:obj.d.nActive
         component = obj.d.activeComponents{i};

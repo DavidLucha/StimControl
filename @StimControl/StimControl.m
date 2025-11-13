@@ -53,7 +53,11 @@ methods
 
         %% Initialise component manager
         obj.d = ComponentManager();
-        obj.d.ClearAll();
+        hFigs = findall(0,'type','figure');        
+        if isempty(hFigs)
+            % this is the only app running, resets can be safely run
+            obj.d.ClearAll();
+        end
         
         %% Initialise Path
         obj.path.dirData = fullfile(getenv('UserProfile'),'Desktop','logs');
