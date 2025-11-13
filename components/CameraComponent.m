@@ -78,7 +78,6 @@ end
 function obj = InitialiseSession(obj, varargin)
     p = inputParser;
     addParameter(p, 'ConfigStruct', []);
-    addParameter(p, 'KeepHardwareSettings', []);
     addParameter(p, 'ActiveDeviceIDs', {}, @(x) iscell(x) || iscellstr(x));
 
     parse(p, varargin{:});
@@ -102,7 +101,7 @@ function obj = InitialiseSession(obj, varargin)
             clockSpeed = set(src,'PCPixelclock_Hz');
             [~,idx] = max(str2num(cell2mat(clockSpeed))); %get fastest clockspeed
             src.PCPixelclock_Hz = clockSpeed{idx}; %fast scanning mode
-            src.E2ExposureTime = 1000/str2double(app.FrameRate.Value) * 1000; %set framerate
+            src.E2ExposureTime = 1000/str2double(obj.ConfigStruct.FrameRate) * 1000; %set framerate
             if isfield(obj.ConfigStruct, 'Binning')
                 if ~isnumeric(obj.ConfigStruct.Binning)
                     binVal = str2double(obj.ConfigStruct.Binning);
@@ -118,9 +117,13 @@ function obj = InitialiseSession(obj, varargin)
                 end
             end
         elseif contains(obj.ConfigStruct.Adaptor, 'gentl')
-            src.Gain = str2double(obj.ConfigStruct.Gain);
+            if isfield(params.ConfigStruct, 'Gain')
+                src.Gain = str2double(obj.ConfigStruct.Gain);
+            else
+                obj.ConfigStruct.Gain = char(string(src.Gain));
+            end
             src.AutoTargetBrightness = 5.019608e-01;
-            if isfield(obj.ConfigStruct, 'Binning')
+            if isfield(params.ConfigStruct, 'Binning')
                 if ~isnumeric(obj.ConfigStruct.Binning)
                     binVal = str2double(obj.ConfigStruct.Binning);
                 else
@@ -135,13 +138,18 @@ function obj = InitialiseSession(obj, varargin)
         if isempty(obj.ConfigStruct.ROIPosition)
             vidRes = get(vidObj,'VideoResolution');
             obj.ConfigStruct.ROIPosition = num2str([0 0 vidRes]);
+        elseif ~isempty(params.ConfigStruct.ROIPosition)
+            set(vidObj,'ROIposition',str2num(obj.ConfigStruct.ROIPosition));
         end
-        set(vidObj,'TriggerFrameDelay',obj.ConfigStruct.TriggerFrameDelay);
-        set(vidObj,'FrameGrabInterval',obj.ConfigStruct.FrameGrabInterval);
-        set(vidObj,'TriggerRepeat',obj.ConfigStruct.TriggerRepeat);
-        set(vidObj,'ROIposition',str2num(obj.ConfigStruct.ROIPosition));
+        for attr = ["TriggerFrameDelay", "FrameGrabInterval", "TriggerRepeat"]
+            if isfield(params.ConfigStruct, attr)
+                set(vidObj, attr, obj.ConfigStruct.(attr));
+            else
+                obj.ConfigStruct.(attr) = vidObj.(attr);
+            end
+        end
         set(vidObj,'FramesPerTrigger',str2double(obj.ConfigStruct.FramesPerTrigger));
-        vidObj.FramesAcquiredFcnCount = 10; %TODO parametrise
+        vidObj.FramesAcquiredFcnCount = 10; %TODO parametrise?
         vidObj.FramesAcquiredFcn = @obj.ReceiveFrame;
         obj.SessionHandle = vidObj;
         obj.UpdateTriggerMode();
