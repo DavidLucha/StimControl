@@ -140,33 +140,6 @@ methods (Access = private)
     % misc
     callbackFileExit(obj,~,~)
     callbackTimer(obj, ~, ~)
-
-    %% Inline functions
-    % function obj = findAvailableHardware(obj)
-    %     %% Find available hardware
-    %     obj.d.Available = {};
-    %     obj.d.Active = [];
-    %     obj.d.IDComponentMap = configureDictionary('string', 'uint32');
-    %     obj.d.ProtocolIDMap = configureDictionary('string', 'uint32');
-    % 
-    %     tmpPlur = ["", "s"];
-    %     pluralStr = @(input) tmpPlur(double(length(input)~=1)+1);
-    %     daqs = DAQComponent.FindAll();
-    %     fprintf("\t Found %d DAQ%s\n", length(daqs), pluralStr(daqs));
-    %     cameras = CameraComponent.FindAll();
-    %     fprintf("\t Found %d camera%s\n", length(cameras), pluralStr(cameras));
-    %     serials = SerialComponent.FindAll();
-    %     fprintf("\t found %d serial device%s\n", length(serials), pluralStr(serials));
-    %     components = [daqs cameras serials];
-    % 
-    %     for ci = 1:length(components)
-    %         comp = components{ci};
-    %         obj.d.IDComponentMap(comp.ComponentID) = ci;
-    %         obj.d.ProtocolIDMap(comp.ConfigStruct.ProtocolID) = ci;
-    %         obj.d.Available{end+1} = comp;
-    %         obj.d.Active(end+1) = true;
-    %     end
-    % end
 end
 
 methods
@@ -380,10 +353,6 @@ methods
 
     function val = get.trialNum(obj)
         val = obj.h.trialNumDisplay.Value;
-    end
-
-    function updatePathDisplay(obj)
-
     end
 
     function errorMsg(obj, message)

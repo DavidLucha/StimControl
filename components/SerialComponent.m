@@ -512,7 +512,7 @@ function out = battery(obj)
     if isMATLABReleaseOlderThan('R2023b')
         out = sscanf(obj.queryN('B',13),'%*fv %d%%');
     else
-        out = sscanf(obj.query('B'), '%*fv %d%%'); %#ok<ST2NM>
+        out = sscanf(obj.query('B'), '%*fv %d%%'); 
     end
 end
 
@@ -640,7 +640,7 @@ methods(Static, Access=public)
     function out = FindPorts()
         % Find all a computer's available ports.
         if isMATLABReleaseOlderThan('R2020a')
-            out = seriallist;
+            out = seriallist; %#ok<*SERLL>
         else
             out = serialportlist;
         end
@@ -649,7 +649,9 @@ methods(Static, Access=public)
     function ClearPort(port)
         % clear any existing session on the target port.
         if isMATLABReleaseOlderThan('R2024a')
-            tmp = instrfind('port', port);
+            warning('off', 'instrument:instrfind:FunctionToBeRemoved'); % I know it's being deprecated. There's no replacement in this version.
+            tmp = instrfind('port', port); %#ok<*INSTRF>
+            warning('on', 'instrument:instrfind:FunctionToBeRemoved');
             if ~isempty(tmp)
                 fclose(tmp);
                 delete(tmp);

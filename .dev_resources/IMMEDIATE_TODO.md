@@ -7,8 +7,6 @@ refresh button
 
 automatic loading of the same trial again after it's finished?
 
-state machine logic - trial number not increasing, trial idx not increasing
-
 DAQs sometimes not stopping automatically
 Cameras sometimes not having enough physical memory
 cameras saving a weird number of things

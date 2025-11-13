@@ -34,8 +34,10 @@ methods(Static, Access=public)
         imaqreset;
         adaptors = imaqhwinfo().InstalledAdaptors;
         for i = 1:length(adaptors)
+            warning('off', 'imaq:imaqhwinfo'); % suppress warnings that no cameras were found for specific adaptor.
             adaptorDevices = imaqhwinfo(adaptors{i});
             devices = adaptorDevices.DeviceInfo;
+            warning('on', 'imaq:imaqhwinfo');
             for j = 1:length(devices)
                 temp = devices(j);
                 protocolID = [CameraComponentProperties.ProtocolID.default char(string(j))];
