@@ -16,6 +16,8 @@ properties(Dependent)
     activeComponents
     nAvailable
     nActive
+    protocolIDs
+    componentIDs
 end
 
 methods
@@ -72,6 +74,42 @@ methods
 
     function activeComponents = get.activeComponents(obj)
         activeComponents = obj.Available(obj.Active == 1);
+    end
+
+    function componentIDs = get.componentIDs(obj)
+        componentIDs = {};
+        for i = 1:length(obj.Available)
+            comp = obj.Available{i};
+            componentIDs{end+1} = comp.ComponentID;
+        end
+    end
+
+    function protocolIDs = get.protocolIDs(obj)
+        protocolIDs = {};
+        for i = 1:length(obj.Available)
+            comp = obj.Available{i};
+            protocolIDs{end+1} = comp.ConfigStruct.ProtocolID;
+        end
+    end
+
+    function protIdx = pIdx(obj, protocolID)
+        protIdx = 0;
+        for i = 1:length(obj.Available)
+            comp = obj.Available{i};
+            if strcmpi(comp.ConfigStruct.ProtocolID, protocolID)
+                protIdx = i;
+            end
+        end
+    end
+
+    function componentIdIdx = cIdx(obj, componentID)
+        componentIdIdx = 0;
+        for i = 1:length(obj.Available)
+            comp = obj.Available{i};
+            if strcmpi(comp.ComponentID, componentID)
+                componentIdIdx = i;
+            end
+        end
     end
 
     function out = get.nAvailable(obj)

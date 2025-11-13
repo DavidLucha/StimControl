@@ -34,43 +34,50 @@ end
 end
 
 %% LOAD COMPONENT CONFIG
-function LoadComponentConfig(obj, filepath)
+function obj = LoadComponentConfig(obj, filepath)
+    obj.indicateLoading("Loading Component Config...");
     if isempty(filepath) || ~any(filepath)
         return
     end
     jsonStr = fileread(filepath);
     jsonData = jsondecode(jsonStr);
+    componentIDs = obj.d.componentIDs;
     for i = 1:length(jsonData)
         if length(jsonData) > 1
             hStruct = jsonData{i};
         else
             hStruct = jsonData;
-        end        
-        switch lower(hStruct.DEVICE)
-            case 'camera'
-                component = CameraComponent('ConfigStruct', hStruct, 'Initialise', false);
-            case 'daq'
-                component = DAQComponent('ConfigStruct', hStruct, 'Initialise', false);
-            otherwise
-                disp("Unsupported hardware type. Come back later.")
         end
-        if contains(keys(obj.d.IDComponentMap), component.ComponentID) %todo this might not allow >1 piece of identical hardware - not currently a problem.
-            existingComponent = obj.d.Available{obj.d.IDComponentMap{component.ComponentID}};
-            existingComponent.SetParams(component.ConfigStruct);
+        if any(contains(componentIDs, hStruct.ComponentID))
+            componentIdx = obj.d.cIdx(hStruct.ComponentID);
+            component = obj.d.Available{componentIdx};
+            Previewing = hStruct.Previewing;
+            
+            % activate or deactivate component if required
+            if hStruct.Active ~= obj.h.AvailableHardwareTable.Data(componentIdx,:).Enable
+                event = struct('Indices', [componentIdx, 5], ...
+                    'NewData', hStruct.Active, ...
+                    'PreviousData', obj.h.AvailableHardwareTable.Data(componentIdx,:).Enable);
+                obj.h.AvailableHardwareTable.CellEditCallback(obj.h.AvailableHardwareTable, event);
+            end
+            if class(component) ~= hStruct.type
+                warning("Component %s not configured: type mismatch", hStruct.ComponentID);
+                continue
+            end
+
+            % sanitise params struct and set params.
+            hStruct = rmfield(hStruct, {'type', 'Previewing', 'Active'});
+            component.SetParams(hStruct);
+            
+            % start preview
+            if Previewing
+                component.StartPreview;
+            end
         else
-            obj.d.Available{end+1} = component;
+            warning("Component not found: %s", hStruct.ComponentID);
         end
     end
-    % Refresh component data in hardware table.
-    tData = obj.h.AvailableHardwareTable.Data;
-    available = obj.d.Available;
-    for i = height(tData)+1:length(obj.d.Available)
-        device = obj.d.Available{i};
-        tData(end+1, :) = {class(device), device.ComponentID, device.GetStatus(), ~isempty(device.SessionHandle)};
-        %TODO ADDITIONAL PREVIEW WINDOWS in CreatePanelSetupPreview AND START
-        %PREVIEW IF INITIALISED
-        obj.h.AvailableHardwareTable.Data = tData;
-    end
+    obj.status = obj.status;
 end
 
 %% LOAD SESSION CONFIG

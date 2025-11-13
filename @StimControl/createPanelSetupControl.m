@@ -5,16 +5,6 @@ grid.ColumnWidth = {100, 23, 23, 100, 23, 23, 100, 23, '1x', 90};
 grid.RowSpacing = 2;
 saveIcon = [obj.path.base filesep '@StimControl' filesep 'icons' filesep 'save.png'];
 
-% %% create debug button
-% obj.h.debugBtn = uibutton(grid, ...
-%     'WordWrap', 'on', 'Text', 'DEBUG', ...
-%     'ButtonPushedFcn',@(src, event) obj.callbackDebug, ...
-%     'Layout', matlab.ui.layout.GridLayoutOptions( ...
-%         'Row', [length(grid.RowHeight) - 1, length(grid.RowHeight)], ...
-%         'Column', length(grid.ColumnWidth) - 1));
-
-%% create "save and continue" button TODO NOT STRICTLY NECESSARY
-
 %% create StimControl session select
 scCol = 1;
 sessionConfigFilesList = getFilesList(obj.path.sessionBase, '.json');
