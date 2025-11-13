@@ -20,7 +20,7 @@ if strcmpi(obj.h.tabs.SelectedTab.Title, 'Setup')
     end
 else
     obj.h.TimerStatusLamp.Color = '#FFED29';
-    obj.h.TimerStatusLabel.Text = obj.status;
+    obj.h.TimerStatusLabel.Text = "Running";
     obj.h.TimerLastUpdatedLabel.Text = string(datetime);
     if isempty(previousStatus)
         previousStatus = obj.status;
@@ -91,8 +91,7 @@ else
                 updateGUITimers(obj, tic, true);
                 updateInteractivity(obj, 'on');
                 if ~isempty(obj.p)
-                    obj.h.protocolSelectDropDown.Value = '';
-                    obj.callbackLoadProtocol(obj.h.protocolSelectDropDown, []);
+                    obj.trialNum = 1;
                     cellfun(@(c) c.Stop(), obj.d.activeComponents);
                 end
                 obj.status = 'no protocol loaded';
@@ -194,6 +193,13 @@ else
             case 'error'
                 obj.status = 'stopping';
         end
+    % update component status display
+    for i = 1:obj.d.nActive
+        component = obj.d.activeComponents{i};
+        component.UpdateStatusDisplay;
+    end
+    obj.h.TimerStatusLamp.Color = '#00FF00';
+
     % catch errors during protocol execution
     catch err
         fid = fopen(fullfile(obj.path.dirData, filesep,'error.log'),'a+');
@@ -204,14 +210,11 @@ else
         % errordlg('Protocol execution incomplete. See error.log for more information.')
         obj.errorMsg(tmp);
         obj.status = 'stopping';
+        obj.h.TimerStatusLamp.Color = '#FF0000';
+        obj.h.TimerStatusLabel.Text = "Error";
         keyboard % see what's going on
     end
-    % update component status display
-    for i = 1:obj.d.nActive
-        component = obj.d.activeComponents{i};
-        component.UpdateStatusDisplay;
-    end
-    obj.h.TimerStatusLamp.Color = '#00FF00';
+    
 end
 end
 
