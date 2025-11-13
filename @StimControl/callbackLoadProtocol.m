@@ -88,6 +88,34 @@ for fi = 1:length(allTargets)
 end
 obj.d.componentTargets = deviceTargets;
 
+ct = fields(obj.d.componentTargets);
+componentData = [];
+for i = 1:length(ct)
+    componentData.(ct{i}) = [];
+end
+% fullComponentData = repmat(componentData, [1 length(obj.p)]);
+
+% reorganise params to be per device.
+for i = 1:length(obj.p)
+    trialComponentData = componentData;
+    trialData = obj.p(i);
+    for cIdx = 1:length(ct)
+        compID = ct{cIdx};
+        targets = obj.d.componentTargets.(compID);
+        componentData = [];
+        for f = 1:length(targets)
+            if isfield(trialData.params, targets{f})
+                componentData.(targets{f}) = trialData.params.(targets{f});
+            end
+        end
+        if length(fields(componentData)) == 1 && any(strcmpi(fields(componentData),compID))
+            componentData = componentData.(compID);
+        end
+        trialComponentData.(compID) = componentData;
+    end
+    obj.p(i).params = trialComponentData;
+end
+
 if createChans
     % first time loading a trial. Initialise.
     for i = 1:length(obj.d.Available)

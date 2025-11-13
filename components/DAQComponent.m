@@ -337,9 +337,10 @@ function LoadTrial(obj, out)
     if isempty(out)
         out = obj.PreviewData(obj.OutChanIdxes,:);
     end
-    
     % release session (in case the previous run was incomplete)
-    stop(obj.SessionHandle);
+    if obj.SessionHandle.Running
+        obj.SessionHandle.stop
+    end
     flush(obj.SessionHandle);
     if obj.SessionHandle.Rate == 0 && any(contains({obj.SessionHandle.Channels.Type}, 'Output'))
         % clocked sampling not supported - timer required for outputs.
@@ -352,17 +353,11 @@ function LoadTrial(obj, out)
         % normal DAQ things hell yeah
         preload(obj.SessionHandle, out); 
     end
-
-    if ~isempty(obj.PreviewPlot) % show preview data
-        obj.StartPreview
-    end
 end
 
 function LoadTrialFromParams(obj, componentTrialData, genericTrialData, preloadDevice)
-    % release session (in case the previous run was incomplete)
-    if obj.SessionHandle.Running
-        obj.SessionHandle.stop
-    end
+    % load trial from params. Does not preload data.
+    
     rate = obj.SessionHandle.Rate;
     if rate==0
         % Software triggering required - only on-demand operations
@@ -425,6 +420,9 @@ function LoadTrialFromParams(obj, componentTrialData, genericTrialData, preloadD
     obj.PreviewData = previewOut;
     if preloadDevice
         obj.LoadTrial(out);
+    end
+    if ~isempty(obj.PreviewPlot) % show preview data
+        obj.StartPreview
     end
 end
 

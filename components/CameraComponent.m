@@ -356,9 +356,6 @@ end
 
 function LoadTrial(obj, out)
     % do nothing - should be loaded from params.
-end
-
-function LoadTrialFromParams(obj, componentTrialData, genericTrialData, preloadDevice)
     if strcmpi(obj.ConfigStruct.TriggerMode, 'hardware') || ...
         strcmpi(obj.ConfigStruct.TriggerMode, 'manual')
         if isrunning(obj.SessionHandle)
@@ -373,7 +370,12 @@ function LoadTrialFromParams(obj, componentTrialData, genericTrialData, preloadD
         if ~isrunning(obj.SessionHandle)
             error("failed to start CameraComponent %s", obj.ComponentID);
         end
-    else %immediate
+    end
+end
+
+function LoadTrialFromParams(obj, componentTrialData, genericTrialData, preloadDevice)
+    if ~(strcmpi(obj.ConfigStruct.TriggerMode, 'hardware') || ...
+                strcmpi(obj.ConfigStruct.TriggerMode, 'manual'))
         obj.recordingTime = genericTrialData.tPre + genericTrialData.tPost;
     end
     %TODO check behaviour of this in rolling acquisition mode - do you

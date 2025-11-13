@@ -68,9 +68,9 @@ classdef (HandleCompatible) TrialData < handle &  matlab.mixin.indexing.Redefine
             %       delay [double]: ms delay to wait between each parameter 
             %       params: [struct] array of params for each struct. Order maps to sequence
             rootNode = obj.RootNode;
-            allTargets = obj.targets;
-            trialParams = rootNode.buildParams;    
             obj.params = rootNode.buildParams;
+            trialParams = obj.params;
+            obj.data = {};
         end
 
         function set.data(obj, val)
