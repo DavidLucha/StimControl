@@ -113,9 +113,7 @@ obj.h.trialInformationScroller.Value = '';
 obj.h.trialInformationScroller.FontColor = 'black';
 
 %% Update paths
-obj.updateDateTime; 
 obj.g.sequence = generateSequence(obj);
-createOutputDir(obj);
 
 %% Load first trial
 obj.callbackLoadTrial(src, event);
@@ -139,23 +137,4 @@ if obj.g.rand > 0
 else
     seq = repmat(tmp,1,obj.g.nProtRuns);
 end
-end
-
-function createOutputDir(obj)
-% create output directory if it doesn't already exist
-if ~isfolder(obj.dirExperiment)
-    mkdir(obj.dirExperiment)
-end
-
-% copy protocol file to output directory
-[~,tmp1,tmp2] = fileparts(obj.path.SessionProtocolFile);
-copyfile(obj.path.SessionProtocolFile,fullfile(obj.dirExperiment,[tmp1 tmp2]))
-
-% % copy channel information to output directory TODO this is copied from
-% QSTcontrol 
-% fid = fopen(fullfile(dirOut,'channels.txt'),'w');
-% tmp = evalc('disp(obj.DAQ.Channels)');
-% tmp = regexprep(tmp,'\n','\r\n');
-% fprintf(fid,'%s',tmp);
-% fclose(fid);
 end

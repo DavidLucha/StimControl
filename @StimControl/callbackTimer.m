@@ -226,6 +226,10 @@ function startTrial(obj)
     obj.indicateLoading('Loading trial data');
     if ~obj.f.trialLoaded
         obj.callbackLoadTrial([]);
+        for i = 1:obj.d.nActive
+            component = obj.d.activeComponents{i};
+            component.LoadTrial([]);
+        end
     end
     comment = obj.p(obj.trialNum).comment;
     obj.h.trialInformationScroller.Value{end+1} = ...
@@ -235,7 +239,6 @@ function startTrial(obj)
     savePrefix = sprintf("%05d_stim%05d", obj.trialIdx, obj.trialNum);
     for i = 1:obj.d.nActive
         component = obj.d.activeComponents{i};
-        component.SavePath = obj.dirExperiment;
         component.SavePrefix = savePrefix;
     end
     updateInteractivity(obj, 'on');
@@ -245,13 +248,10 @@ function startTrial(obj)
         component = obj.d.activeComponents{ci};
         component.StartTrial;
     end
-    obj.f.trialLoaded = false;
 end
 
-%% TODO FIX LOGIC HERE!!
 function StartPassiveTrial(obj)
     updateInteractivity(obj, 'off');
-    obj.indicateLoading('Loading trial data');
     obj.updateDateTime;
     timeString = [obj.path.time(1:2) '-' obj.path.time(3:4) '-' obj.path.time(5:6)];
     obj.h.trialInformationScroller.Value{end+1} = ...
@@ -259,10 +259,6 @@ function StartPassiveTrial(obj)
     
     % Set filepath params
     savePrefix = sprintf("%s_stim_passive_%s", num2str(obj.trialIdx, '%05.f'), obj.path.time);
-    % todo this may be redundant but it's useful for right now
-    % if ~isfolder([obj.dirExperiment '_PassiveAcquisition'])
-    %     mkdir([obj.dirExperiment '_PassiveAcquisition']);
-    % end
     for i = 1:obj.d.nActive
         component = obj.d.activeComponents{i};
         component.SavePrefix = savePrefix;
