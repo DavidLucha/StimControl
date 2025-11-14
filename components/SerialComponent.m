@@ -142,13 +142,8 @@ function StartPreview(obj)
         obj.Previewing = true;
         return;
     end
-    ps = strsplit(obj.query('P'),'\r');
-    if length(ps) < 2
-        return
-    end
-    % process first line of parameter block
-    p = sscanf(ps{2},'N%d T%d I%d Y%d S%s');
-    thermP = cell2mat(cellfun(@(x) {sscanf(x,'C%d V%d R%d D%d')},ps(3:end)));
+    [p, thermP] = obj.GetLoadedParams(false);
+    % todo account for multi-stim trials
     % startDelay = obj.TrialData.delay(1); 
     sampleRate = 1000;
     S = str2num([char(p(5:end))]); %#ok     % Selected surfaces
@@ -159,7 +154,7 @@ function StartPreview(obj)
     R = thermP(3,:)/10;                     % Return Speed (C/sec)
     stimTicks = (obj.TrialData.tPre + obj.TrialData.tPost) * sampleRate / 1000;
     tPost = obj.TrialData.tPost;
-    % TODO it's different???
+    % TODO it's different??? future michelle here: what does this MEAN
 
     tax = linspace(1/sampleRate, stimTicks/sampleRate, stimTicks) - obj.TrialData.tPre/1000;
     stim = ones(length(tax),5) * N;
@@ -189,6 +184,35 @@ function StartPreview(obj)
     yticks(obj.PreviewPlot, 0:10:65);
 end
 
+function [p, thermP] = GetLoadedParams(obj, fromDevice)
+    p = [];
+    thermP = [];
+    if fromDevice
+        ps = strsplit(obj.query('P'),'\r');
+        if length(ps) < 2
+            return
+        end
+        % process first line of parameter block
+        p = sscanf(ps{2},'N%d T%d I%d Y%d S%s');
+        thermP = cell2mat(cellfun(@(x) {sscanf(x,'C%d V%d R%d D%d')},ps(3:end)));
+    else
+        td = obj.TrialData;
+        p = [td.NeutralTemp*10; ...
+                td.nTrigger; ...
+                td.integralTerm; ...
+                double(td.SurfaceSelect)'+48];      
+        thermP = [td.SetpointTemp*10; ...
+                td.PacingRate*10; ...
+                td.ReturnSpeed*10; ...
+                td.dStimulus];
+        % N = p(1)/10;                            % Neutral temp (C)
+        % C = thermP(1,:)/10;                     % SetPoint Temp (C)
+        % D = thermP(4,:)/1000;                   % Duration (sec)
+        % V = thermP(2,:)/10;                     % Pacing Rate (C/sec)
+        % R = thermP(3,:)/10;                     % Return Speed (C/sec)
+    end
+end
+
 % Dynamic visualisation of the object output
 function StopPreview(obj)
     obj.Previewing = false;
@@ -208,7 +232,7 @@ end
 
 % Preload a single trial
 function LoadTrialFromParams(obj, componentTrialData, genericTrialData, preloadDevice)
-    componentTrialData = componentTrialData.QST; %TODO UN-HARDCODE
+    componentTrialData = componentTrialData.params.commands; %TODO UN-HARDCODE
     obj.TrialData = componentTrialData;
     obj.TrialData.tPre = genericTrialData.tPre;
     obj.TrialData.tPost = genericTrialData.tPost;
@@ -268,6 +292,10 @@ function status = GetSessionStatus(obj)
     persistent prevTemp;
     persistent prevTested;
     stat = sscanf(obj.query('Og'), '%d+%d+%d+%d+%d+%d\n%d');
+    if isempty(stat)
+        status = "unconnected";
+        return;
+    end
     temps = stat(2:5);
     if isempty(prevTemp)
         prevTemp = sum(temps);
