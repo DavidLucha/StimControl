@@ -196,7 +196,7 @@ function [p, thermP] = GetLoadedParams(obj, fromDevice)
         p = sscanf(ps{2},'N%d T%d I%d Y%d S%s');
         thermP = cell2mat(cellfun(@(x) {sscanf(x,'C%d V%d R%d D%d')},ps(3:end)));
     else
-        td = obj.TrialData;
+        td = obj.TrialData.params;
         p = [td.NeutralTemp*10; ...
                 td.nTrigger; ...
                 td.integralTerm; ...
@@ -225,36 +225,21 @@ end
 
 function LoadTrial(obj, out)
     if isempty(out)
-        out = obj.TrialData(obj.idxStim);
+        out = obj.CurrentCommand;
     end
     preloadSingleQSTStim(obj, out);
 end
 
 % Preload a single trial
 function LoadTrialFromParams(obj, componentTrialData, genericTrialData, preloadDevice)
-    componentTrialData = componentTrialData.params.commands; %TODO UN-HARDCODE
+    componentTrialData.params = componentTrialData.params.commands;
     obj.TrialData = componentTrialData;
     obj.TrialData.tPre = genericTrialData.tPre;
     obj.TrialData.tPost = genericTrialData.tPost;
-    if contains(obj.ConfigStruct.ProtocolID, 'QST') && preloadDevice
-        preloadSingleQSTStim(obj, componentTrialData(1))
-    end
-    obj.nStimsInTrial = genericTrialData.nRuns * length(componentTrialData);
     obj.idxStim = 1;
-    if obj.nStimsInTrial > 1
-        if ~isempty(obj.TriggerTimer)
-            if isvalid(obj.TriggerTimer)
-                stop(obj.TriggerTimer);
-                delete(obj.TriggerTimer);
-            end
-        end
-        obj.TriggerTimer = timer(...
-            'StartDelay',       0, ...
-            'Period',           0.5, ...
-            'ExecutionMode',    'fixedDelay', ...
-            'TimerFcn',         @obj.multiTriggerTimer, ...
-            'Name',             'SerialExecutionTimer');
-        % TODO THIS: CHECK PROPERTIES OF SERIAL DEVICE, THERE'S A TIMER ATTACHED???
+    obj.nStimsInTrial = length(componentTrialData.sequence);
+    if contains(obj.ConfigStruct.ProtocolID, 'QST') && preloadDevice
+        preloadSingleQSTStim(obj, []);
     end
     if obj.Previewing
         obj.StartPreview;
@@ -277,6 +262,22 @@ function UpdateStatusDisplay(obj)
     UpdateStatusDisplay@HardwareComponent(obj);
     obj.statusHandles.battery.Text = sprintf('battery: %dpct',obj.battery);
 end
+
+function TrialMaintain(obj)
+    % checks if there is another command to load. If yes and the previous
+    % stim is finished, loads the next stim.
+    if isempty(obj.nStimsInTrial) || obj.nStimsInTrial < 2 ...
+            || obj.idxStim == obj.nStimsInTrial
+        return
+    end
+    if ~isempty(obj.tStimStarted) ...
+            && toc(obj.tStimStarted) > max(obj.CurrentCommand().dStimulus)
+        obj.idxStim = obj.idxStim + 1;
+        obj.tStimStarted = [];
+        obj.preloadSingleQSTStim([]);
+    end
+end
+
 end
 
 methods(Access=protected)
@@ -326,7 +327,7 @@ function preloadSingleQSTStim(obj, stimStruct)
     % build command stack
     stack = {};
     if isempty(stimStruct)
-        stimStruct = obj.TrialData;
+        stimStruct = obj.CurrentCommand;
     end
     for param = fieldnames(stimStruct)'
         val = stimStruct.(param{:});
@@ -588,15 +589,10 @@ function obj = OpenSerialConnection(obj)
     %TODO configure terminator, inputbuffersize. Not necessary for QST
 end
 
-function multiTriggerTimer(obj, ~, ~)
-    timeoutMs = obj.TrialData(obj.idxStim).params.commands.dStimulus;
-    if isempty(obj.trialStartedTic)
-        return
-    else
-        if seconds(toc(obj.trialStartedTic)) > seconds(timeoutMs/1000)
-            obj.PreloadSingleQSTStim
-            obj.trialStartedTic = [];
-        end
+function out = CurrentCommand(obj)
+    out = [];
+    if ~isempty(obj.TrialData)
+        out = obj.TrialData.params(obj.TrialData.sequence(obj.idxStim));
     end
 end
 

@@ -133,6 +133,8 @@ else
                     end
                     if ~any(cellfun(@(c) strcmpi(c.GetStatus(), 'running'), obj.d.activeComponents))
                         obj.f.trialFinished = true;
+                    else
+                        cellfun(@(c) c.TrialMaintain, obj.d.activeComponents); %
                     end
                 end
             case 'awaiting trigger'

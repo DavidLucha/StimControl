@@ -246,7 +246,11 @@ function CreateSoftwareTriggerTimer(obj, rate)
             'Period',           period, ...
             'ExecutionMode',    'fixedRate', ...
             'TimerFcn',         @obj.SoftwareTrigger);
+end
 
+function TrialMaintain(obj)
+    % for components that may need to load additional data during a trial 
+    % (e.g. serial components). By default, does nothing. 
 end
 
 % get current device parameters for saving
@@ -293,8 +297,7 @@ methods (Abstract, Access=public)
 %                                   settings
 InitialiseSession(obj, varargin)
 
-% Start device. For synchronisation reasons, should only be used for
-% self-triggered devices and 
+% Start device. Start the trigger device last.
 StartTrial(obj)
 
 % Stop device during trial and flush any remaining data.

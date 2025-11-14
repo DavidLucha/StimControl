@@ -1,9 +1,10 @@
-- dry runs and stress testing
+
+Configurable visualisation layout!!
+
+
+DAQs sometimes not stopping automatically - fixed??
+Cameras sometimes not having enough physical memory - fixed??
+cameras saving a weird number of things - fixed??
 - fix the over-saving bug (I think done but test)
-
-Configurable visualisation layout
-
-DAQs sometimes not stopping automatically
-Cameras sometimes not having enough physical memory
-cameras saving a weird number of things
+- dry runs and stress testing (done?)
 QST multi-stim stuff?
