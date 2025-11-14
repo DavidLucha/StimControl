@@ -143,13 +143,14 @@ function obj = InitialiseSession(obj, varargin)
         elseif ~isfield(params.ConfigStruct, 'ROIPosition')
             set(vidObj,'ROIposition',str2num(obj.ConfigStruct.ROIPosition));
         end
-        for attr = ["TriggerFrameDelay", "FrameGrabInterval", "TriggerRepeat"]
+        for attr = ["TriggerFrameDelay", "FrameGrabInterval"]
             if isfield(params.ConfigStruct, attr)
                 set(vidObj, attr, obj.ConfigStruct.(attr));
             else
                 obj.ConfigStruct.(attr) = vidObj.(attr);
             end
         end
+        set(vidObj, 'TriggerRepeat', obj.ConfigStruct.TriggerRepeat); % special case bc it defaults to one trigger.
         set(vidObj,'FramesPerTrigger',str2double(obj.ConfigStruct.FramesPerTrigger));
         vidObj.FramesAcquiredFcnCount = 10; %TODO parametrise?
         vidObj.FramesAcquiredFcn = @obj.ReceiveFrame;
