@@ -1,5 +1,8 @@
 
 Configurable visualisation layout!!
+- save preview plot settings to session params
+- document them a non-coder is going to look at this and HATE it
+check session params works
 
 
 control & vibration data looks weird?

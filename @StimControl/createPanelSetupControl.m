@@ -64,12 +64,12 @@ obj.h.AvailableHardwareTable = uitable('Parent', grid, ...
         'Column', [1 length(grid.ColumnWidth)]), ...
     'ColumnSortable', true, ...
     'SelectionType', 'row', ...
-    'ColumnEditable', [false false true false true true], ...
+    'ColumnEditable', [false false true false true true true true], ...
     'SelectionChangedFcn', @obj.callbackEditComponentConfig, ...
     'CellEditCallback', @(src, event) updateComponentTableCell(src, event, obj));
 
 %% Populate Component Table
-columnNames = {'Type', 'ID', 'Protocol ID', 'Status', 'Enable', 'Preview'};
+columnNames = {'Type', 'ID', 'Protocol ID', 'Status', 'Enable', 'Preview', 'Row', 'Column'};
 tData = table();
 available = obj.d.Available;
 if isempty(obj.d.Available) % prevent errors with no hardware attached
@@ -82,7 +82,9 @@ for i = 1:length(obj.d.Available)
                         device.ConfigStruct.ProtocolID, ...
                         device.GetStatus, ...
                         ~isempty(device.SessionHandle), ...
-                        device.Previewing};
+                        device.Previewing, ...
+                        cellstr(num2str(device.PreviewPlot.Parent.Parent.Layout.Row)), ...
+                        cellstr(num2str(device.PreviewPlot.Parent.Parent.Layout.Column))};
 end
 
 tData.Properties.VariableNames = columnNames;
@@ -106,12 +108,27 @@ function updateComponentTableCell(src, event, obj)
         else
             obj.d.Active(idxRow) = false;
             component.Stop();
+            src.Data.Preview{idxRow} = false;
         end
     elseif strcmpi(property, "Preview")
         if event.NewData    
+            if ~obj.d.Active(idxRow)
+                % can't preview if not active.
+                src.Data.Preview{idxRow} = false;
+                return
+            end
+            component.PreviewPlot.Parent.Parent.Visible = "on";
             component.StartPreview();
         else
+            component.PreviewPlot.Parent.Parent.Visible = "off";
             component.StopPreview();
         end
+        %TODO automatically re-shuffle other preview plots to fill the gap.
+    elseif strcmpi(property, "Row") || strcmpi(property, "Column")
+        component.PreviewPlot.Parent.Parent.Layout.(property) = str2num(event.NewData); %#ok
     end
+
+    % % update preview display
+    % obj.h.Preview.panel.params.Children(1).Children; % the panels within the grid (can also go through obj.d)
+    % obj.h.Preview.panel.params.Children; % the grid
 end

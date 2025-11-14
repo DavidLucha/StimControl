@@ -13,14 +13,15 @@ if strcmpi(event.NewValue.Title, 'Experiment')
             component.Stop();
         end
     end
-    % update preview panel with final count of active components.
-    obj.createPanelSessionPreview(obj.h.Session.Preview.panel.params);
     obj.createPanelSessionHardware(obj.h.Session.HardwareStatus.panel.params);
 elseif strcmpi(event.NewValue.Title, 'Setup')
-    % move component previews back
-    for i = 1:length(obj.d.Available)
-        component = obj.d.Available{i};
-        component.UpdatePreview(obj.h.Setup.PreviewPanels{i});
+    % If experiment is running, swap it back. (can't disable the tab so this is the next best thing)
+    if contains("running, inter-trial, paused, awaiting trigger, stopping", obj.status)
+        obj.warnMsg("Can't change tabs when a trial is running. Stop the trial and try again.");
+        obj.h.tabs.SelectedTab = obj.h.Session.Tab;
+        return
     end
 end
+% warning: cursed
+obj.h.Preview.panel.params.Parent = event.NewValue.Children;
 end
