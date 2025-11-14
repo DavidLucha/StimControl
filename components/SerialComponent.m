@@ -225,7 +225,7 @@ end
 
 function LoadTrial(obj, out)
     if isempty(out)
-        out = obj.TrialData(obj.IdxStim);
+        out = obj.TrialData(obj.idxStim);
     end
     preloadSingleQSTStim(obj, out);
 end
@@ -325,8 +325,11 @@ function preloadSingleQSTStim(obj, stimStruct)
     %TODO flush previous
     % build command stack
     stack = {};
-    for param = fieldnames(stimStruct.params.commands)'
-        val = stimStruct.params.commands.(param{:});
+    if isempty(stimStruct)
+        stimStruct = obj.TrialData;
+    end
+    for param = fieldnames(stimStruct)'
+        val = stimStruct.(param{:});
         switch param{:}
             case 'NeutralTemp'
                 cmd = sprintf('N%03d',round(val*10));

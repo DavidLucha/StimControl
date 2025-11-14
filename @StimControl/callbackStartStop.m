@@ -14,6 +14,8 @@ if strcmpi(obj.status, 'running') || strcmpi(obj.status, 'paused') ...
 elseif src == obj.h.StartStopBtn || src == obj.h.StartSingleTrialBtn
     obj.updateDateTime;
     createOutputDir(obj);
+    obj.h.trialInformationScroller.Value = '';
+    obj.h.trialInformationScroller.FontColor = 'black';
     if src == obj.h.StartStopBtn
         obj.f.runningExperiment = true;
         obj.trialIdx = 1;
@@ -26,6 +28,8 @@ elseif src == obj.h.StartStopBtn || src == obj.h.StartSingleTrialBtn
     obj.f.startTrial = true;
     
 elseif src == obj.h.StartPassiveBtn
+    obj.h.trialInformationScroller.Value = '';
+    obj.h.trialInformationScroller.FontColor = 'black';
     obj.f.passive = true;
     for i = 1:obj.d.nActive
         component = obj.d.activeComponents{i};
