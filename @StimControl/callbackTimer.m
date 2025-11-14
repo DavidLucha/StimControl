@@ -233,6 +233,7 @@ function startTrial(obj)
     comment = obj.p(obj.trialNum).comment;
     obj.h.trialInformationScroller.Value{end+1} = ...
         char(sprintf("%d(%d): %s", obj.trialIdx, obj.trialNum, comment));
+    scroll(obj.h.trialInformationScroller, 'bottom');
     
     % Set filepath params
     savePrefix = sprintf("%05d_stim%05d", obj.trialIdx, obj.trialNum);

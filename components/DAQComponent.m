@@ -655,16 +655,19 @@ end
 function plotData(obj, ~,event)
     % manage persistent variables
     persistent emptyCount
+    eventData = read(event.Source);
+
     if obj.idxData > size(obj.StackedPreview.YData)
         % cut off the end of the data? TODO CHECK THIS IS DESIRED BEHAVIOUR
-        disp("we have too much data??");
+        if ~isempty(eventData)
+            disp("we have too much data??");
+        end
         return
     end
     if ~isfolder(obj.SavePath)
         mkdir(obj.SavePath)
     end
 
-    eventData = read(event.Source);
     % check data exists.
     if ~isempty(eventData)
         targetIdx = obj.idxData:eventData.NumScans+obj.idxData-1;
