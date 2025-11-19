@@ -42,6 +42,11 @@ function obj = SerialComponent(varargin)
     end
 end
 
+% TODO REMOVE
+function Debug(obj)
+    keyboard
+end
+
 % Initialise the hardware session. 
 function obj = InitialiseSession(obj, varargin)
     p = inputParser;

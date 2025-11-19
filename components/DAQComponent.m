@@ -89,6 +89,11 @@ function obj = DAQComponent(varargin)
     end
 end
 
+% TODO REMOVE
+function Debug(obj)
+    keyboard
+end
+
 function obj = InitialiseSession(obj, varargin)
     % Initialise device. 
     %TODO STOP/START
@@ -534,11 +539,9 @@ function obj = CreateChannels(obj, filename, protocolIDs)
             obj.ChannelMap.(line.Device{:}).(line.Label{:}).ioType = ioType;
 
         catch exception
-            disp(exception.message)
-            dbstack
-            keyboard
             message = ['Encountered an error reading channels config file on line ' ...
                     char(string(ii)) ': ' exception.message ' Line skipped.'];
+            disp("")
             warning(message);
         end
     end
@@ -549,14 +552,18 @@ function obj = CreateChannels(obj, filename, protocolIDs)
 end
 
 function obj = ClearChannels(obj)
-    if length(obj.SessionHandle.Channels) ~= 0
-        removechannel(obj.SessionHandle, 1:length(obj.SessionHandle.Channels));
-    end
-    obj.ChannelMap = [];
-    obj.PreviewChannels = [];
-    obj.OutChanIdxes = [];
-    obj.InChanIdxes = [];
-end
+            disp(message);
+            % disp(exception.message)
+            dbstack
+            keyboard
+            % if length(obj.SessionHandle.Channels) ~= 0
+            %     removechannel(obj.SessionHandle, 1:length(obj.SessionHandle.Channels));
+            % end
+            % obj.ChannelMap = [];
+            % obj.PreviewChannels = [];
+            % obj.OutChanIdxes = [];
+            % obj.InChanIdxes = [];
+        end
 end
 
 

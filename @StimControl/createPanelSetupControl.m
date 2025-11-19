@@ -50,9 +50,9 @@ configLabel = uilabel(grid, 'Text', 'Hardware Config', ...
         'Column', [ccCol ccCol+1]));
 
 %% create component edit button
-obj.h.editComponentConfigBtn = uibutton(grid, ...
-    'WordWrap', 'on', 'Text', 'Edit Component', ...
-    'ButtonPushedFcn',@(src, event)obj.callbackEditComponentConfig(src, event), ...
+obj.h.debugComponentBtn = uibutton(grid, ...
+    'WordWrap', 'on', 'Text', 'Debug Component', ...
+    'ButtonPushedFcn',@(src, event)obj.callbackDebug(src, event), ...
     'Layout', matlab.ui.layout.GridLayoutOptions( ...
         'Row', [length(grid.RowHeight) - 1, length(grid.RowHeight)], ...
         'Column', length(grid.ColumnWidth)));
@@ -69,7 +69,7 @@ obj.h.AvailableHardwareTable = uitable('Parent', grid, ...
     'CellEditCallback', @(src, event) updateComponentTableCell(src, event, obj));
 
 %% Populate Component Table
-columnNames = {'Type', 'ID', 'Protocol ID', 'Status', 'Enable', 'Preview', 'Row', 'Column'};
+columnNames = {'Type', 'ID', 'Protocol ID', 'Status', 'Enable', 'Preview', 'PRow', 'PColumn'};
 tData = table();
 available = obj.d.Available;
 if isempty(obj.d.Available) % prevent errors with no hardware attached
@@ -108,7 +108,10 @@ function updateComponentTableCell(src, event, obj)
         else
             obj.d.Active(idxRow) = false;
             component.Stop();
-            src.Data.Preview{idxRow} = false;
+            component.Close(); %TODO RE-INITIALISE ON STARTUP
+            src.Data.Preview(idxRow) = false;
+            component.PreviewPlot.Parent.Parent.Visible = "off";
+            component.StopPreview();
         end
     elseif strcmpi(property, "Preview")
         if event.NewData    
@@ -124,7 +127,9 @@ function updateComponentTableCell(src, event, obj)
             component.StopPreview();
         end
         %TODO automatically re-shuffle other preview plots to fill the gap.
-    elseif strcmpi(property, "Row") || strcmpi(property, "Column")
+    elseif strcmpi(property, "PRow") || strcmpi(property, "PColumn")
+        property = property{:};
+        property = property(2:end);
         component.PreviewPlot.Parent.Parent.Layout.(property) = str2num(event.NewData); %#ok
     end
 

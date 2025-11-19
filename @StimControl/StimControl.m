@@ -84,7 +84,7 @@ methods
 
         %% Find available hardware
         disp("Initialising Available Hardware...")
-        obj.d = obj.d.FindAvailableHardware();
+        obj.d = obj.d.FindAvailableHardware(); %TODO CHANGE THIS SO IT ONLY FINDS HARDWARE WITHOUT AN ACTVIE SESSION ELSEWHERE. Or at least doesn't initialise
 
         %% Create figure and get things going
         disp("Creating figure...")
@@ -160,7 +160,7 @@ methods
 
     function filepath = get.dirExperiment(obj)
         if ~isfield(obj.path, 'date')
-            obj.UpdateDateTime
+            obj.updateDateTime
         end
         tmpPath = [obj.dirAnimal filesep obj.path.date];
         if ~exist(tmpPath, 'dir')

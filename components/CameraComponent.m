@@ -76,6 +76,13 @@ function obj = CameraComponent(varargin)
     end
 end
 
+% TODO REMOVE
+function Debug(obj)
+    vidObj = obj.SessionHandle;
+    src = getselectedsource(obj.SessionHandle);
+    keyboard
+end
+
 % Initialise device
 function obj = InitialiseSession(obj, varargin)
     p = inputParser;
@@ -134,6 +141,13 @@ function obj = InitialiseSession(obj, varargin)
                 src.BinningHorizontal = binVal;
                 src.BinningVertical = binVal;
             end
+            % set output lines
+            src.LineSelector = obj.ConfigStruct.OutputLine;
+            src.LineMode = "Output";
+            src.LineSource = "ExposureActive";
+            % src.LineSelector = obj.ConfigStruct.TriggerLine;
+            % src.LineMode = "Input";
+            % src.TriggerSource = val;
         else
             %TODO fill out GENERIC CAMERAS
         end
@@ -157,6 +171,13 @@ function obj = InitialiseSession(obj, varargin)
         obj.SessionHandle = vidObj;
         obj.UpdateTriggerMode();
         obj.Status = "ok";
+    end
+end
+
+function EndTrial(obj)
+    % clear buffer of waiting frames
+    if obj.SessionHandle.FramesAvailable
+        obj.ReceiveFrame(obj.SessionHandle, obj.SessionHandle);
     end
 end
 
@@ -311,6 +332,7 @@ function obj = SetParams(obj, paramsStruct)
             case "OutputLine"
                 src.LineSelector = val;
                 src.LineMode = "Output";
+                src.LineSource = "ExposureActive";
             case "TriggerLine"
                 src.LineSelector = val;
                 src.LineMode = "Input";
@@ -539,10 +561,12 @@ function status = GetSessionStatus(obj)
     status = '';
     if isrunning(obj.SessionHandle)
         status = 'ready';
-        if strcmpi(obj.ConfigStruct.TriggerMode, 'immediate') || ...
-            (~isempty(obj.LastAcquisition) && ...
-                seconds(toc(obj.LastAcquisition)) < seconds(obj.ConfigStruct.TrialTimeout))
+        if strcmpi(obj.ConfigStruct.TriggerMode, 'immediate')
             status = 'running';
+        elseif ~isempty(obj.LastAcquisition)
+            if seconds(toc(obj.LastAcquisition)) < seconds(obj.ConfigStruct.TrialTimeout)
+                status = 'running';
+            end
         end
     elseif ~isempty(obj.SessionHandle) && isvalid(obj.SessionHandle)
         status = 'connected';

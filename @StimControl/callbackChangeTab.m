@@ -10,7 +10,11 @@ if strcmpi(event.NewValue.Title, 'Experiment')
             end
         else
             % de-initialise unnecessary devices
-            component.Stop();
+            try
+                component.Stop();
+            catch exc
+                disp("[CALLBACKCHANGETAB] fix this when you have a second lmao")
+            end
         end
     end
     obj.createPanelSessionHardware(obj.h.Session.HardwareStatus.panel.params);

@@ -133,6 +133,7 @@ else
                     end
                     if ~any(cellfun(@(c) strcmpi(c.GetStatus(), 'running'), obj.d.activeComponents))
                         obj.f.trialFinished = true;
+                        cellfun(@(c) c.EndTrial(), obj.d.activeComponents);
                     else
                         cellfun(@(c) c.TrialMaintain, obj.d.activeComponents); %
                     end

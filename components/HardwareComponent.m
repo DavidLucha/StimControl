@@ -253,6 +253,11 @@ function TrialMaintain(obj)
     % (e.g. serial components). By default, does nothing. 
 end
 
+function EndTrial(obj)
+    % for components that may need additional data saved after a trial ends
+    % - e.g. cameras that only write to file every 10 frames.
+end
+
 % get current device parameters for saving
 function objStruct = GetParams(obj)
     objStruct = setfield(obj.ConfigStruct, 'ComponentID', obj.ComponentID);
