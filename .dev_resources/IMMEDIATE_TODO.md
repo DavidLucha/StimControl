@@ -2,11 +2,9 @@
 Configurable visualisation layout!!
 - save preview plot settings to session params
 - document them a non-coder is going to look at this and HATE it
-check session params works
 
-
-control & vibration data looks weird?
-
+check session params works (again)
+add support for sub-targeting on DAQs (e.d. Widefield1-Trigger)
 
 
 DAQs sometimes not stopping automatically: Internal Error: The hardware did not report that it had stopped before the timer ran out
