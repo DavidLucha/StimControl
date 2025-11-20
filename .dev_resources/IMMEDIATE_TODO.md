@@ -5,9 +5,6 @@ Configurable visualisation layout!!
 
 Multi-saving is kiiinda fixed but its' still making a folder for the experiment and another one for _passive
 
-show comment next to trial number, not just in scroller (also for next one)
-
-
 add ability to set "run this in every trial" line?
 
 Logic for not interrupting other sessions (taking over hardware) needs work

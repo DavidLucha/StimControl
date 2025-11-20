@@ -423,6 +423,7 @@ function LoadTrialFromParams(obj, componentTrialData, genericTrialData, preloadD
             elseif strcmpi(fieldName, 'TwoPhotonNext')
                 out(3, idx) = 1;
             else
+                stim = stim(1:length(out)); %todo this is cheating.
                 out(:,idx) = stim;
             end
         end
