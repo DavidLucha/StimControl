@@ -78,7 +78,9 @@ end
 for fi = 1:length(allTargets)
     targetName = allTargets{fi};
     if ~isfield(obj.pids, targetName)
-        error("No connected device found for stimulus target %s", targetName);
+        warning("No connected device found for stimulus target %s. Passive mode enabled.", targetName);
+        obj.status = 'no protocol loaded';
+        return
     end
     componentIDs = obj.pids.(targetName);
     for ci = 1:length(componentIDs)

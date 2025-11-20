@@ -12,6 +12,7 @@ properties (Access = protected)
     recordingTime;
     selfStop;
     startTic;
+    Flushing = false;
 end
 
 methods(Static, Access=public)
@@ -177,6 +178,7 @@ end
 function EndTrial(obj)
     % clear buffer of waiting frames
     if obj.SessionHandle.FramesAvailable
+        obj.Flushing = true;
         obj.ReceiveFrame(obj.SessionHandle, obj.SessionHandle);
     end
 end
@@ -184,6 +186,7 @@ end
 % Start device
 function StartTrial(obj)
     flushdata(obj.SessionHandle)
+    obj.Flushing = false;
     if isempty(obj.SessionHandle)
         return
     end
@@ -397,6 +400,7 @@ function LoadTrial(obj, out)
 end
 
 function LoadTrialFromParams(obj, componentTrialData, genericTrialData, preloadDevice)
+    obj.Flushing = false;
     if ~(strcmpi(obj.ConfigStruct.TriggerMode, 'hardware') || ...
                 strcmpi(obj.ConfigStruct.TriggerMode, 'manual'))
         obj.recordingTime = genericTrialData.tPre + genericTrialData.tPost;
@@ -404,7 +408,6 @@ function LoadTrialFromParams(obj, componentTrialData, genericTrialData, preloadD
     %TODO check behaviour of this in rolling acquisition mode - do you
     %start then wait for trigger?
     % if obj.SessionHandle.
-    % TODO restart camera to reset framecount?
     % check triggermode and change if needed
     % detect number of triggers needed / framerate / etc.
 end
@@ -564,8 +567,12 @@ function status = GetSessionStatus(obj)
         if strcmpi(obj.ConfigStruct.TriggerMode, 'immediate')
             status = 'running';
         elseif ~isempty(obj.LastAcquisition)
-            if seconds(toc(obj.LastAcquisition)) < seconds(obj.ConfigStruct.TrialTimeout)
-                status = 'running';
+            if (seconds(toc(obj.LastAcquisition)) < seconds(obj.ConfigStruct.TrialTimeout))
+                if ~obj.Flushing
+                    status = 'running';
+                else
+                    status = 'ready';
+                end
             end
         end
     elseif ~isempty(obj.SessionHandle) && isvalid(obj.SessionHandle)

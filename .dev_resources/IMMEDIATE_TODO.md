@@ -4,9 +4,12 @@ Configurable visualisation layout!!
 - document them a non-coder is going to look at this and HATE it
 
 Multi-saving is kiiinda fixed but its' still making a folder for the experiment and another one for _passive
-Start passive isn't available until you pick a protocl, but picking a protocol where some of the harware isn't connected throws an error. Make it finish failing to load and then enable start passive.
 
-Logic for not interrupting other sessions needs work
+
+
+add ability to set "run this in every trial" line?
+
+Logic for not interrupting other sessions (taking over hardware) needs work
 
 Logic for ending a session is a bit janky, creates bonus folders in the other direction now! (CameraComponent EndTrial specifically)
 
@@ -16,6 +19,7 @@ add time to daq channel names savings at start
 
 check session params works (again)
 add support for sub-targeting on DAQs (e.d. Widefield1-Trigger)
+Add support for function definitions that include other functions in protocol files
 
 
 DAQs sometimes not stopping automatically: Internal Error: The hardware did not report that it had stopped before the timer ran out
