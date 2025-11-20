@@ -150,7 +150,9 @@ methods
             totalDelay = obj.startDelay;
             for si = 1:length(sequence)
                 traversedParam = traversedParams{sequence(si)};
-                traversedParam = traversedParam{:};
+                if ~isstruct(traversedParam)
+                    traversedParam = traversedParam{:};
+                end
                 child = children(sequence(si));
                 for f = fields(traversedParam)'
                     % set params

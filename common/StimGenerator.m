@@ -231,12 +231,13 @@ function stim = analogPulse(varargin)
         || (params.duration == -1 && (params.rampOn + params.RampDown > StimGenerator.TicksToMs(length(stim), params.sampleRate)))
         error('invalid parameters for stimulus: ramp duration must fit within overall duration');
     end
-
-    rampUpTicks = StimGenerator.MsToTicks(params.rampOn, params.sampleRate);
-    rampDownTicks = StimGenerator.MsToTicks(params.rampOff, params.sampleRate);
-    stim(1:rampUpTicks+1) = linspace(params.baseAmp, params.pulseAmp, rampUpTicks);
-    stim(rampUpTicks+1:length(stim)-rampDownTicks) = params.pulseAmp;
-    stim(end-rampDownTicks:end) = linspace(params.pulseAmp, params.minAmp, rampDownTicks);
+    
+    stim(:) = params.pulseAmp;
+    % rampUpTicks = StimGenerator.MsToTicks(params.rampOn, params.sampleRate);
+    % rampDownTicks = StimGenerator.MsToTicks(params.rampOff, params.sampleRate);
+    % stim(1:rampUpTicks+1) = linspace(params.baseAmp, params.pulseAmp, rampUpTicks);
+    % stim(rampUpTicks+1:length(stim)-rampDownTicks) = params.pulseAmp;
+    % stim(end-rampDownTicks:end) = linspace(params.pulseAmp, params.minAmp, rampDownTicks);
 
     if params.display
         StimGenerator.show(stim);
@@ -539,7 +540,7 @@ function stim = piezoStim(varargin)
     end
 
     stim = StimGenerator.GetBase(params.totalTicks, params.duration, params.sampleRate);
-
+    tax = linspace(1/params.sampleRate, length(stim)/params.sampleRate, length(stim));
     ramp = params.ramp;
     piezoAmp = params.amplitude * StimGenerator.Aurorasf; piezoAmp = min([piezoAmp 9.5]);  %added a safety block here 2024.11.15
     piezostimunitx = -ramp:ramp;

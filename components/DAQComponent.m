@@ -416,10 +416,26 @@ function LoadTrialFromParams(obj, componentTrialData, genericTrialData, preloadD
         % if strcmpi(lower(params.params.Type), 'pwm') && obj.ChannelMap
         stim = StimGenerator.GenerateStimTrain(componentTrialData.(fieldName), genericTrialData, obj.SessionHandle.Rate);
         for idx = outIdxes
-            out(:,idx) = stim;
+            if strcmpi(fieldName, 'TwoPhotonStop') %todo INCREDIBLY cursed. fix.
+                out(end-5:end-4, idx) = 1 ;
+            elseif strcmpi(fieldName, 'TwoPhotonStart')
+                out(1, idx) = 1;
+            elseif strcmpi(fieldName, 'TwoPhotonNext')
+                out(3, idx) = 1;
+            else
+                out(:,idx) = stim;
+            end
         end
         for idx = chIdxes
-            previewOut(:, idx) = stim;
+            if strcmpi(fieldName, 'TwoPhotonStop') %todo INCREDIBLY cursed. fix.
+                previewOut(end-5:end-4, idx) = 1;
+            elseif strcmpi(fieldName, 'TwoPhotonStart')
+                previewOut(1, idx) = 1;
+            elseif strcmpi(fieldName, 'TwoPhotonNext')
+                previewOut(1, idx) = 1;
+            else
+                previewOut(:, idx) = stim;
+            end
         end
     end
     obj.PreviewData = previewOut;

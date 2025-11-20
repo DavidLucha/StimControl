@@ -94,6 +94,7 @@ else
                     obj.trialNum = 1;
                     cellfun(@(c) c.Stop(), obj.d.activeComponents);
                 end
+                obj.f.runningExperiment = false;
                 obj.status = 'no protocol loaded';
             case 'running'
                 %% Trial running
