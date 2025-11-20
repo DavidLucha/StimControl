@@ -12,7 +12,7 @@ Logic for ending a session is a bit janky, creates bonus folders in the other di
 
 change errormsg function - put it somewhere else!
 
-
+add time to daq channel names savings at start
 
 check session params works (again)
 add support for sub-targeting on DAQs (e.d. Widefield1-Trigger)
@@ -35,3 +35,11 @@ cameras saving a weird number of things - fixed??
 - fix the over-saving bug (I think done but test)
 - dry runs and stress testing (done?)
 QST multi-stim stuff?
+
+
+
+
+**CLARISSA NOTES**
+post-trial summary of relevant data: frames sent vs frames received?
+** A WARNING IF THEY DON'T MATCH
+

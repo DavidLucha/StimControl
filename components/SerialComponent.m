@@ -298,7 +298,7 @@ function status = GetSessionStatus(obj)
     persistent prevTemp;
     persistent prevTested;
     stat = sscanf(obj.query('Og'), '%d+%d+%d+%d+%d+%d\n%d');
-    if isempty(stat)
+    if isempty(stat) || length(stat) < 5
         status = "unconnected";
         return;
     end
