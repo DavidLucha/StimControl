@@ -500,7 +500,7 @@ for idxTrial = 1:length(trialParams)
         end
     end
     plotTree(tree, stack, line, idxTrial);
-    tree = CleanTree(tree)
+    tree = CleanTree(tree);
     trial.data = tree;
     trial.generateParamsSequence;
     trials{end+1} = trial;
