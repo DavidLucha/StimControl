@@ -507,6 +507,7 @@ for idxTrial = 1:length(trialParams)
 end
 p = [trials{:}];
 
+%TODO ADD oddRand and oddSeq to this!!
 function CleanTree(tree)
     idxesToRemove = [];
     newChildren = repmat({}, [1 length(tree)]);
