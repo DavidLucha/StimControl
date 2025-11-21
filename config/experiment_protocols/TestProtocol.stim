@@ -47,8 +47,8 @@
 %                     (guaranteed equal total occurrences)
 % 
 % Oddball stimulus blocks require the following arguments to also be set:
-%     * OddDistrX         - distribution method (1=even, 2=random, 3=semirandom)
-%     * OddMinSwapDistX   - only if OddDistr3 - minimum occurrences of baseline
+%     * OddDistrX         - distribution method (0=even, 1=random, 2=semirandom)
+%     * OddMinDistX       - only if OddDistr3 - minimum occurrences of baseline
 %                             between oddball swaps.
 %     
 % ------------------SECTION 3: STIMULUS DEFINITIONS---------------
@@ -147,10 +147,14 @@
 nProtRuns2 rand1 dPause30 tPre2000 tPost5000
 
 ~ % Start Trial Definitions 
-(CameraTrigger & TwoSecWarm )    % 2 second warm
 CameraTrigger & TwoSecCool     % 2 second cool
-CameraTrigger & (TwoSecWarm ^.5 TwoSecCool OddDistr1) % oddball cool warm
-CameraTrigger & (TwoSecWarm > TwoSecCool StartDel1000) % sequential and start delay
+(CameraTrigger & (TwoSecWarm) )    % 2 second warm
+(CameraTrigger & TwoSecWarm )    % 2 second warm
+CameraTrigger & ((TwoSecWarm > TwoSecCool) & PWMUnclocked) % oddball cool warm
+CameraTrigger & (((TwoSecWarm > TwoSecCool)) & PWMUnclocked) % oddball cool warm
+CameraTrigger & (TwoSecWarm ^.5 TwoSecCool OddDistr2 OddMinDist3 nStims10 RepDel10) % oddball cool warm
+CameraTrigger & (TwoSecWarm ^.5 (TwoSecCool |> TwoSecWarm) OddDistr2 OddMinSwapDist3 nStims10 RepDel10) % sequential oddball cool warm
+CameraTrigger & (TwoSecWarm > TwoSecCool > TwoSecWarm StartDel1000) % sequential and start delay
 TwoSecWarm > TwoSecCool % warm > cool
 
 ~ % Start Stimulus Definitions
@@ -163,3 +167,6 @@ PWMUnclocked(PWM)[GPIO0]: DC90 Freq30 Dur1000 RampOnDur50 RampOffDur50
 PWMClocked(PWM)[GPIO1]: DC90 Freq30 Dur1000 
 ArbitraryNoInterp(arbitrary)[ao0]: arbitrary.astim 
 ArbitraryInterp(arbitrary)[ao0]: arbitrary.astim Interp1 Dur2000
+
+%TODO THIS
+%Acquisitions: CameraTrigger TwoPhotonStart TwoPhotonStop TwoPhotonNext

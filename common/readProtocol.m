@@ -29,30 +29,22 @@ g = struct(...              % general parameters
     'dPause',               5,...
     'nProtRuns',            1,...
     'rand',                 0);
-trial = struct( ...
+defaultTrial = struct( ...
     'nRuns',                1, ...
     'tPre',                 1000, ...
     'tPost',                5000);
-stimBlock = struct( ...
-    'nStims',               1, ...
-    'repDel',               0, ...
-    'startDel',             0);
 
-% function st1 = mergeStructs(st1, st2)
-%     fs = fields(st2);
-%     for i = 1:length(fs)
-%         if ~isfield(st1, fs{i})
-%             st1.(fs{i}) = st2.(fs{i});
-%         end
-%     end
-% end
+validTrialParams = struct("tPre", false, ... % param and whether it's already been initialised
+    "tPost", false, ...
+    "nTrialRuns", false);
 
-% standardStimStruct = struct( ...
-%     'type', '', ...
-%     'identifier', '', ...
-%     'targetDevices', [], ...
-%     'isAcquisitionTrigger', false, ...
-%     'duration', 0);
+validStimBlockParams = struct(...
+    "OddDistr", false, ...
+    "OddMinDist", false, ...
+    "repDel", false, ...
+    "nStims", false, ...
+    "startDel", false);
+
 BaseStimStructs = struct(...
     'qst', struct( ...
         'identifier', 'QST', ....
@@ -209,13 +201,10 @@ validProtocolParams = struct(... %fields: valid params in protocol file. values:
         'PW', 'pulseWidth'));
 
 oddballParams = struct(...
-    'distributionMethod', 'random', ... %even / random / semirandom
+    'distributionMethod', 'random', ... %0=even / 1=random / 2=semirandom 
     'minSwapDist', 0, ...
     'swapRatio', 0.5, ...
     'oddballRel', 'rand'); % rand / seq - | or |> 
-
-% %% Finish initialising.
-% p = repmat(p,1,1000);
 
 splitIdxes = find(startsWith(lines, '~'));
 if length(splitIdxes) ~= 2
@@ -259,17 +248,17 @@ if splitIdxes(1) > 1
                 case 'ntrialruns'
                     validateattributes(val,{'numeric'},{'nonnegative'},...
                         mfilename,token)
-                    trial.nRuns = val;
+                    defaultTrial.nRuns = val;
                     continue
                 case 'tpre'
                     validateattributes(val,{'numeric'},{'nonnegative'},...
                         mfilename,token)
-                    trial.tPre = val;
+                    defaultTrial.tPre = val;
                     continue
                 case 'tpost'
                     validateattributes(val,{'numeric'},{'nonnegative'},...
                         mfilename,token)
-                    trial.tPost = val;
+                    defaultTrial.tPost = val;
                 continue
             end
         end
@@ -282,7 +271,11 @@ stimuli = [];
 %% parse stimulus definitions
 for idxStim = 1:length(stimDefinitions)
     line = stimDefinitions{idxStim};
-    tmp = regexpi(line, '([A-z])*\((\w)+\)\[((\w)(-\w)?,? ?)+\]: ?(.*)(%.*)?', 'tokens', 'once'); %todo support for only targeting Widefield1-Trigger, for e.g.
+    % todo support for targeting specific channels connected to the same defice (e.g. Widefield1_Trigger)
+    % note - this is way harder than it sounds. We're gonna name our channels individually for now.
+    tmp = regexpi(line, '([A-z])*\((\w)+\)\[((\w)(-\w)?,? ?)+\]: ?(.*)(%.*)?', 'tokens', 'once'); 
+    % note to future devs: sorry about this ^. There are some regex testers out there that can help with reading this.
+    % I've been using https://regexr.com/
     [stimID, stimType, targets, params, comment] = tmp{:};
     stimType = lower(stimType);
     if isfield(stimuli, stimID)
@@ -330,90 +323,249 @@ for idxStim = 1:length(stimDefinitions)
             end
     end
     stimuli.(stimID) = stimStruct;
-    stimuli.(stimID).targets = string(targets); % todo convert to array of strings if length > 1
+    if contains(targets, ',')
+        targets = string(strtrim(split(targets, ',')))';
+    end
+    stimuli.(stimID).targetDevices = string(targets); % todo convert to array of strings if length > 1
 end
 
-%% Parse trials
+trials = {};
+%% Parse trials (eek!)
 for idxTrial = 1:length(trialParams)
-    % s = {StimulusBlock('childIdxes', [2 3]), ... 
-    %         StimulusBlock('stimParams', cameraTriggerStruct), ...
-    %         StimulusBlock('childIdxes', [4 5 6], 'startDelay', td.tPre), ...
-    %         StimulusBlock('stimParams', qs), ...
-    %         StimulusBlock('stimParams', ls), ...
-    %         StimulusBlock('stimParams', ps)};
-    trialNodes = {};
-    trialNodeIdxes = [];
-    trialNodeChildren = [];
+    % initialise
     line = trialParams{idxTrial};
     [params, comment] = strtok(line, '%');
     params = strtrim(params);
-    comment = strtrim(comment);
-    closeIdxes = strfind(params, ')');
-    openIdxes = strfind(params, '(');
-    if length(openIdxes) ~= length(closeIdxes)
-        error("Unmatched bracket on trial line %d (%s)", idxTrial, comment);
-    end
-    nBracketPairs = length(closeIdxes);
-    if nBracketPairs ~= 0
-        for i = 1:nBracketPairs
-            closeIdx = closeIdxes(1);
-            tmp = linspace(1, length(openIdxes), length(openIdxes));
-            openIdx = max(tmp(openIdxes < closeIdx));
-            substring = params(openIdx+1:closeIdx-1);
-            trialNodes{end} = ConstructStimSubtree(substring, trialNodes, trialNodeIdxes, trialNodeChildren, idxTrial, comment); %todo might be a series of nodes!!
-            trialNodeNames.(['trialNode_' char(48+i)]) = length(trialNodes);
-            params = [params(1:openIdx) 'trialNode_' char(48+i) params(closeIdx:end)];
+    comment = strtrim(comment(2:end));
+    trialParamsTracker = validTrialParams;
+    
+    % Sanitise line (add spaces around everything)
+    sepQuery = '&|>|(\|>)|(\^\.\d?)';
+    [startIdxes, endIdxes] = regexpi(params, [sepQuery '|\)|\(']);
+    for i = 0:length(startIdxes)-1
+        l = length(startIdxes);
+        startIdx = startIdxes(l-i);
+        endIdx = endIdxes(l-i);
+        if endIdx ~= length(params) && ~strcmpi(params(endIdx + 1), ' ')
+            params = insertAfter(params, endIdx, ' ');
+        end
+        if startIdx ~= 1 && ~strcmpi(params(startIdx - 1), ' ')
+            params = insertBefore(params, startIdx, ' ');
         end
     end
-    find(params, ')');
-end
 
-function [Nodes, Idxes, Children] = ConstructStimSubtree(params, Nodes, Idxes, Children, idxTrial, Comment)
-    sepQuery = ' ?(&|>|(\|>)|(\^\.\d?))? ?';
-    if ~regexpi(params, sepQuery)
-        error("Syntax error in trial line %d (%s): Individual stimuli should not be placed in brackets.", idxTrial, Comment);
-    end
-    params = strtrim(params);
-    separators = regexpi(params, sepQuery, 'tokens');
-    separators = [separators{:}];
-    if any(cellfun(@(c) ~strcmpi(c, separators{1}), separators))
-        error("Syntax error in trial line %d (%s): Only one relationship type may exist per stim block", idxTrial, Comment);
-    end
-    rln = separators{1};
-    tokens = regexpi(params, ['(\w*\d*)' sepQuery '(\w*\d*))*'], 'tokens', 'once');
-    for idxTok = 1:length(tokens)
-        subtok = regexpi(tokens(idxTok), ['(' sepQuery ')?' '(\w*)(\d+)?'], 'tokens', 'once');
-        subtok = subtok{:};
-        [~, tknName, value] = subtok{:};
-        switch tknName
-            case 'tPre'
+    % initialise stack vars
+    trial = TrialData( ...
+        'tPre', defaultTrial.tPre, ...
+        'tPost', defaultTrial.tPost, ...
+        'nRuns', defaultTrial.nRuns, ...
+        'comment', comment);
+    stack = java.util.Stack;
+    stack.push(1); % push root node index to stack
+    tree = {StimulusBlock()};
 
-            case 'tPost'
+    paramTokens = split(params, ' ');
 
-            case 'startDel'
-
-            case 'repDel'
-
-            case 'nTrialRuns'
-
-            case 'nStims'
-
-            case 'oddDistr'
-
-            case 'minSwapDist'
-
-            otherwise
-                if ~isfield(stimuli, tkName)
-                    error("Invalid parameter on trial definition line %d: %s. " + ...
-                        "Parameters must be a stimulis defined in the stimulus section " + ...
-                        "or one of the following: %s", idxTrial, tkName, ...
-                        GetListFromArray({"tPre", "tPost", "nTrialRuns", "oddDistr", "minSwapDist", "repDel", "nStims", "startDel"}));
+    % ENTER THE STACK ZONE
+    for i = 1:length(paramTokens)
+        token = paramTokens{i};
+        [name, value] = regexpi(token, '(\w*)(\d*)', 'tokens');
+        value = str2double(value);
+        currentParentIdx = stack.pop();
+        currentParent = tree{currentParentIdx};
+        % do the stuff that doesn't require parsing first because otherwise we'll throw an error
+        if token == '('
+            % Start of a new block. Make a new parent node.
+            stack.push(currentParentIdx);
+            tree{end+1} = StimulusBlock();
+            currentParent.childIdxes(end+1) = length(tree);
+            tree{currentParentIdx} = currentParent;
+            stack.push(length(tree));
+            continue
+        elseif token == ')'
+            % End of a block. Remove the parent's index from the stack and
+            % update the next parent's child indices.
+            newParentIdx = stack.pop();
+            currentParent = tree{newParentIdx};
+            currentParent.childIdxes(end+1) = currentParentIdx;
+            currentParentIdx = newParentIdx;
+        elseif regexpi(token, sepQuery)
+            % Separator. Set parent's child relationship
+            if token(1) == '&'
+                childRel = 'sim';
+            elseif token(1) == '>'
+                childRel = 'seq';
+            elseif token(1) == '|'
+                if strcmpi(token, '|>')
+                    childRel = 'oddSeq'; %TODO IMPLEMENT IN STIMULUSBLOCK
+                else
+                    childRel = 'oddRan'; %TODO IMPLEMENT IN STIMULUSBLOCK
                 end
-                % set child node data
+            else % ^.X
+                childRel = 'odd';
+                currentParent.oddballParams.swapRatio = str2double(['0.' token(3:end)]);
+            end
+            if ~isempty(currentParent.childRel) && ~strcmpi(currentParent.childRel, childRel)
+                error("Syntax error in trial line %d (%s): Only one relationship type may exist per stim block. " + ...
+                    "In oddball paradigms with multiple oddballs, put all oddball " + ...
+                    "stimuli into their own bracket block within the oddball block."+ ...
+                    "(relationships defined: %s, %s)", ...
+                    idxTrial, comment, currentParent.childRel, childRel); 
+            else
+                currentParent.childRel = childRel;
+            end
+            % update parent in tree
+            tree{currentParentIdx} = currentParent;
+        elseif isfield(stimuli, token)
+            % leaf (stimulus) node. Create child node and push, add index to current parent
+            newNode = StimulusBlock('stimParams', stimuli.(token));
+            tree{end+1} = newNode;
+            currentParent.childIdxes(end+1) = length(tree);
+            tree{currentParentIdx} = currentParent;
+        elseif isfield(trialParamsTracker, name)
+            % set trial data (and check it hasn't already been set)
+            if trialParamsTracker.(name)
+                error("Invalid syntax on trial line %d (%s): %s can only be defined once per trial.", ...
+                    idxTrial, comment, name);
+            else
+                trialParamsTracker.(name) = true;
+                trial.(name) = value; % todo check this works all the time, I think it does
+            end
+        elseif isfield(validStimBlockParams, name)
+            % params for current parent! set em.
+            switch lower(name)
+                case 'odddistr'
+                    % some syntax checking
+                    if ~strcmpi(currentParent.childRel, 'odd')
+                        % gotta be an oddball to use this
+                        error("Invalid syntax on trial definition line %d (%s): " + ...
+                            "OddDistrX is set, but the relationship for its stimulus block is not oddball (^.X)", idxTrial, comment);
+                    end
+                    if value == 0
+                        currentParent.oddParams.distributionMethod = 'even';
+                    elseif value == 1
+                        currentParent.oddParams.distributionMethod = 'random';
+                    elseif value == 2
+                        if (~isfield(currentParent.oddParams, 'distributionMethod') || ...
+                            currentParent.oddParams.distributionMethod(1) ~= 's') && ...
+                            ~contains(lower(params), 'oddmindist')
+                                % can't set semirandom without also setting a minimum distance
+                                error("Invalid syntax on trial definition line %d (%s): " + ...
+                                    "to make oddball distribution semirandom, you must also define the minimum distance between oddballs using OddMinDistX. " + ...
+                                    "Add this parameter or change to another OddDistr (0=even, 1=random, 2=semirandom)", idxTrial, comment);
+                        end
+                    else
+                        error("Invalid syntax on trial definition line %d (%s): " + ...
+                            "OddDistrX accepts X values 0=even, 1=random, 2=semirandom", idxTrial, comment);
+                    end
+                case 'oddmindist'
+                    % some syntax checking.
+                    if ~strcmpi(currentParent.childRel, 'odd')
+                        % gotta be an oddball to use this
+                        error("Invalid syntax on trial definition line %d (%s): " + ...
+                            "OddMinDistX is set, but the relationship for its stimulus block is not oddball (^.X).", idxTrial, comment);
+                    elseif isfield(currentParent.oddParams, 'distributionMethod')
+                        % shouldn't be set! likely the wrong kind of oddball distribution method.
+                        error("Invalid syntax on trial definition line %d (%s): " + ...
+                            "OddMinDistX is set, but the OddDistr value for its stimulus block is not semirandom (OddDistr2).", idxTrial, comment);
+                    end
+                    currentParent.oddParams.distributionMethod = ['semirandom' char(string(value))];
+                case 'repdel'
+                    currentParent.repeatDelay = value;
+                case 'nstims'
+                    currentParent.nStimRuns = value;
+                case 'startdel'
+                    currentParent.startDelay = value;
+            end
+            tree{currentParentIdx} = currentParent;
+        else
+            % crime detected!
+             error("Invalid parameter on trial definition line %d (%s): %s. " + ...
+                "Parameters must be a stimulis defined in the stimulus section " + ...
+                "or one of the following: %s", idxTrial, comment, tkName, ...
+                GetListFromArray(fields(validTrialParams)));
+        end
+        % put parent back on the stack
+        stack.push(currentParentIdx);
+        % plotTree(tree, stack, comment, idxTrial);
+    end
+    % clear the stack - todo is this necessary?
+    while ~stack.empty
+        childIdx = stack.pop;
+        if ~stack.empty
+            parentIdx = stack.pop();
+            parent = tree{parentIdx};
+            parent.childIdxes(end+1) = childIdx;
+            stack.push(parentIdx);
         end
     end
+    plotTree(tree, stack, line, idxTrial);
+    tree = CleanTree(tree)
+    trial.data = tree;
+    trial.generateParamsSequence;
+    trials{end+1} = trial;
+end
+p = [trials{:}];
+
+function CleanTree(tree)
+    idxesToRemove = [];
+    newChildren = repmat({}, [1 length(tree)]);
+    idxOffsets = zeros([1 length(tree)]);
+    for ti =1:length(tree)
+        block = obj.StimulusBlocks{ti};
+        if isempty(block.childRel) && isempty(block.stimParams)
+            % this is an empty block!! kill it!!
+            newChildren{ti} = block.childIdxes;
+            idxesToRemove(end+1) = ti;
+            idxOffsets(ti:end) = idxOffsets(ti) - 1;
+        end
+    end
+    if ~isempty(idxesToRemove)
+        for ti = 1:length(obj.StimulusBlocks)
+            block = obj.StimulusBlocks{ti};
+            if ~isempty(block.childIdxes)
+                % check if any block children are going to be deleted. If
+                % yes, transfer that child's children.
+                blockNewChildren = newChildren{block.childIdxes};
+                for tj = 1:length(blockNewChildren)
+                    block.childIdxes = [block.childIdxes blockNewChildren{tj}];
+                end
+                % update childIdxes to new tree
+                block.childIdxes = block.childIdxes+idxOffsets(block.childIdxes);
+            end
+            tree{ti} = block;
+        end
+    end
+    % remove blank nodes.
+    tree{idxesToRemove} = [];
 end
 
+function plotTree(tree, stck, comment, trialIdx)
+    dat = zeros([1 length(tree)]);
+    labels = repmat({}, [1 length(tree)]);
+    for j = 1:length(tree)
+        node = tree{j};
+        if ~isempty(node.childIdxes)
+            dat(node.childIdxes) = j;
+        end
+        if ~isempty(node.stimParams)
+            target = strjoin(node.stimParams.targetDevices);
+            len = min([length(char(target)) 5]);
+            t = char(target);
+            target = string(t(1:len));
+        else
+            target = "";
+        end
+        labels{j} = sprintf("%d-%s-%s", j, string(node.childRel), target);
+    end
+    treeplot(dat);
+    [x,y] = treelayout(dat);
+    text(x + 0.02,y,labels);
+    title(sprintf("%s: %d", comment, trialIdx));
+    disp(stck);
+end
+
+%% Helper functions
 function stimStruct = ParseArbitrary(params, stimStruct, stimName)
     tmp = regexpi(tok, '^([A-Z]*)(\:)(.*)$', 'once', 'tokens');
     id = tmp{1};

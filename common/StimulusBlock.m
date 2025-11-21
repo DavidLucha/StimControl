@@ -1,7 +1,7 @@
 classdef StimulusBlock
 properties
     treeHandle  = [];   % TrialData, for indexing into children.
-    idx         = 1;        % int, if = 1, this is a root node.
+    idx         = 1;    % int, if == 1, this is a root node.
     repeatDelay = 0     % int, ms to wait between stim repeats
     startDelay  = 0;    % int, ms to wait after stim t=0 to start
     nStimRuns   = 1;    % int, number of times to run the stim within the block
@@ -21,7 +21,7 @@ properties
                             % oddballRel (rand / seq) - with multiple oddballs, 
                                 % defined whether the oddballs are randomly distributed or 
                                 % swapped in sequentially.
-    childRel    = 'sim';% [char], relationship between children. One of:
+    childRel    = '';   % [char], relationship between children. One of:
                             % odd (oddball, swap out child1 for child2 according to oddball params
                             % sim (simultaneous, children start at same time)
                             % seq (sequential, child1 starts after child2 finishes
@@ -160,8 +160,11 @@ methods
                     % offset for each child, greater possibility of
                     % miscalculating if you're doing stim duration in two
                     % places (here and StimGenerator: see TODO:SEQ)
+                    if iscell(f)
+                        f = f{:};
+                    end
                     singleStimParams.(f).sequence = ...
-                        [singleStimParams.(f).sequence traversedParam.(f).sequence+helperStruct.(f).offsetIdx]; 
+                        [singleStimParams.(f).sequence traversedParam.(f).sequence+helperStruct.(f).idxOffset]; 
                     singleStimParams.(f).delay = ...
                         [singleStimParams.(f).delay traversedParam.(f).delay+(totalDelay-helperStruct.(f).offsetMs)];
                     singleStimParams.(f).params = ...
