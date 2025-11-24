@@ -44,6 +44,7 @@ methods
         %   childRel    - [char], relationship between children. One of: 'odd', 'sim', 'seq'
         p = inputParser;
         addParameter(p, 'childIdxes', obj.childIdxes);
+        addParameter(p, 'parentIdx', obj.parentIdx);
         addParameter(p, 'repeatDelay', obj.repeatDelay, @(x) isnumeric(x));
         addParameter(p, 'startDelay', obj.startDelay, @(x) isnumeric(x));
         addParameter(p, 'nStimRuns', obj.nStimRuns, @(x) isnumeric(x));
@@ -195,7 +196,7 @@ methods
     end
 
     function isRootNode = isRootNode(obj)
-        isRootNode = obj.idx == 1;
+        isRootNode = obj.idx == obj.treeHandle.rootNodeIdx;
     end
 
     function isLeafNode = isLeafNode(obj)

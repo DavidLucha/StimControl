@@ -147,9 +147,9 @@
 nProtRuns2 rand1 dPause30 tPre2000 tPost5000
 
 ~ % Start Trial Definitions 
-CameraTrigger & TwoSecCool     % 2 second cool
-(CameraTrigger & (TwoSecWarm) )    % 2 second warm
-(CameraTrigger & TwoSecWarm )    % 2 second warm
+% CameraTrigger & TwoSecCool     % 2 second cool
+% (CameraTrigger & (TwoSecWarm) )    % 2 second warm
+% (CameraTrigger & TwoSecWarm )    % 2 second warm
 CameraTrigger & ((TwoSecWarm > TwoSecCool) & PWMUnclocked) % oddball cool warm
 CameraTrigger & (((TwoSecWarm > TwoSecCool)) & PWMUnclocked) % oddball cool warm
 CameraTrigger & (TwoSecWarm ^.5 TwoSecCool OddDistr2 OddMinDist3 nStims10 RepDel10) % oddball cool warm

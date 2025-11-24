@@ -359,7 +359,9 @@ for idxTrial = 1:length(trialParams)
         'tPre', defaultTrial.tPre, ...
         'tPost', defaultTrial.tPost, ...
         'nRuns', defaultTrial.nRuns, ...
-        'comment', comment);
+        'comment', comment, ...
+        'line', line, ...
+        'params', params);
     stack = java.util.Stack;
     stack.push(1); % push root node index to stack
     tree = {StimulusBlock()};
@@ -377,7 +379,7 @@ for idxTrial = 1:length(trialParams)
         if token == '('
             % Start of a new block. Make a new parent node.
             stack.push(currentParentIdx);
-            tree{end+1} = StimulusBlock();
+            tree{end+1} = StimulusBlock('parentIdx', currentParentIdx);
             currentParent.childIdxes(end+1) = length(tree);
             tree{currentParentIdx} = currentParent;
             stack.push(length(tree));
@@ -397,9 +399,9 @@ for idxTrial = 1:length(trialParams)
                 childRel = 'seq';
             elseif token(1) == '|'
                 if strcmpi(token, '|>')
-                    childRel = 'oddSeq'; %TODO IMPLEMENT IN STIMULUSBLOCK
+                    childRel = 'oddSeq';
                 else
-                    childRel = 'oddRan'; %TODO IMPLEMENT IN STIMULUSBLOCK
+                    childRel = 'oddRand';
                 end
             else % ^.X
                 childRel = 'odd';
@@ -418,7 +420,7 @@ for idxTrial = 1:length(trialParams)
             tree{currentParentIdx} = currentParent;
         elseif isfield(stimuli, token)
             % leaf (stimulus) node. Create child node and push, add index to current parent
-            newNode = StimulusBlock('stimParams', stimuli.(token));
+            newNode = StimulusBlock('stimParams', stimuli.(token), 'parentIdx', currentParentIdx);
             tree{end+1} = newNode;
             currentParent.childIdxes(end+1) = length(tree);
             tree{currentParentIdx} = currentParent;
@@ -489,59 +491,40 @@ for idxTrial = 1:length(trialParams)
         stack.push(currentParentIdx);
         % plotTree(tree, stack, comment, idxTrial);
     end
-    % clear the stack - todo is this necessary?
-    while ~stack.empty
-        childIdx = stack.pop;
-        if ~stack.empty
-            parentIdx = stack.pop();
-            parent = tree{parentIdx};
-            parent.childIdxes(end+1) = childIdx;
-            stack.push(parentIdx);
-        end
-    end
-    plotTree(tree, stack, line, idxTrial);
-    tree = CleanTree(tree);
+    stack
     trial.data = tree;
+    trial.RootNodeIdx = 1;
+    trial.PlotTree;
+    trial = trial.Clean;
+    trial.PlotTree;
+    % plotTree(tree, stack, line, idxTrial);
+    % tree = CleanTree(tree, stack, line, idxTrial, comment);
+    % plotTree(tree, stack, line, idxTrial);
+    % trial.data = tree;
     trial.generateParamsSequence;
     trials{end+1} = trial;
 end
 p = [trials{:}];
 
-%TODO ADD oddRand and oddSeq to this!!
-function CleanTree(tree)
-    idxesToRemove = [];
-    newChildren = repmat({}, [1 length(tree)]);
-    idxOffsets = zeros([1 length(tree)]);
-    for ti =1:length(tree)
-        block = obj.StimulusBlocks{ti};
-        if isempty(block.childRel) && isempty(block.stimParams)
-            % this is an empty block!! kill it!!
-            newChildren{ti} = block.childIdxes;
-            idxesToRemove(end+1) = ti;
-            idxOffsets(ti:end) = idxOffsets(ti) - 1;
-        end
-    end
-    if ~isempty(idxesToRemove)
-        for ti = 1:length(obj.StimulusBlocks)
-            block = obj.StimulusBlocks{ti};
-            if ~isempty(block.childIdxes)
-                % check if any block children are going to be deleted. If
-                % yes, transfer that child's children.
-                blockNewChildren = newChildren{block.childIdxes};
-                for tj = 1:length(blockNewChildren)
-                    block.childIdxes = [block.childIdxes blockNewChildren{tj}];
-                end
-                % update childIdxes to new tree
-                block.childIdxes = block.childIdxes+idxOffsets(block.childIdxes);
-            end
-            tree{ti} = block;
-        end
-    end
-    % remove blank nodes.
-    tree{idxesToRemove} = [];
+%% Helper functions
+
+function out = PreProcessLine(line, idxTrial, comment)
+    % preprocess line. Add spaces to line and validate syntax.
+
+    % check oddball syntax
+    % check only one relationship per stimulus block.
+    % check brackets match
+    % check trialParams are only defined once
+    % check stimulusBlock params are only defined once per block.
+    % check all arguments are valid (either ( ) separator defined stimulus or valid param name.
+    % check same hardware isn't targeted simultaneously
+    % check no sequential acquisitionTriggers
+
+    %TODO error message with the little pointer thing. ^ 
 end
 
 function plotTree(tree, stck, comment, trialIdx)
+    % plot the stim tree. For debugging purposes.
     dat = zeros([1 length(tree)]);
     labels = repmat({}, [1 length(tree)]);
     for j = 1:length(tree)
@@ -566,7 +549,6 @@ function plotTree(tree, stck, comment, trialIdx)
     disp(stck);
 end
 
-%% Helper functions
 function stimStruct = ParseArbitrary(params, stimStruct, stimName)
     tmp = regexpi(tok, '^([A-Z]*)(\:)(.*)$', 'once', 'tokens');
     id = tmp{1};
