@@ -1,4 +1,10 @@
 
+
+****TODO TOMORROW: THE GOT DAM ACQUISITION TRIGGERS AND STIMULUS TRIGGERS WITH A DIFFERENT START TIME: SET THE ROOT NODE UP TO JUST ALWAYS HAVE ONE OF EACH.****
+****ALSO GET THE STRING VALIDATION WORKING SO YOU CAN YELL AT PEOPLE WHO PUT UNNECESSARY BRACKETS AROUND THE WHOLE THING****
+
+
+
 Configurable visualisation layout!!
 - save preview plot settings to session params
 - document them a non-coder is going to look at this and HATE it
