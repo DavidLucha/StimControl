@@ -45,7 +45,6 @@ function obj = TrialData(varargin)
     addParameter(p, 'line', obj.line);
     addParameter(p, 'stimuli', obj.stimuli);
     addParameter(p, 'comment', obj.stimuli);
-    addParameter(p, 'params', obj.stimuli);
     parse(p, varargin{:});
     for fn = fieldnames(p.Results)'
         obj.(fn{1}) = p.Results.(fn{1});
@@ -89,6 +88,9 @@ function trialParams = generateParamsSequence(obj)
     rootNode = obj.RootNode;
     obj.params = rootNode.buildParams;
     trialParams = obj.params;
+    % DEBUG: TODO REMOVE
+    obj.PlotTree;
+    % END DEBUG
     obj.data = {};
 end
 
@@ -131,7 +133,33 @@ function PlotTree(obj)
     treeplot(dat);
     [x,y] = treelayout(dat);
     text(x + 0.02,y,labels);
-    title(sprintf("%s: %d", obj.comment, obj.trialIdx));
+    % title(sprintf("%s: %d", obj.comment, obj.trialIdx));
+    title(obj.line);
+    if ~isempty(obj.params)
+        [baseTable, paramsTables] = obj.PrintParams;
+        colWidths = {'1x'};
+        rowHeights = repmat({'1x'}, [length(paramsTables) 1]);
+        f = uifigure();
+        baseGrid = uigridlayout(f, 'ColumnWidth', {'1x'}, 'RowHeight', {'1x', '1x'});
+        tinyGrid = uigridlayout(baseGrid, 'Layout', ...
+            matlab.ui.layout.GridLayoutOptions( ...
+                'Row', 2, ...
+                'Column', 1), ...
+            'ColumnWidth', colWidths, ...
+            'RowHeight', rowHeights);
+        tb = uitable(baseGrid, 'Layout', ...
+            matlab.ui.layout.GridLayoutOptions( ...
+                'Row', 1, ...
+                'Column', 1), ...
+            'Data', baseTable);
+        for i = 1:length(paramsTables)
+            tb = uitable(tinyGrid, 'Layout', ...
+            matlab.ui.layout.GridLayoutOptions( ...
+                'Row', i, ...
+                'Column', 1), ...
+            'Data', paramsTables{i});
+        end
+    end
 end
 
 %% line parsing functions
@@ -151,6 +179,23 @@ function obj = Clean(obj)
         block = tree{ti};
         if (isempty(block.childRel) && isempty(block.stimParams)) || ...
                 (strcmpi(block.childRel, 'oddSeq') || strcmpi(block.childRel, 'oddRand'))
+            if strcmpi(block.childRel, 'oddSeq') || strcmpi(block.childRel, 'oddRand')
+                parent = tree{block.parentIdx};
+                % pass relevant oddball params up.
+                if ~strcmpi(parent.childRel, 'odd')
+                     error("Invalid syntax on trial definition line %d (%s). " + ...
+                        "|> and | operators are only valid in the context of an oddball relationship. " + ...
+                        "Appropriate syntax: A ^.X (B |> C) nStimsX ...", obj.trialIdx, obj.comment);
+                end
+                parent.oddParams.oddballRel = lower(char(block.childRel(4:end)));
+                tree{block.parentIdx} = parent;
+            elseif block.repeatDelay ~= 0 || block.startDelay ~= 0 || block.nStimRuns ~= 1
+                % not actually an empty block. define child relationship
+                % and continue.
+                block.childRel = 'sim';
+                tree{ti} = block;
+                continue
+            end
             % EMPTY BLOCK.
             % move child indices to parent
             if isempty(block.parentIdx)
@@ -167,20 +212,11 @@ function obj = Clean(obj)
                         "Root node has multiple children but no relationship assigned.", ...
                         obj.trialIdx, obj.comment);
                 end
-                continue
             end
             parent = tree{block.parentIdx};
             parent.childIdxes = [parent.childIdxes block.childIdxes];
             parent.childIdxes(parent.childIdxes == ti) = [];
-            if contains(block.childRel, 'odd')
-                % pass relevant oddball params up.
-                if ~strcmpi(parent.childRel, 'odd')
-                     error("Invalid syntax on trial definition line %d (%s). " + ...
-                        "|> and | operators are only valid in the context of an oddball relationship. " + ...
-                        "Appropriate syntax: A ^.X (B |> C) nStimsX ...", obj.trialIdx, obj.comment);
-                end
-                parent.oddParams.oddRel = lower(char(block.chilRel(4:end)));
-            end
+
             % put altered block back into data
             tree{block.parentIdx} = parent;
             % move parent indices to children
@@ -196,6 +232,23 @@ function obj = Clean(obj)
         end
     end
     obj.StimulusBlocks = tree;
+end
+
+function [tbl, tables] = PrintParams(obj)
+    fs = fields(obj.params);
+    tables = {};
+    tblData = repmat({}, length(fs), 3);
+    for fi = 1:length(fs)
+        fieldName = fs{fi};
+        dat = obj.params.(fs{fi});
+        tblData{fi, 1} = fieldName;
+        tblData{fi, 2} = dat.sequence;
+        tblData{fi, 3} = dat.delay;
+        tbl = struct2table(obj.params.(fs{fi}).params, 'AsArray', true);
+        tables{fi} = tbl;
+    end
+    tbl = cell2table(tblData);
+    tbl.Properties.VariableNames = {'Target', 'Sequence', 'Delay'};
 end
 end
 

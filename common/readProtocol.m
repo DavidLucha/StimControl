@@ -41,9 +41,9 @@ validTrialParams = struct("tPre", false, ... % param and whether it's already be
 validStimBlockParams = struct(...
     "OddDistr", false, ...
     "OddMinDist", false, ...
-    "repDel", false, ...
+    "RepDel", false, ...
     "nStims", false, ...
-    "startDel", false);
+    "StartDel", false);
 
 BaseStimStructs = struct(...
     'qst', struct( ...
@@ -267,6 +267,7 @@ if splitIdxes(1) > 1
 end
 
 stimuli = [];
+acquisitionTriggers = [];
 
 %% parse stimulus definitions
 for idxStim = 1:length(stimDefinitions)
@@ -327,9 +328,13 @@ for idxStim = 1:length(stimDefinitions)
         targets = string(strtrim(split(targets, ',')))';
     end
     stimuli.(stimID).targetDevices = string(targets); % todo convert to array of strings if length > 1
+    if stimuli.(stimID).isAcquisitionTrigger
+        acquisitionTriggers.(stimID) = stimuli.(stimID);
+    end
 end
 
 trials = {};
+% TODO HANDLE ACQUISITION TRIGGERS
 %% Parse trials (eek!)
 for idxTrial = 1:length(trialParams)
     % initialise
@@ -360,8 +365,7 @@ for idxTrial = 1:length(trialParams)
         'tPost', defaultTrial.tPost, ...
         'nRuns', defaultTrial.nRuns, ...
         'comment', comment, ...
-        'line', line, ...
-        'params', params);
+        'line', line);
     stack = java.util.Stack;
     stack.push(1); % push root node index to stack
     tree = {StimulusBlock()};
@@ -371,8 +375,14 @@ for idxTrial = 1:length(trialParams)
     % ENTER THE STACK ZONE
     for i = 1:length(paramTokens)
         token = paramTokens{i};
-        [name, value] = regexpi(token, '(\w*)(\d*)', 'tokens');
-        value = str2double(value);
+        name = []; value = [];
+        tmp = regexpi(token, '([A-z]*)(\d*)', 'tokens');
+        if ~isempty(tmp)
+            tmp = tmp{:};
+            name = tmp{1};
+            value = tmp{2};
+            value = str2double(value);
+        end
         currentParentIdx = stack.pop();
         currentParent = tree{currentParentIdx};
         % do the stuff that doesn't require parsing first because otherwise we'll throw an error
@@ -405,7 +415,7 @@ for idxTrial = 1:length(trialParams)
                 end
             else % ^.X
                 childRel = 'odd';
-                currentParent.oddballParams.swapRatio = str2double(['0.' token(3:end)]);
+                currentParent.oddParams.swapRatio = str2double(['0.' token(3:end)]);
             end
             if ~isempty(currentParent.childRel) && ~strcmpi(currentParent.childRel, childRel)
                 error("Syntax error in trial line %d (%s): Only one relationship type may exist per stim block. " + ...
@@ -421,6 +431,7 @@ for idxTrial = 1:length(trialParams)
         elseif isfield(stimuli, token)
             % leaf (stimulus) node. Create child node and push, add index to current parent
             newNode = StimulusBlock('stimParams', stimuli.(token), 'parentIdx', currentParentIdx);
+            %% TODO SEPARATE OUT ACQUISITION TRIGGERS HERE
             tree{end+1} = newNode;
             currentParent.childIdxes(end+1) = length(tree);
             tree{currentParentIdx} = currentParent;
@@ -482,21 +493,22 @@ for idxTrial = 1:length(trialParams)
             tree{currentParentIdx} = currentParent;
         else
             % crime detected!
+            if iscell(name)
+                name = name{:};
+            end
              error("Invalid parameter on trial definition line %d (%s): %s. " + ...
                 "Parameters must be a stimulis defined in the stimulus section " + ...
-                "or one of the following: %s", idxTrial, comment, tkName, ...
+                "or one of the following: %s", idxTrial, comment, name, ...
                 GetListFromArray(fields(validTrialParams)));
         end
         % put parent back on the stack
         stack.push(currentParentIdx);
         % plotTree(tree, stack, comment, idxTrial);
     end
-    stack
     trial.data = tree;
     trial.RootNodeIdx = 1;
     trial.PlotTree;
     trial = trial.Clean;
-    trial.PlotTree;
     % plotTree(tree, stack, line, idxTrial);
     % tree = CleanTree(tree, stack, line, idxTrial, comment);
     % plotTree(tree, stack, line, idxTrial);
@@ -511,6 +523,7 @@ p = [trials{:}];
 function out = PreProcessLine(line, idxTrial, comment)
     % preprocess line. Add spaces to line and validate syntax.
 
+    % check the whole thing isn't surrounded in one big bracket.
     % check oddball syntax
     % check only one relationship per stimulus block.
     % check brackets match

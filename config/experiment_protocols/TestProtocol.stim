@@ -34,8 +34,8 @@
 % 
 % As well as any number of stimulus blocks, connected by either either & or > 
 % and separated using brackets. Once per stimulus block, you can define: 
-%     * repDelXXXX    - Delay between repeats in ms. Default 0.
-%     * startDelXXXX  - Start delay from stimulus t=0
+%     * RepDelXXXX    - Delay between repeats in ms. Default 0.
+%     * StartDelXXXX  - Start delay from stimulus t=0
 %     * nStimsX       - Number of times to run. -1 will repeat to the end of tPost
 % 
 % Operators between stimulus blocks are: 
@@ -147,13 +147,14 @@
 nProtRuns2 rand1 dPause30 tPre2000 tPost5000
 
 ~ % Start Trial Definitions 
-% CameraTrigger & TwoSecCool     % 2 second cool
-% (CameraTrigger & (TwoSecWarm) )    % 2 second warm
-% (CameraTrigger & TwoSecWarm )    % 2 second warm
+CameraTrigger & TwoSecCool     % 2 second cool
+(CameraTrigger & (TwoSecWarm) )    % 2 second warm
+(CameraTrigger & TwoSecWarm )    % 2 second warm
 CameraTrigger & ((TwoSecWarm > TwoSecCool) & PWMUnclocked) % oddball cool warm
+CameraTrigger & ((TwoSecWarm > (TwoSecCool StartDel100)) & PWMUnclocked) % oddball cool warm
 CameraTrigger & (((TwoSecWarm > TwoSecCool)) & PWMUnclocked) % oddball cool warm
-CameraTrigger & (TwoSecWarm ^.5 TwoSecCool OddDistr2 OddMinDist3 nStims10 RepDel10) % oddball cool warm
-CameraTrigger & (TwoSecWarm ^.5 (TwoSecCool |> TwoSecWarm) OddDistr2 OddMinSwapDist3 nStims10 RepDel10) % sequential oddball cool warm
+CameraTrigger & (TwoSecWarm ^.2 TwoSecCool OddDistr2 OddMinDist1 nStims10 RepDel10) % oddball cool warm
+CameraTrigger & (TwoSecWarm ^.5 (TwoSecCool |> TwoSecWarm) OddDistr2 OddMinDist1 nStims10 RepDel10) % sequential oddball cool warm
 CameraTrigger & (TwoSecWarm > TwoSecCool > TwoSecWarm StartDel1000) % sequential and start delay
 TwoSecWarm > TwoSecCool % warm > cool
 
