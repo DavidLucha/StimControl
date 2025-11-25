@@ -92,6 +92,27 @@ methods
         end
     end
 
+    function out = FirstCommonParentIdx(obj, idx)
+        out = [];
+        objParents = obj.traverseParentIdxes;
+        altNode = obj.treeHandle{idx};
+        altParents = altNode.traverseParentIdxes;
+        for pIdx = objParents
+            if any(altParents == pIdx)
+                out = pIdx;
+                return
+            end
+        end
+    end
+
+    function out = traverseParentIdxes(obj)
+        out = [];
+        if ~isempty(obj.parentIdx)
+            parent = obj.treeHandle{obj.parentIdx};
+            out = [obj.parentIdx parent.traverseParentIdxes];
+        end
+    end
+
     function trialParams = buildParams(obj)
         % Builds a params sequence
         singleStimParams = [];
@@ -214,7 +235,9 @@ methods
     end
 
     function isLeafNode = isLeafNode(obj)
-        isLeafNode = length(obj.childIdxes)==0; %#ok<ISMT>
+        % returns whether the node is a **CONNECTED** leaf node. Ignores
+        % empty nodes that were removed on cleanup.
+        isLeafNode = ~isempty(obj.stimParams);
     end
 
     function allTargets = targets(obj)

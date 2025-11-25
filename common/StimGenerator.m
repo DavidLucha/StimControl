@@ -45,7 +45,7 @@ function stimTrain = GenerateStimTrain(componentTrialData, genericTrialData, sam
         interimStim = StimGenerator.GenerateStim(stimParams, sampleRate, stimTicks-startIdx);
         stimTrain(startIdx+1:startIdx+length(interimStim)) = interimStim; 
 
-        startIdx = startIdx + length(interimStim); %TODO:SEQ THIS AND IN StimulusBlock.BuildParams (explanation there)
+        startIdx = startIdx + length(interimStim); 
     end
 end
 
@@ -211,6 +211,8 @@ function stim = analogPulse(varargin)
     addParameter(p, 'rampOff', 0, @(x) isnumeric(x));
     addParameter(p, 'baseAmp', 5, @(x) isnumeric(x));
     addParameter(p, 'pulseAmp', 0, @(x) isnumeric(x));
+    addParameter(p, 'display', false, @(x) islogical(x));
+    addParameter(p, 'paramsStruct', [], @(x) isstruct(x));
     addParameter(p, 'display', false, @(x) islogical(x));
     addParameter(p, 'paramsStruct', [], @(x) isstruct(x));
     parse(p, varargin{:});

@@ -62,12 +62,21 @@
 %         SquareWave          Arbitrary       PWM             Arbitrary
 %         SineWave            AnalogNoise     Piezo           QST
 %         DigitalTrigger      AnalogPulse     DigitalPulse    Serial
+%         StimulusGroup
 %     * and params are defined per type as below:
 % 
 % By default, stimuli are assumed to begin at the start of tPost. Any stimulus can
 % be given the attribute AcquisitionTrigger to have it start at the start of tPre.
 % Note that X and x represent digits. X is an arbitrary number of digits, while
 % x denotes the precise number of digits that need to be given.
+% 
+% ---StimulusGroup---
+%     Special case. Targets should be set to 'none', and all arguments are the names of other functions. 
+%     Used for grouping acquisition triggers into a single function for readability.
+%     parsed as a stimulus definition that is then inserted as a simultaneous stimulus 
+%     with other definitions on the line.
+%     **NOTE: all StimulusGroups MUST be defined after all comprising stimuli
+%     have been defined. Failing to do this will throw an error.
 % 
 % ---AnalogPulse---
 %     * DurX          - Pulse duration (ms) -1=until end of stim
@@ -83,6 +92,8 @@
 % 
 % ---DigitalPulse---
 %     * DurX      - duration (ms) -1=until end of stim
+%     * FromEndX  - effectively whether to reverse this stimulus within its block. 
+%                       0=false, 1=true. Used for 'acquisition end' triggers. Default 0
 % 
 % ---DigitalTrigger---
 %     * PWX       - Pulse width (ms). Default 50% of period.
@@ -147,7 +158,7 @@
 nProtRuns2 rand1 dPause30 tPre2000 tPost5000
 
 ~ % Start Trial Definitions 
-CameraTrigger & TwoSecCool     % 2 second cool
+TwoSecCool & AcquisitionTriggers & AcqTrig    % 2 second cool
 (CameraTrigger & (TwoSecWarm) )    % 2 second warm
 (CameraTrigger & TwoSecWarm )    % 2 second warm
 CameraTrigger & ((TwoSecWarm > TwoSecCool) & PWMUnclocked) % oddball cool warm
@@ -155,19 +166,23 @@ CameraTrigger & ((TwoSecWarm > (TwoSecCool StartDel100)) & PWMUnclocked) % oddba
 CameraTrigger & (((TwoSecWarm > TwoSecCool)) & PWMUnclocked) % oddball cool warm
 CameraTrigger & (TwoSecWarm ^.2 TwoSecCool OddDistr2 OddMinDist1 nStims10 RepDel10) % oddball cool warm
 CameraTrigger & (TwoSecWarm ^.5 (TwoSecCool |> TwoSecWarm) OddDistr2 OddMinDist1 nStims10 RepDel10) % sequential oddball cool warm
-CameraTrigger & (TwoSecWarm > TwoSecCool > TwoSecWarm StartDel1000) % sequential and start delay
-TwoSecWarm > TwoSecCool % warm > cool
+AcquisitionTriggers & (TwoSecWarm > TwoSecCool > TwoSecWarm StartDel1000) % sequential and start delay
 
 ~ % Start Stimulus Definitions
-
+% stimuli
 TwoSecWarm(QST)[GPIO2]: N320 S11000 C0420 V03000 R03000 D002000 T001 I1
 TwoSecCool(QST)[GPIO2]: N320 S11000 C0220 V03000 R03000 D002000 T001 I1
-CameraTrigger(DigitalTrigger)[Widefield1, Widefield2]: AcquisitionTrigger Freq20 Dur-1
 Sine(SineWave)[ao1]: Amp2 Freq20 Dur1000
 PWMUnclocked(PWM)[GPIO0]: DC90 Freq30 Dur1000 RampOnDur50 RampOffDur50
 PWMClocked(PWM)[GPIO1]: DC90 Freq30 Dur1000 
 ArbitraryNoInterp(arbitrary)[ao0]: arbitrary.astim 
 ArbitraryInterp(arbitrary)[ao0]: arbitrary.astim Interp1 Dur2000
 
-%TODO THIS
-%Acquisitions: CameraTrigger TwoPhotonStart TwoPhotonStop TwoPhotonNext
+% acquisition triggers
+CameraTrigger(DigitalTrigger)[Widefield1, Widefield2]: AcquisitionTrigger Freq20 Dur-1
+TwoPhotonStartNext(digitalPulse)[GPIO3, GPIO4]: Dur1 AcquisitionTrigger
+TwoPhotonStop(digitalPulse)[GPIO5]: Dur1 AcquisitionTrigger FromEnd1
+
+% grouped blocks
+AcquisitionTriggers(StimulusGroup)[none]: CameraTrigger & TwoPhotonStartNext & TwoPhotonStop
+AcqTrig(StimulusGroup)[none]: CameraTrigger & TwoPhotonStartNext

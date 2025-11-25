@@ -170,6 +170,16 @@ function PlotTree(obj)
     end
 end
 
+function leafIdxes = leafIdxes(obj)
+    leafIdxes = [];
+    for i = 1:length(obj.data)
+        node = obj.StimulusBlocks{i};
+        if node.isLeafNode
+            leafIdxes(end+1) = i;
+        end
+    end
+end
+
 %% line parsing functions
 function out = GetTrialDataFromLine(obj, line, stimuli)
     if ~isempty(line)
@@ -258,6 +268,29 @@ function [tbl, tables] = PrintParams(obj)
     end
     tbl = cell2table(tblData);
     tbl.Properties.VariableNames = {'Target', 'Sequence', 'Delay'};
+end
+
+function ValidateTree(obj)
+    % Check the tree is valid. 
+    leafIdxes = obj.leafIdxes;
+    
+    % validate leaf relationships
+    for i = 1:length(leafIdxes)
+        firstLeaf = obj.StimulusBlocks{leafIdxes(i)};
+        for j = i+1:length(leafIdxes)
+            secondLeaf = obj.StimulusBlocks{leafIdxes(j)};
+            commonParent = firstLeaf.FirstCommonParentIdx(leafIdxes(j));
+            par = obj.StimulusBlocks{commonParent};
+            % check no device / channel is targeted simultaneously by two commands.
+            similarityMatrix = secondLeaf.stimParams.targetDevices == firstLeaf.stimParams.targetDevices';
+            if any(similarityMatrix) && strcmpi(par.childRel, 'sim')
+                
+                error("Device targeted twice simultaneously in trial definition %d (%s): %s. ", ...
+                    obj.trialIdx, obj.comment, strjoin(secondLeaf.stimParams.targetDevices(logical(sum(similarityMatrix)))));
+            end
+
+        end
+    end
 end
 end
 
