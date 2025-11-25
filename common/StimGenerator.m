@@ -4,8 +4,12 @@ properties (Constant)
     % Constants for use in calculations. May change depending on specific
     % lab hardware.
     Aurorasf = 52;
-
 end
+
+% NOTE: for information on how the passed parameters are expected to be set
+% up, see common/readProtocol. I don't want a bunch of comment redundancy
+% while this is still in development (TODO: documentation once this has
+% stopped being in development)
 
 methods (Static, Access=public)
 
@@ -26,15 +30,6 @@ function stimTrain = GenerateStimTrain(componentTrialData, genericTrialData, sam
     
     stimTicks = numel(timeAxis);
     startIdx = 0;
-    
-    %this is done on generation - startDelay is just tPre
-    % if params.isAcquisitionTrigger
-    %     stimTicks = numel(timeAxis);
-    %     startIdx = 0;
-    % else
-    %     stimTicks = numel(timeAxis) - tPreLength;
-    %     startIdx = tPreLength;
-    % end
     
     for i = 1:length(componentTrialData.sequence)
         stimIdx = componentTrialData.sequence(i);
@@ -184,8 +179,15 @@ function stim = digitalPulse(varargin)
         params.display = display;
     end
 
-    stim = StimGenerator.GetBase(params.totalTicks, params.duration, params.sampleRate);
-    stim = ones(length(stim), 1);
+    if isfield(params, 'alignRight') && params.alignRight
+        stim = StimGenerator.GetBase(paramstotalTicks, -1, params.sampleRate);
+        durTicks = StimGenerator.MsToTicks(params.duration, params.sampleRate);
+        stim(end-durTicks:end) = 1;
+    else
+        stim = StimGenerator.GetBase(params.totalTicks, params.duration, params.sampleRate);
+        stim = ones(length(stim), 1);
+    end
+
     if params.display
         StimGenerator.show(stim);
     end
