@@ -136,10 +136,18 @@ function PlotTree(obj)
     % title(sprintf("%s: %d", obj.comment, obj.trialIdx));
     title(obj.line);
     if ~isempty(obj.params)
+        hFigs = findall(0,'type','figure');
+        if ~isempty(hFigs(strcmpi([hFigs.Name], 'treegrid')))
+            f = hFigs(strcmpi([hFigs.Name], 'treegrid'));
+            if ~matlab.ui.internal.isUIFigure(f)
+                f = uifigure('Name', 'treegrid', 'Position', f.Position);
+            end
+        else
+            f = uifigure('Name', 'treegrid');
+        end
         [baseTable, paramsTables] = obj.PrintParams;
         colWidths = {'1x'};
         rowHeights = repmat({'1x'}, [length(paramsTables) 1]);
-        f = uifigure();
         baseGrid = uigridlayout(f, 'ColumnWidth', {'1x'}, 'RowHeight', {'1x', '1x'});
         tinyGrid = uigridlayout(baseGrid, 'Layout', ...
             matlab.ui.layout.GridLayoutOptions( ...
@@ -178,7 +186,8 @@ function obj = Clean(obj)
     for ti =1:length(tree)
         block = tree{ti};
         if (isempty(block.childRel) && isempty(block.stimParams)) || ...
-                (strcmpi(block.childRel, 'oddSeq') || strcmpi(block.childRel, 'oddRand'))
+                (strcmpi(block.childRel, 'oddSeq') || strcmpi(block.childRel, 'oddRand')) || ...
+                (isempty(block.childIdxes) && isempty(block.stimParams))
             if strcmpi(block.childRel, 'oddSeq') || strcmpi(block.childRel, 'oddRand')
                 parent = tree{block.parentIdx};
                 % pass relevant oddball params up.
@@ -242,7 +251,7 @@ function [tbl, tables] = PrintParams(obj)
         fieldName = fs{fi};
         dat = obj.params.(fs{fi});
         tblData{fi, 1} = fieldName;
-        tblData{fi, 2} = dat.sequence;
+        tblData{fi, 2} = strcat(string(dat.sequence));
         tblData{fi, 3} = dat.delay;
         tbl = struct2table(obj.params.(fs{fi}).params, 'AsArray', true);
         tables{fi} = tbl;

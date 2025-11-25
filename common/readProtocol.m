@@ -334,7 +334,6 @@ for idxStim = 1:length(stimDefinitions)
 end
 
 trials = {};
-% TODO HANDLE ACQUISITION TRIGGERS
 %% Parse trials (eek!)
 for idxTrial = 1:length(trialParams)
     % initialise
@@ -367,8 +366,12 @@ for idxTrial = 1:length(trialParams)
         'comment', comment, ...
         'line', line);
     stack = java.util.Stack;
-    stack.push(1); % push root node index to stack
-    tree = {StimulusBlock()};
+    tree = {StimulusBlock('childRel', 'sim', 'childIdxes', [2 3]), ...  % root node
+        StimulusBlock('childRel', 'sim', 'parentIdx', 1), ...           % acquisition trigger node
+        StimulusBlock('parentIdx', 1)};                                 % stimulus trigger node
+    acquisitionIdx = 2;
+    stimNodeIdx = 3;
+    stack.push(stimNodeIdx); % push stim node index to stack
 
     paramTokens = split(params, ' ');
 
@@ -430,11 +433,26 @@ for idxTrial = 1:length(trialParams)
             tree{currentParentIdx} = currentParent;
         elseif isfield(stimuli, token)
             % leaf (stimulus) node. Create child node and push, add index to current parent
-            newNode = StimulusBlock('stimParams', stimuli.(token), 'parentIdx', currentParentIdx);
-            %% TODO SEPARATE OUT ACQUISITION TRIGGERS HERE
-            tree{end+1} = newNode;
-            currentParent.childIdxes(end+1) = length(tree);
-            tree{currentParentIdx} = currentParent;
+            % Unless acquisition trigger, in which case add to acquisitiontrigger node 
+            if stimuli.(token).isAcquisitionTrigger
+                if ~strcmpi(currentParent.childRel, 'sim') && ~isempty(currentParent.childRel) % todo this doesn't check the whole way up. Document that isAcquisitionTrigger is separate
+                    error("Syntax error in trial line %d (%s): " + ...
+                        "Stimuli marked as AcquisitionTrigger cannot occur within sequential or oddball relationships",  ...
+                        idxTrial, comment);
+                end
+                newNode = StimulusBlock('stimParams', stimuli.(token), ...
+                    'parentIdx', acquisitionIdx);
+                acqNode = tree{acquisitionIdx};
+                tree{end+1} = newNode;
+                acqNode.childIdxes(end+1) = length(tree);
+                tree{acquisitionIdx} = acqNode;
+            else
+                newNode = StimulusBlock('stimParams', stimuli.(token), ...
+                    'parentIdx', currentParentIdx);
+                tree{end+1} = newNode;
+                currentParent.childIdxes(end+1) = length(tree);
+                tree{currentParentIdx} = currentParent;
+            end
         elseif isfield(trialParamsTracker, name)
             % set trial data (and check it hasn't already been set)
             if trialParamsTracker.(name)
@@ -505,14 +523,13 @@ for idxTrial = 1:length(trialParams)
         stack.push(currentParentIdx);
         % plotTree(tree, stack, comment, idxTrial);
     end
+    stimRoot = tree{stimNodeIdx};
+    stimRoot.startDelay = stimRoot.startDelay + trial.tPre;
+    tree{stimNodeIdx} = stimRoot;
     trial.data = tree;
     trial.RootNodeIdx = 1;
     trial.PlotTree;
     trial = trial.Clean;
-    % plotTree(tree, stack, line, idxTrial);
-    % tree = CleanTree(tree, stack, line, idxTrial, comment);
-    % plotTree(tree, stack, line, idxTrial);
-    % trial.data = tree;
     trial.generateParamsSequence;
     trials{end+1} = trial;
 end
