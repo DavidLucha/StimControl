@@ -126,7 +126,7 @@ function updateComponentTableCell(src, event, obj)
             component.PreviewPlot.Parent.Parent.Visible = "off";
             component.StopPreview();
         end
-        %TODO automatically re-shuffle other preview plots to fill the gap.
+        %TODO automatically re-shuffle other preview plots to fill the gap?
     elseif strcmpi(property, "PRow") || strcmpi(property, "PColumn")
         property = property{:};
         property = property(2:end);

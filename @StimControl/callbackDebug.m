@@ -9,6 +9,7 @@ if src == obj.h.debugComponentBtn
     component.Debug;
     return
 end
+keyboard
 % obj.t.stop;
 % obj.t.start;
 path = 'C:\Users\labadmin\Desktop\logs\debug\251112\251112_161302_TempandVibe';
