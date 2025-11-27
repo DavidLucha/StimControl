@@ -124,6 +124,7 @@ methods (Access = private)
     callbackChangeTab(obj, src, event)
     callbackDebug(obj, src, event)
     callbackReload(obj, src, event)
+    callbackUpdateComponentTable(obj, src, event)
     
     % experiment control callbacks
     callbackLoadProtocol(obj, src, event)

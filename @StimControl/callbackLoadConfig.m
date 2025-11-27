@@ -87,6 +87,37 @@ function obj = LoadSessionConfig(obj, filepath)
     obj = loadSessionHelper(obj, data, 'componentParams', obj.path.paramBase, @LoadComponentConfig);
     obj = loadSessionHelper(obj, data, 'activeHardware', '', '');
     obj = loadSessionHelper(obj, data, 'protocol', obj.path.sessionBase, '');
+    
+    %update availableHardwareTable
+    if isfield(data, 'hardwareTableData')
+        fs = fields(data.hardwareTableData);
+        lineIds = {obj.h.AvailableHardwareTable.Data.('Protocol ID')};
+        for i = 1:length(fs)
+            lineIdx = cellfun(@(x)strcmpi(x, fs{i}), lineIds, 'UniformOutput', false);
+            lineIdx = find(lineIdx{:});
+            line = obj.h.AvailableHardwareTable.Data(lineIdx,:);
+            params = fields(data.hardwareTableData.(fs{i}));
+            for pi = 1:length(params)
+                param = params{pi};
+                paramIdx = cellfun(@(x)strcmpi(x, param), line.Properties.VariableNames, 'UniformOutput', false);
+                paramIdx = find([paramIdx{:}]);
+                src = obj.h.AvailableHardwareTable;
+                event = struct( ...
+                    'Indices', [lineIdx paramIdx], ...
+                    'PreviousData', line.(param), ...
+                    'NewData', data.hardwareTableData.(fs{i}).(param));
+                if islogical(line.(param)) && ...
+                        line.(param) ~= data.hardwareTableData.(fs{i}).(param)
+                    obj.h.AvailableHardwareTable.Data(lineIdx, paramIdx) = data.hardwareTableData.(fs{i}).(param);
+                    obj.callbackUpdateComponentTable(src, event);
+                elseif ischar(line.(param)) && ...
+                        ~strcmpi(line.(param),data.hardwareTableData.(fs{i}).(param))
+                    obj.h.AvailableHardwareTable.Data(lineIdx, paramIdx) = data.hardwareTableData.(fs{i}).(param);
+                    obj.callbackUpdateComponentTable(src, event);
+                end
+            end
+        end
+    end
 end
 
 function obj = loadSessionHelper(obj, data, fieldName, defaultPath, fcnHandle)
@@ -94,7 +125,10 @@ function obj = loadSessionHelper(obj, data, fieldName, defaultPath, fcnHandle)
         return
     end
     if strcmpi(fieldName, 'activeHardware')
-        %TODO ACTIVE HARDWARE - SET FOR 'ALL' TOO
+        if length(data.activeHardware) == 1 && strcmpi(data.activeHardware{1}, 'all')
+            error("Not implemented yet.")
+            % TODO
+        end
         obj.d.ActiveIDs = data.activeHardware;
     else
         if contains(data.(fieldName), filesep)
