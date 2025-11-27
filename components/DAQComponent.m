@@ -153,6 +153,7 @@ function StartTrial(obj)
         % save channel names
         filename = [obj.ConfigStruct.ProtocolID '_channelNames.csv'];
         channelNames = {obj.SessionHandle.Channels.Name};
+        channelNames = [{"Time"} channelNames];
         filepath = [obj.SavePath filesep filename];
         writecell(channelNames, filepath);        
     end
