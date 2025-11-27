@@ -9,7 +9,6 @@ properties (Access = public)
     SessionHandle
     SavePath
     TrialPrefix
-    Required %todo remove
     Abstract
     ConfigStruct
     PreviewPlot = []
@@ -73,7 +72,6 @@ end
 % Initialise the component. Will attempt to start a session with the hardware
 function obj = Initialise(obj, params)
     obj.SavePath = params.SavePath;
-    obj.Required = params.Required;
     obj.SessionHandle = params.Handle;
     obj.Abstract = params.Abstract;
     obj.ConfigStruct = obj.GetConfigStruct(params.ConfigStruct);
