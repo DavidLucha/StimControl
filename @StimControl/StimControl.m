@@ -360,9 +360,17 @@ methods
     end
 
     function errorMsg(obj, message)
+        if obj.h.tabs.Active == obj.h.Setup.tab
+            target = obj.h.Setup.Message;
+        elseif obj.h.tabs.Active == obj.h.Session.tab
+            target = obj.h.Session.Message;
+        else
+            error("errorMsg not implemented for this tab.")
+        end
+            
         try
-            obj.h.trialInformationScroller.Value = char(message);
-            obj.h.trialInformationScroller.FontColor = 'red';
+            target.Text = char(message);
+            target.FontColor = 'red';
             obj.status = 'error';
         catch % handle likely not initialised
             error(message)
@@ -370,9 +378,16 @@ methods
     end
 
     function warnMsg(obj, message)
+        if obj.h.tabs.Active == obj.h.Setup.tab
+            target = obj.h.Setup.Message;
+        elseif obj.h.tabs.Active == obj.h.Session.tab
+            target = obj.h.Session.Message;
+        else
+            error("warnMsg not implemented for this tab.")
+        end
         try
-            obj.h.trialInformationScroller.Value = char(message);
-            obj.h.trialInformationScroller.FontColor = 'black';
+            target.Text = char(message);
+            target.FontColor = 'yellow';
         catch % handle likely not initialised
             warning(message)
         end
