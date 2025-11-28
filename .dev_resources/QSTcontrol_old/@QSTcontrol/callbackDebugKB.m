@@ -1,3 +1,0 @@
-function callbackDebugKB(obj,~,~)
-
-keyboard

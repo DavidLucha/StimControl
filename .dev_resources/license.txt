@@ -1,3 +1,4 @@
+QSTcontrol license:
 Copyright (c) 2016, Yair Altman
 All rights reserved.
 
