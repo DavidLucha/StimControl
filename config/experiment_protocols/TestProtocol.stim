@@ -161,7 +161,7 @@ nProtRuns2 rand1 dPause30 tPre2000 tPost5000
 TwoSecCool & AcquisitionTriggers & AcqTrig    % 2 second cool
 (CameraTrigger & (TwoSecWarm) )    % 2 second warm
 (CameraTrigger & TwoSecWarm )    % 2 second warm
-CameraTrigger & ((TwoSecWarm > TwoSecCool) & PWMUnclocked) % oddball cool warm
+CameraTrigger & ((TwoSecWarm > TwoSecCool) & PWMUnclocked) % sequential warm cool 
 CameraTrigger & ((TwoSecWarm > (TwoSecCool StartDel100)) & PWMUnclocked) % oddball cool warm
 CameraTrigger & (((TwoSecWarm > TwoSecCool)) & PWMUnclocked) % oddball cool warm
 CameraTrigger & (TwoSecWarm ^.2 TwoSecCool OddDistr2 OddMinDist1 nStims10 RepDel10) % oddball cool warm

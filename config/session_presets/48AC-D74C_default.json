@@ -1,8 +1,8 @@
 [
     {
         "componentParams": "none",
-        "componentProtocolMap": "48AC-D74C_default.json", 
         "protocol": "none",
+        "hardwareTableData": {},
         "activeHardware": ["Trigger", "Widefield1", "Widefield2", "QST", "Aurora", "2Photon", "BlueLED", "GreenLED", "Speaker", "OpticalStim", "FlashLED", "IRLED", "VibrationMotor", "Heatpad", "TwoPhotonStart", "TwoPhotonStop", "TwoPhotonNext"]
     }
 ]

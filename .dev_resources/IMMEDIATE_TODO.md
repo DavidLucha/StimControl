@@ -7,15 +7,9 @@ String validation for readProtocol so you can (among other things) yell at peopl
 VALIDATION FOR PROTOCOL FILES
 
 Configurable visualisation layout!!
-- save preview plot settings to session params
 - document them a non-coder is going to look at this and HATE it
 
-add time to daq channel names savings at start
-
-check session params works (again)
 add support for sub-targeting on DAQs (e.d. Widefield1-Trigger) - SHELVED. TOO HARD.
-
-
 
 **CLARISSA NOTES**
 post-trial summary of relevant data: frames sent vs frames received?
@@ -33,4 +27,3 @@ Phill feedback
 - [ ] move ComponentID to ComponentProperties with generator function
 - [ ] add [progress bar](https://au.mathworks.com/help/matlab/ref/uiprogressdlg.html) to loading screens?
 - [ ] go through all the TODOs and get rid of commented code
-

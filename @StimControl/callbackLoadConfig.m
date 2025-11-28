@@ -108,11 +108,11 @@ function obj = LoadSessionConfig(obj, filepath)
                     'NewData', data.hardwareTableData.(fs{i}).(param));
                 if islogical(line.(param)) && ...
                         line.(param) ~= data.hardwareTableData.(fs{i}).(param)
-                    obj.h.AvailableHardwareTable.Data(lineIdx, paramIdx) = data.hardwareTableData.(fs{i}).(param);
+                    obj.h.AvailableHardwareTable.Data(lineIdx, paramIdx) = {data.hardwareTableData.(fs{i}).(param)};
                     obj.callbackUpdateComponentTable(src, event);
                 elseif ischar(line.(param)) && ...
                         ~strcmpi(line.(param),data.hardwareTableData.(fs{i}).(param))
-                    obj.h.AvailableHardwareTable.Data(lineIdx, paramIdx) = data.hardwareTableData.(fs{i}).(param);
+                    obj.h.AvailableHardwareTable.Data(lineIdx, paramIdx) = {data.hardwareTableData.(fs{i}).(param)};
                     obj.callbackUpdateComponentTable(src, event);
                 end
             end
