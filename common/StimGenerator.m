@@ -180,7 +180,7 @@ function stim = digitalPulse(varargin)
     end
 
     if isfield(params, 'alignRight') && params.alignRight
-        stim = StimGenerator.GetBase(paramstotalTicks, -1, params.sampleRate);
+        stim = StimGenerator.GetBase(params.totalTicks, -1, params.sampleRate);
         durTicks = StimGenerator.MsToTicks(params.duration, params.sampleRate);
         stim(end-durTicks:end) = 1;
     else

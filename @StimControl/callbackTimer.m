@@ -19,8 +19,8 @@ if strcmpi(obj.h.tabs.SelectedTab.Title, 'Setup')
         obj.h.AvailableHardwareTable.Data.Status{i} = component.GetStatus;
     end
 else
-    obj.h.TimerStatusLamp.Color = '#FFED29';
-    obj.h.TimerStatusLabel.Text = "Running";
+    % obj.h.TimerStatusLamp.Color = '#FFED29';
+    % obj.h.TimerStatusLabel.Text = "Running";
     obj.h.TimerLastUpdatedLabel.Text = string(datetime);
     if isempty(previousStatus)
         previousStatus = obj.status;
@@ -202,7 +202,7 @@ else
         component = obj.d.activeComponents{i};
         component.UpdateStatusDisplay;
     end
-    obj.h.TimerStatusLamp.Color = '#00FF00';
+    % obj.h.TimerStatusLamp.Color = '#00FF00';
 
     % catch errors during protocol execution
     catch err
@@ -214,8 +214,8 @@ else
         % errordlg('Protocol execution incomplete. See error.log for more information.')
         obj.errorMsg(tmp);
         obj.status = 'stopping';
-        obj.h.TimerStatusLamp.Color = '#FF0000';
-        obj.h.TimerStatusLabel.Text = "Error";
+        % obj.h.TimerStatusLamp.Color = '#FF0000';
+        % obj.h.TimerStatusLabel.Text = "Error";
         keyboard % see what's going on
     end
     

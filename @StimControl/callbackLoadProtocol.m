@@ -19,7 +19,7 @@ elseif src ~= obj.h.protocolSelectDropDown
 elseif strcmpi(src.Value, 'Browse...')
     warning("This will cause problems if you choose something outside the default protocol base path, " + ...
         "switch off, then switch back to it through the dropdown. Be careful!");
-    [filename, dir] = uigetfile([obj.path.protocolBase], 'Select protocol');
+    [filename, dir] = uigetfile([obj.path.protocolBase filesep '*.*'], 'Select protocol');
     if filename == 0
         src.Value = '';
         return
@@ -69,7 +69,7 @@ obj.g = g;
 obj.trialIdx = 1;
 obj.trialNum = 1;
 
-allTargets = fields([obj.p(:).params]);
+allTargets = getAllTargets(obj.p);
 % Construct appropriate trial for each device
 deviceTargets = [];
 for di = 1:sum(obj.d.Active)
@@ -167,4 +167,17 @@ if obj.g.rand > 0
 else
     seq = repmat(tmp,1,obj.g.nProtRuns);
 end
+end
+
+%% Helpers
+function targets = getAllTargets(p)
+    targets = {};
+    for i = 1:length(p)
+        fds = fields(p(i).params);
+        for j = 1:length(fds)
+            if ~any(contains(targets, fds{j}))
+                targets{end+1} = fds{j};
+            end
+        end
+    end
 end

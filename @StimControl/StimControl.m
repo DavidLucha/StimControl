@@ -372,6 +372,7 @@ methods
             target.Text = char(message);
             target.FontColor = 'red';
             obj.status = 'error';
+            error(message)
         catch % handle likely not initialised
             error(message)
         end
@@ -388,6 +389,7 @@ methods
         try
             target.Text = char(message);
             target.FontColor = 'yellow';
+            warning(message)
         catch % handle likely not initialised
             warning(message)
         end

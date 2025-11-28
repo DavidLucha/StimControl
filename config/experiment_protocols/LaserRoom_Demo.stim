@@ -158,31 +158,23 @@
 nProtRuns2 rand1 dPause30 tPre2000 tPost5000
 
 ~ % Start Trial Definitions 
-TwoSecCool & AcquisitionTriggers & AcqTrig    % 2 second cool
-(CameraTrigger & (TwoSecWarm))    % 2 second warm
-(CameraTrigger & TwoSecWarm )    % 2 second warm
-CameraTrigger & ((TwoSecWarm > TwoSecCool) & PWMUnclocked) % sequential warm cool 
-CameraTrigger & ((TwoSecWarm > (TwoSecCool StartDel100)) & PWMUnclocked) % oddball cool warm
-CameraTrigger & (((TwoSecWarm > TwoSecCool)) & PWMUnclocked) % oddball cool warm
-CameraTrigger & (TwoSecWarm ^.2 TwoSecCool OddDistr2 OddMinDist1 nStims10 RepDel10) % oddball cool warm
-CameraTrigger & (TwoSecWarm ^.5 (TwoSecCool |> TwoSecWarm) OddDistr2 OddMinDist1 nStims10 RepDel10) % sequential oddball cool warm
-AcquisitionTriggers & (TwoSecWarm > TwoSecCool > TwoSecWarm StartDel1000) % sequential and start delay
+
+Triggers & TwoSecCool                                                           % 2 second cool
+Triggers & TwoSecWarm                                                           % 2 second warm
+Triggers & (TwoSecWarm > (TwoSecCool StartDel10) nStims3 RepDel10)              % sequential warm cool with 10ms delay x3
+Triggers & (TwoSecWarm ^.2 TwoSecCool OddDistr2 OddMinDist1 nStims10 RepDel10)  % oddball swap 20% of warm stims for cool stims
+Triggers & (TwoSecWarm ^.5 (TwoSecCool |> TwoSecWarm) OddDistr2 OddMinDist1 nStims10 RepDel10) % oddball swap 50% of warm stims for either warm or cool, alternating 
 
 ~ % Start Stimulus Definitions
+
 % stimuli
-TwoSecWarm(QST)[GPIO2]: N320 S11000 C0420 V03000 R03000 D002000 T001 I1
-TwoSecCool(QST)[GPIO2]: N320 S11000 C0220 V03000 R03000 D002000 T001 I1
-Sine(SineWave)[ao1]: Amp2 Freq20 Dur1000
-PWMUnclocked(PWM)[GPIO0]: DC90 Freq30 Dur1000 RampOnDur50 RampOffDur50
-PWMClocked(PWM)[GPIO1]: DC90 Freq30 Dur1000 
-ArbitraryNoInterp(arbitrary)[ao0]: arbitrary.astim 
-ArbitraryInterp(arbitrary)[ao0]: arbitrary.astim Interp1 Dur2000
+TwoSecWarm(QST)[QST]: N320 S11000 C0420 V03000 R03000 D002000 T001 I1
+TwoSecCool(QST)[QST]: N320 S11000 C0220 V03000 R03000 D002000 T001 I1
 
 % acquisition triggers
 CameraTrigger(DigitalTrigger)[Widefield1, Widefield2]: AcquisitionTrigger Freq20 Dur-1
-TwoPhotonStartNext(digitalPulse)[GPIO3, GPIO4]: Dur1 AcquisitionTrigger
-TwoPhotonStop(digitalPulse)[GPIO5]: Dur1 AcquisitionTrigger FromEnd1
+TwoPhotonStartNext(digitalPulse)[TwoPhotonStart, TwoPhotonNext]: Dur1 AcquisitionTrigger
+TwoPhotonStop(digitalPulse)[TwoPhotonStop]: Dur1 AcquisitionTrigger FromEnd1
 
 % grouped blocks
-AcquisitionTriggers(StimulusGroup)[none]: CameraTrigger & TwoPhotonStartNext & TwoPhotonStop
-AcqTrig(StimulusGroup)[none]: CameraTrigger & TwoPhotonStartNext
+Triggers(StimulusGroup)[none]: CameraTrigger & TwoPhotonStartNext & TwoPhotonStop

@@ -89,7 +89,7 @@ function trialParams = generateParamsSequence(obj)
     obj.params = rootNode.buildParams;
     trialParams = obj.params;
     % DEBUG: TODO REMOVE
-    obj.PlotTree;
+    % obj.PlotTree;
     % END DEBUG
     obj.data = {};
 end

@@ -10,7 +10,7 @@ elseif src == obj.h.animalSelectDropDown
     % choose an existing animal, write a new animal directly into the box, or browse
     if strcmpi(src.Value, 'Browse...')
         % let the user select a directory
-        [file, location] = uigetfile([obj.path.dirData]);
+        [file, location] = uigetfile([obj.path.dirData filesep '*.*']);
         filepath = [location file];
         if isempty(filepath) || ~any(filepath)
             return

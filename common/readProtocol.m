@@ -535,7 +535,7 @@ for idxTrial = 1:length(trialParams)
     tree{stimNodeIdx} = stimRoot;
     trial.data = tree;
     trial.RootNodeIdx = 1;
-    trial.PlotTree;
+    % trial.PlotTree;
     trial = trial.Clean;
     trial.ValidateTree;
     trial.generateParamsSequence;
