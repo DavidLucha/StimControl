@@ -61,7 +61,7 @@ function obj = LoadComponentConfig(obj, filepath)
                 obj.h.AvailableHardwareTable.CellEditCallback(obj.h.AvailableHardwareTable, event);
             end
             if class(component) ~= hStruct.type
-                warning("Component %s not configured: type mismatch", hStruct.ComponentID);
+                obj.warnMsg("Component %s not configured: type mismatch", hStruct.ComponentID);
                 continue
             end
 
@@ -74,7 +74,7 @@ function obj = LoadComponentConfig(obj, filepath)
                 component.StartPreview;
             end
         else
-            warning("Component not found: %s", hStruct.ComponentID);
+            obj.warnMsg("Component not found: %s", hStruct.ComponentID);
         end
     end
     obj.status = obj.status;
@@ -119,7 +119,7 @@ function obj = loadSessionHelper(obj, data, fieldName, defaultPath, fcnHandle)
     end
     if strcmpi(fieldName, 'activeHardware')
         if length(data.activeHardware) == 1 && strcmpi(data.activeHardware{1}, 'all')
-            error("Not implemented yet.")
+            obj.errorMsg("'All' as a value for active hardware in session param files is not currently implemented. Please list all hardware.");
             % TODO
         end
         obj.d.ActiveIDs = data.activeHardware;

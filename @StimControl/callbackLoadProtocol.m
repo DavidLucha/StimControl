@@ -17,8 +17,8 @@ elseif src ~= obj.h.protocolSelectDropDown
     % not implemented.
     return
 elseif strcmpi(src.Value, 'Browse...')
-    warning("This will cause problems if you choose something outside the default protocol base path, " + ...
-        "switch off, then switch back to it through the dropdown. Be careful!");
+    obj.warnMsg("Browsing will cause problems if you choose something outside the default protocol base path " + ...
+        " and then choose another protocol from the dropdown. Please be aware.");
     [filename, dir] = uigetfile([obj.path.protocolBase filesep '*.*'], 'Select protocol');
     if filename == 0
         src.Value = '';
@@ -78,7 +78,7 @@ end
 for fi = 1:length(allTargets)
     targetName = allTargets{fi};
     if ~isfield(obj.pids, targetName)
-        warning("No connected device found for stimulus target %s. Passive mode enabled.", targetName);
+        obj.WarnMsg("No connected device found for stimulus target %s. Passive mode enabled.", targetName);
         obj.status = 'no protocol loaded';
         return
     end
