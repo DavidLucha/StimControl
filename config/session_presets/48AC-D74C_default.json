@@ -3,6 +3,6 @@
         "componentParams": "none",
         "protocol": "none",
         "hardwareTableData": {},
-        "activeHardware": ["Trigger", "Widefield1", "Widefield2", "QST", "Aurora", "2Photon", "BlueLED", "GreenLED", "Speaker", "OpticalStim", "FlashLED", "IRLED", "VibrationMotor", "Heatpad", "TwoPhotonStart", "TwoPhotonStop", "TwoPhotonNext"]
+        "activeHardware": ["Trigger", "Widefield1", "Widefield2", "QST", "Aurora", "2Photon", "BlueLED", "GreenLED", "Speaker", "OpticalStim", "FlashLED", "IRLED", "VibrationMotor", "Heatpad", "TwoPhotonStart", "TwoPhotonStop", "TwoPhotonNext", "Wheel"]
     }
 ]
