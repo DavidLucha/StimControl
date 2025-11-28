@@ -17,6 +17,11 @@ if strcmpi(event.NewValue.Title, 'Experiment')
             end
         end
     end
+    % remove selection indicator from preview background colour
+    for pi = 1:length(obj.h.PreviewPanels)
+        pan = obj.h.PreviewPanels{pi};
+            pan.Parent.Parent.BackgroundColor = [0.9400 0.9400 0.9400];
+    end
     obj.createPanelSessionHardware(obj.h.Session.HardwareStatus.panel.params);
 elseif strcmpi(event.NewValue.Title, 'Setup')
     % If experiment is running, swap it back. (can't disable the tab so this is the next best thing)
