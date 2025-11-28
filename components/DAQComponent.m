@@ -560,6 +560,8 @@ function obj = CreateChannels(obj, filename, protocolIDs)
             message = ['Encountered an error reading channels config file on line ' ...
                     char(string(ii)) ': ' exception.message ' Line skipped.'];
             disp("")
+            % todo pass warning messages back to StimControl so we can
+            % display them good.
             warning(message);
         end
     end
