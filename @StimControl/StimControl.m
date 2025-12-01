@@ -360,39 +360,43 @@ methods
     end
 
     function errorMsg(obj, message)
-        % if obj.h.tabs.SelectedTab == obj.h.Setup.Tab
-        %     target = obj.h.Setup.Message;
-        % elseif obj.h.tabs.Active == obj.h.Session.Tab
-        %     target = obj.h.Session.Message;
-        % else
-        %     error("errorMsg not implemented for this tab.")
-        % end
-        % 
-        % try
-        %     target.Text = char(message);
-        %     target.FontColor = 'red';
-        %     obj.status = 'error';
-        %     error(message)
-        % catch % handle likely not initialised
-        %     error(message)
-        % end
+        %PHILL: COMMENT OUT FROM HERE
+        if obj.h.tabs.SelectedTab == obj.h.Setup.Tab
+            target = obj.h.Setup.Message;
+        elseif obj.h.tabs.SelectedTab == obj.h.Session.Tab
+            target = obj.h.Session.Message;
+        else
+            error("errorMsg not implemented for this tab.")
+        end
+        
+        try
+            target.Text = char(message);
+            target.FontColor = 'red';
+            obj.status = 'error';
+            error(message)
+        catch % handle likely not initialised
+            error(message)
+        end
+        %PHILL: COMMENT OUT DOWN TO HERE
     end
 
     function warnMsg(obj, message)
-        % if obj.h.tabs.SelectedTab == obj.h.Setup.Tab
-        %     target = obj.h.Setup.Message;
-        % elseif obj.h.tabs.Active == obj.h.Session.Tab
-        %     target = obj.h.Session.Message;
-        % else
-        %     error("warnMsg not implemented for this tab.")
-        % end
-        % try
-        %     target.Text = char(message);
-        %     target.FontColor = 'yellow';
-        %     warning(message)
-        % catch % handle likely not initialised
-        %     warning(message)
-        % end
+        %PHILL: COMMENT OUT FROM HERE
+        if obj.h.tabs.SelectedTab == obj.h.Setup.Tab
+            target = obj.h.Setup.Message;
+        elseif obj.h.tabs.SelectedTab == obj.h.Session.Tab
+            target = obj.h.Session.Message;
+        else
+            error("warnMsg not implemented for this tab.")
+        end
+        try
+            target.Text = char(message);
+            target.FontColor = '#FFA500';
+            warning(message)
+        catch % handle likely not initialised
+            warning(message)
+        end
+        %PHILL: COMMENT OUT TO HERE
     end
 
     function obj = loadDefaultSession(obj)

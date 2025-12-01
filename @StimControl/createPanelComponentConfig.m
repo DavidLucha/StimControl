@@ -51,7 +51,7 @@ function updateComponentConfigTable(src,event,obj)
         % new value is invalid
         sInvalid = uistyle('BackgroundColor','red');
         addStyle(src,sInvalid,'row', rownum);
-        obj.errorMsg(fprintf("%s: %s must fulfil the following: %s", ...
+        obj.errorMsg(sprintf("%s: %s must fulfil the following: %s", ...
             propertyName, component.ConfigStruct.ProtocolID, ...
             func2str(component.ComponentProperties.(propertyName).validatefcn)));
     end
@@ -71,7 +71,7 @@ function updateComponentConfigTable(src,event,obj)
     else
         sUnsaved = uistyle('BackgroundColor', [1 0.8 0]);
         addStyle(src,sUnsaved,'row', rownum);
-        obj.warnMsg(fprintf("%s: %s requires a device restart to take effect. Press 'confirm' or lose your changes!", ...
+        obj.warnMsg(sprintf("%s: %s requires a device restart to take effect. Press 'confirm' or lose your changes!", ...
             propertyName, component.ConfigStruct.ProtocolID));
         if ~isfield(obj.h.ComponentConfig, 'ValsToUpdate') || isempty(obj.h.ComponentConfig.ValsToUpdate)
             obj.h.ComponentConfig.ValsToUpdate = struct(propertyName, newVal);

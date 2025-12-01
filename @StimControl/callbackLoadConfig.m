@@ -61,7 +61,7 @@ function obj = LoadComponentConfig(obj, filepath)
                 obj.h.AvailableHardwareTable.CellEditCallback(obj.h.AvailableHardwareTable, event);
             end
             if class(component) ~= hStruct.type
-                obj.warnMsg("Component %s not configured: type mismatch", hStruct.ComponentID);
+                obj.warnMsg(sprintf("Component %s not configured: type mismatch", hStruct.ComponentID));
                 continue
             end
 
@@ -74,7 +74,7 @@ function obj = LoadComponentConfig(obj, filepath)
                 component.StartPreview;
             end
         else
-            obj.warnMsg("Component not found: %s", hStruct.ComponentID);
+            obj.warnMsg(sprintf("Component not found: %s", hStruct.ComponentID));
         end
     end
     obj.status = obj.status;
