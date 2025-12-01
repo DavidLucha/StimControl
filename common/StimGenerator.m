@@ -215,8 +215,6 @@ function stim = analogPulse(varargin)
     addParameter(p, 'pulseAmp', 0, @(x) isnumeric(x));
     addParameter(p, 'display', false, @(x) islogical(x));
     addParameter(p, 'paramsStruct', [], @(x) isstruct(x));
-    addParameter(p, 'display', false, @(x) islogical(x));
-    addParameter(p, 'paramsStruct', [], @(x) isstruct(x));
     parse(p, varargin{:});
     params = p.Results;
 

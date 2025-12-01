@@ -21,11 +21,11 @@ port0/line30,IRLED_BaslerImaging,output,Digital,,,IRLED,ttl,0
 port0/line2,Vibration,output,Digital,,,VibrationMotor,out,0
 port0/line7,Thermode Trigger,output,Digital,,,QST,trigger,0
 ao0,Aurora Force Command Voltage,output,Voltage,SingleEnded,[-10 10],Aurora,out,0
-ai8,Wheel 1A,input,Voltage,SingleEnded,,Wheel,1A,1
-ai9,Wheel 1B,input,Voltage,SingleEnded,,Wheel,1B,0
-ai10,Wheel 2A,input,Voltage,SingleEnded,,Wheel,2A,1
-ai11,Wheel 2B,input,Voltage,SingleEnded,,Wheel,2B,0
-ai12,Wheel 3A,input,Voltage,SingleEnded,,Wheel,3A,1
-ai13,Wheel 3B,input,Voltage,SingleEnded,,Wheel,3B,0
-ai14,Wheel 4A,input,Voltage,SingleEnded,,Wheel,4A,1
-ai15,Wheel 4B,input,Voltage,SingleEnded,,Wheel,4B,0
+ai8,Wheel 1A,input,Voltage,SingleEnded,,Wheel,A1,1
+ai9,Wheel 1B,input,Voltage,SingleEnded,,Wheel,A2,0
+ai10,Wheel 2A,input,Voltage,SingleEnded,,Wheel,B1,1
+ai11,Wheel 2B,input,Voltage,SingleEnded,,Wheel,B2,0
+ai12,Wheel 3A,input,Voltage,SingleEnded,,Wheel,C1,1
+ai13,Wheel 3B,input,Voltage,SingleEnded,,Wheel,C3,0
+ai14,Wheel 4A,input,Voltage,SingleEnded,,Wheel,D1,1
+ai15,Wheel 4B,input,Voltage,SingleEnded,,Wheel,D2,0
