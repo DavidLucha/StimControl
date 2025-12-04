@@ -193,8 +193,28 @@ end
 function obj = Clean(obj)
     tree = obj.data;
     line = obj.line;
+    for rti = length(tree):-1:1
+        % go through in reverse trimming all nodes that don't ultimately
+        % end in a parameter.
+        block = tree{rti};
+        if isempty(block.childIdxes) && isempty(block.stimParams)
+            % node shouldn't exist
+            if isempty(block.parentIdx)
+                continue
+            end
+            parent = tree{block.parentIdx};
+            parent.childIdxes(parent.childIdxes == rti) = [];
+            tree{block.parentIdx} = parent;
+            block.parentIdx = [];
+            tree{rti} = block;
+        end
+    end
     for ti =1:length(tree)
         block = tree{ti};
+        if isempty(block.childIdxes) && isempty(block.parentIdx)
+            % already pruned. skip.
+            continue
+        end
         if (isempty(block.childRel) && isempty(block.stimParams)) || ...
                 (strcmpi(block.childRel, 'oddSeq') || strcmpi(block.childRel, 'oddRand')) || ...
                 (isempty(block.childIdxes) && isempty(block.stimParams))

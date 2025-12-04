@@ -95,6 +95,10 @@ function obj = LoadSessionConfig(obj, filepath)
         for i = 1:length(fs)
             lineIdx = cellfun(@(x)strcmpi(x, fs{i}), lineIds, 'UniformOutput', false);
             lineIdx = find(lineIdx{:});
+            if isempty(lineIdx)
+                % device not initialised in this session
+                continue
+            end
             line = obj.h.AvailableHardwareTable.Data(lineIdx,:);
             params = fields(data.hardwareTableData.(fs{i}));
             for pi = 1:length(params)

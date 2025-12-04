@@ -370,7 +370,7 @@ methods
         end
         
         try
-            target.Text = char(message);
+            target.Text = ['ERROR: ' char(message)];
             target.FontColor = 'red';
             obj.status = 'error';
             error(message)
@@ -390,7 +390,7 @@ methods
             error("warnMsg not implemented for this tab.")
         end
         try
-            target.Text = char(message);
+            target.Text = ['WARNING: ' char(message)];
             target.FontColor = '#FFA500';
             warning(message)
         catch % handle likely not initialised

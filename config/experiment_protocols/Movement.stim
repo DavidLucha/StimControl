@@ -1,0 +1,174 @@
+% STIMCONTROL PROTOCOL FILES 
+% 
+% For a full overview of how to use these files, go to 
+% https://github.com/WhitmireLab/StimControl/wiki/Protocols
+% 
+% A protocol file has 3 sections, separated by a ```~``` operator on a new line: 
+% 1. General Protocol Parameters
+% 2. Trial Information
+% 3. Stimulus Definitions
+% 
+% You can add comments to a protocol file using the ```%``` operator. 
+% Comments in the trial information section will be displayed during the experiment.
+%   
+% ------------------SECTION 1: GENERAL-----------------------------
+% The general section takes up the first non-comment line. 
+% It accepts the following arguments:
+%     * nProtRunsX    - number of times the protocol runs (including the first)
+%     * RandomiseX    - how to randomise trials
+%     * dPauseX       - time (seconds) between trials in the protocol
+%     * nTrialRunsX   - (optional) default trial nRuns
+%     * tPreX         - (optional) default trial tPre
+%     * tPostX        - (optional) default trial tPost
+% 
+% ------------------SECTION 2: TRIAL INFORMATION------------------
+% Trials are made up of stimulus blocks, which are separated with bracket notation
+% Stimuli within the same block will occur simultaneously unless specified 
+% otherwise by using the > or ODD operators.
+% 
+% Each line in this section is a new trial.
+% 
+% Once per trial, you can define:
+%     * nTrialRunsX   - (optional) number of times this trial is run per protocol
+%     * An inline comment, which will show up during execution.
+% 
+% As well as any number of stimulus blocks, connected by either either & or > 
+% and separated using brackets. Once per stimulus block, you can define: 
+%     * RepDelXXXX    - Delay between repeats in ms. Default 0.
+%     * StartDelXXXX  - Start delay from stimulus t=0
+%     * nStimsX       - Number of times to run. -1 will repeat to the end of tPost
+% 
+% Operators between stimulus blocks are: 
+%     * A  &  B - simultaneous
+%     * A  >  B - sequential
+%     * A ^.X B - oddball swapping out X% of block A for block B
+%     * B  |> C - (oddball only) alternate B and C on oddball swaps
+%     * B  |  C - (oddball only) randomly choose between B and C on oddball swaps
+%                     (guaranteed equal total occurrences)
+% 
+% Oddball stimulus blocks require the following arguments to also be set:
+%     * OddDistrX         - distribution method (0=even, 1=random, 2=semirandom)
+%     * OddMinDistX       - only if OddDistr3 - minimum occurrences of baseline
+%                             between oddball swaps.
+%     
+% ------------------SECTION 3: STIMULUS DEFINITIONS---------------
+% 
+% Stimuli are each defined on their own line, and have the syntax:
+% StimulusName[TargetDevice, TargetDevice](type): param1 param2 param3
+% Where:
+%     * StimulusName maps to a StimBlock defined in section 2
+%     * TargetDevice(s) map to device ProtocolIDs
+%     * type is one of:
+%         SquareWave          Arbitrary       PWM             Arbitrary
+%         SineWave            AnalogNoise     Piezo           QST
+%         DigitalTrigger      AnalogPulse     DigitalPulse    Serial
+%         StimulusGroup
+%     * and params are defined per type as below:
+% 
+% By default, stimuli are assumed to begin at the start of tPost. Any stimulus can
+% be given the attribute AcquisitionTrigger to have it start at the start of tPre.
+% Note that X and x represent digits. X is an arbitrary number of digits, while
+% x denotes the precise number of digits that need to be given.
+% 
+% ---StimulusGroup---
+%     Special case. Targets should be set to 'none', and all arguments are the names of other functions. 
+%     Used for grouping acquisition triggers into a single function for readability.
+%     parsed as a stimulus definition that is then inserted as a simultaneous stimulus 
+%     with other definitions on the line.
+%     **NOTE: all StimulusGroups MUST be defined after all comprising stimuli
+%     have been defined. Failing to do this will throw an error.
+% 
+% ---AnalogPulse---
+%     * DurX          - Pulse duration (ms) -1=until end of stim
+%     * PulseAmpX     - Pulse amplitude (V)
+%     * RampOnDurX    - Pulse onset ramping dur (ms). Default 0
+%     * RampOffDurX   - Pulse offset ramping dur (ms). Default 0
+%     * BaseAmpX      - Amplitude to pulse from (V). Default 0
+% 
+% ---Arbitrary---
+%     * File:FileName - name of the file to refer to 
+%     * InterpX       - whether to interpolate values (1=true 0=false). Default 0
+%     * DurX          - duration (ms) -1=until end of stim
+% 
+% ---DigitalPulse---
+%     * DurX      - duration (ms) -1=until end of stim
+%     * FromEndX  - effectively whether to reverse this stimulus within its block. 
+%                       0=false, 1=true. Used for 'acquisition end' triggers. Default 0
+% 
+% ---DigitalTrigger---
+%     * PWX       - Pulse width (ms). Default 50% of period.
+%     * FreqX     - Frequency (Hz) 0 = single trigger
+%     * DurX      - Signal duration (ms) -1=until end of stim
+% 
+% ---AnalogNoise---
+%     * DurX      - duration (ms) -1=until end of stim
+%     * DistrX    - distribution type (1=uniform, 2=normal)
+%     * MinAmpX   - minimum amplitude (V)
+%     * MaxAmpX   - maximum amplitude (V)
+% 
+% ---Piezo--- (#TODO REMOVE??)
+%     * DurX      - pulse duration (ms)
+%     * FreqX     - pulse frequency (ms)
+%     * StimNumX  - stimulation number
+%     * AmpX      - Max amplitude.
+%     * RampX     - Signal ramp. Default 20
+%     * nStimsX   - number of stims
+%     Note that piezo is a legacy implementation of analog pulse with sensible 
+%     defaults, but in general AnalogPulse should be used instead.
+% 
+% ---PWM---
+%     * DCX           - Duty cycle (%)
+%     * FreqX         - Pulse frequency (Hz)
+%     * DurX          - PWM duration (ms) -1=until end of stim
+%     * upRampDurX    - Duration of any up ramp (ms). Takes place within Dur. Default 0
+%     * downRampDurX  - Duration of any down ramp (ms) Takes place within Dur. Default 0
+% 
+% ----QST----
+%     * Nxxx      - set neutral temperature in 1/10 °C (xxx = 200-400)
+%     * Sxxxxx    - enable/disable area 1 to 5 (x=0: disable, x=1: enable)
+%     * Cxxx      - set stimulation temperature in 1/10 °C (s=0: all areas or s=1-5, xxx=100-600)
+%     * Vxxxx     - set stimulation speed in 1/10 °C/s (s=0: all areas or s=1-5, xxxx=0001-9999)
+%     * Dxxxx     - set stimulation duration in ms (s=0: all areas or s=1-5, xxxx=0001-9999)
+%     * Txxx      - set trigger number (xxx = 001-255)
+%     * Ix        - enable/disable Integral term (x=0: disable, x=1: enable)
+%     * Trigger:StimName - Connected trigger. Defaults to a single trigger at t=0
+%     * DurX      - stimulation duration, if different from Dxxxx (for buffering)
+% 
+% ---Serial---
+%     * DurX             - stimulation duration -1=until end of stim
+%     * Trigger:StimName - Connected trigger stimulus definition
+%     * xxx              - Any valid serial command for the device
+% 
+% ---SineWave---
+%     * AmpX              - Peak-peak amplitude (V)
+%     * FreqX             - Frequency (Hz)
+%     * DurX              - signal duration (ms) -1=until end of stim
+%     * PhaseX            - phase shift (deg). Default 0
+%     * VerticalShiftX    - amplitude constant. Default 0
+%     * AmpMod:StimName   - amplitude modification function. Defaults to 1 (no modification)
+% 
+% ---SquareWave---
+%     * DurX      - signal duration (ms) -1=until end of stim
+%     * FreqX     - signal frequency (Hz)
+%     * MaxAmpX   - max amplitude (V)
+%     * MinAmpX   - min amplitude (V)
+%     * DCX       - signal duty cycle (percent)
+
+% General Parameters
+nProtRuns30 rand1 dPause10 tPre1000 tPost59000
+
+~ % Start Trial Definitions 
+
+AcquisitionTriggers
+
+~ % Start Stimulus Definitions
+% stimuli
+
+
+% acquisition triggers
+CameraTrigger(DigitalTrigger)[Widefield1, Widefield2]: AcquisitionTrigger Freq60 Dur-1
+TwoPhotonStartNext(digitalPulse)[TwoPhotonStart, TwoPhotonNext]: Dur1 AcquisitionTrigger
+TwoPhotonStop(digitalPulse)[TwoPhotonStop]: Dur1 AcquisitionTrigger FromEnd1
+
+% grouped blocks
+AcquisitionTriggers(StimulusGroup)[none]: CameraTrigger & TwoPhotonStartNext & TwoPhotonStop
