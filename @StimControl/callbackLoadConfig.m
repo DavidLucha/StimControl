@@ -110,8 +110,13 @@ function obj = LoadSessionConfig(obj, filepath)
                     'Indices', [lineIdx paramIdx], ...
                     'PreviousData', line.(param), ...
                     'NewData', data.hardwareTableData.(fs{i}).(param));
-                obj.h.AvailableHardwareTable.Data(lineIdx, paramIdx) = {data.hardwareTableData.(fs{i}).(param)};
-                obj.callbackUpdateComponentTable(src, event);
+                try
+                    obj.h.AvailableHardwareTable.Data(lineIdx, paramIdx) = {data.hardwareTableData.(fs{i}).(param)};
+                    obj.callbackUpdateComponentTable(src, event);
+                catch err
+                    obj.errorMsg("Unable to load saved session. Likely the automatically generated grid size is not compatible with" + ...
+                        "saved parameters. Change the parameters manually, save the session, and try again.");
+                end
             end
         end
     end

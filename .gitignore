@@ -3,4 +3,6 @@ WidefieldImager/WidefieldImager.asv
 *.asv
 *.csv
 *.json
+*.stim
+*.qst
 !*/Example*
