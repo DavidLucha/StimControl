@@ -41,10 +41,9 @@ methods
     function obj = StimControl(varargin)
         % close all
         obj.path.base = pwd;
-        if ~contains(pwd, 'StimControl')
-            obj.path.base = [pwd filesep 'StimControl'];
-        end
-        addpath(pwd)
+        obj.path.base = mfilename('fullpath');
+        obj.path.base = obj.path.base(1:49);
+        addpath(obj.path.base);
         addpath(genpath(fullfile(obj.path.base, 'components')))
         addpath(genpath(fullfile(obj.path.base, 'common')))
         addpath(genpath(fullfile(obj.path.base,'@StimControl', 'icons')))

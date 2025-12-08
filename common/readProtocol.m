@@ -344,23 +344,25 @@ for idxTrial = 1:length(trialParams)
     % also optimise this is worst case O(n^2)
     % also todo this doesn't work if you have two stimulusGroup names where
     % the name for one is a subset of the name for the other.
-    while any(contains(params, fields(stimulusGroups)))
-        sfs = fields(stimulusGroups);
-        for sfi = 1:length(sfs)
-            sgFieldName = sfs{sfi};
-            idx = strfind(params, sgFieldName);
-            if ~isempty(idx)
-                for idxi = idx
-                    params = [params(1:idxi-1) ...
-                        '(' stimulusGroups.(sgFieldName) ')' ...
-                        params(length(sgFieldName)+idxi:end)];
+    if ~isempty(stimulusGroups)
+        while any(contains(params, fields(stimulusGroups)))
+            sfs = fields(stimulusGroups);
+            for sfi = 1:length(sfs)
+                sgFieldName = sfs{sfi};
+                idx = strfind(params, sgFieldName);
+                if ~isempty(idx)
+                    for idxi = idx
+                        params = [params(1:idxi-1) ...
+                            '(' stimulusGroups.(sgFieldName) ')' ...
+                            params(length(sgFieldName)+idxi:end)];
+                    end
                 end
             end
         end
     end
 
     % Sanitise line (add spaces around everything)
-    sepQuery = '&|>|(\|>)|(\^\.\d?)';
+    sepQuery = '&|>|(\|>)|(\|)|(\^\.\d?)';
     [startIdxes, endIdxes] = regexpi(params, [sepQuery '|\)|\(']);
     for i = length(startIdxes):-1:1
         startIdx = startIdxes(i);
