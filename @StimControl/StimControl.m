@@ -40,9 +40,10 @@ end
 methods
     function obj = StimControl(varargin)
         % close all
-        obj.path.base = pwd;
+        % obj.path.base = pwd;
         obj.path.base = mfilename('fullpath');
-        obj.path.base = obj.path.base(1:49);
+        endIdx = strfind(obj.path.base, [filesep '@StimControl']) - 1;
+        obj.path.base = obj.path.base(1:endIdx);
         addpath(obj.path.base);
         addpath(genpath(fullfile(obj.path.base, 'components')))
         addpath(genpath(fullfile(obj.path.base, 'common')))
