@@ -697,12 +697,14 @@ methods(Static, Access=public)
                 fclose(tmp);
                 delete(tmp);
             end
+            clear(port);
         else
             tmp = serialportfind(Port=port);
-            clear(tmp);
+            if ~isempty(tmp)
             delete(tmp);
+            clear tmp;
+            end
         end
-        clear(port);
     end
 end
 end

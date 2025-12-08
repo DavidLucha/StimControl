@@ -38,6 +38,9 @@ function callbackSaveConfig(obj, src, event)
     end
     jsonData = jsonencode(saveData);
     file = fopen([pBase filesep filename], 'w+');
+    if file == -1
+        obj.errorMsg(sprintf("Unable to create file %s", [pBase filesep filename]));
+    end
     fprintf(file, '%s', jsonData);
     fclose(file);
 end
