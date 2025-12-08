@@ -164,7 +164,7 @@ Triggers & TwoSecWarm                                                           
 Triggers & (TwoSecWarm > (TwoSecCool StartDel10) nStims3 RepDel10)              % sequential warm cool with 10ms delay x3
 Triggers & (TwoSecWarm ^.2 TwoSecCool OddDistr2 OddMinDist1 nStims10 RepDel10)  % oddball swap 20% of warm stims for cool stims
 Triggers & (TwoSecWarm ^.5 (TwoSecCool |> TwoSecWarm) OddDistr2 OddMinDist1 nStims10 RepDel10) % oddball swap 50% of warm stims for either warm or cool, alternating 
-Triggers & (TwoSecWarm ^.5 (TwoSecCool0.2 | TwoSecWarm0.8) OddDistr1 nStims10 RepDel10) % oddball swap 50% of warm stims for either warm or cool, randomly chosen where 20% of total oddballs will be cool and 80% will be warm.
+Triggers & (TwoSecWarm ^.5 (TwoSecCool | TwoSecWarm) OddDistr1 nStims10 RepDel10) % oddball swap 50% of warm stims for either warm or cool, randomly chosen where 20% of total oddballs will be cool and 80% will be warm.
 
 ~ % Start Stimulus Definitions
 
