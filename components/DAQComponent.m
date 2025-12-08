@@ -446,9 +446,9 @@ function obj = CreateChannels(obj, filename, protocolIDs)
     % obj.SessionHandle.
     tab = readtable(filename);
     s = size(tab);
-    if ~isMATLABReleaseOlderThan('R2024b')
-        channelList = daqchannellist;
-    end
+    % if ~isMATLABReleaseOlderThan('R2024b')
+    %     channelList = daqchannellist;
+    % end
     for ii = 1:s(1)
         try
             warning('');
@@ -475,35 +475,35 @@ function obj = CreateChannels(obj, filename, protocolIDs)
             if contains(class(range), 'cell')
                 range = range{1};
             end
-            if ~isMATLABReleaseOlderThan('R2024b')
-                channelList = add(channelList, ioType, deviceID, portNum, signalType, TerminalConfig=terminalConfig, Range=range);
-            else
-                switch ioType
-                    case 'input'
-                        [ch, idx] = addinput(obj.SessionHandle,deviceID,portNum,signalType);
-                        obj.InChanIdxes(end+1) = idx;
-                    case 'output'
-                        [ch, idx] = addoutput(obj.SessionHandle,deviceID,portNum,signalType);
-                        obj.OutChanIdxes(end+1) = idx;
-                    case 'bidirectional'
-                        [ch, idx] = addbidirectional(obj.SessionHandle,deviceID,portNum,signalType);
-                        obj.OutChanIdxes(end+1) = idx;
-                        obj.InChanIdxes(end+1) = idx;
-                end
-                ch.Name = channelID;
-                if ~isempty(terminalConfig) && ~contains(class(ch), 'Digital')
-                    ch.TerminalConfig = terminalConfig;
-                end
-                if ~isempty(range) && ~contains(class(ch), 'Digital')
-                    range = str2num(range);
-                    ch.Range = range;
-                end
-                [warnMsg, warnId] = lastwarn;
-                if ~isempty(warnMsg)
-                    message = ['Warning encountered loading DAQComponent channel information on line ' char(string(ii))];
-                    warning(message);
-                end
+            % if ~isMATLABReleaseOlderThan('R2024b')
+            %     channelList = add(channelList, ioType, deviceID, portNum, signalType, TerminalConfig=terminalConfig, Range=range);
+            % else
+            switch ioType
+                case 'input'
+                    [ch, idx] = addinput(obj.SessionHandle,deviceID,portNum,signalType);
+                    obj.InChanIdxes(end+1) = idx;
+                case 'output'
+                    [ch, idx] = addoutput(obj.SessionHandle,deviceID,portNum,signalType);
+                    obj.OutChanIdxes(end+1) = idx;
+                case 'bidirectional'
+                    [ch, idx] = addbidirectional(obj.SessionHandle,deviceID,portNum,signalType);
+                    obj.OutChanIdxes(end+1) = idx;
+                    obj.InChanIdxes(end+1) = idx;
             end
+            ch.Name = channelID;
+            if ~isempty(terminalConfig) && ~contains(class(ch), 'Digital')
+                ch.TerminalConfig = terminalConfig;
+            end
+            if ~isempty(range) && ~contains(class(ch), 'Digital')
+                range = str2num(range);
+                ch.Range = range;
+            end
+            [warnMsg, warnId] = lastwarn;
+            if ~isempty(warnMsg)
+                message = ['Warning encountered loading DAQComponent channel information on line ' char(string(ii))];
+                warning(message);
+            end
+            % end
             
             if ~isfield(obj.ChannelMap, line.Device{:})
                 obj.ChannelMap.(line.Device{:}) = [];
@@ -521,9 +521,9 @@ function obj = CreateChannels(obj, filename, protocolIDs)
             warning(message);
         end
     end
-    if ~isMATLABReleaseOlderThan('R2024b')
-        obj.SessionHandle.Channels = channelList;
-    end
+    % if ~isMATLABReleaseOlderThan('R2024b')
+    %     obj.SessionHandle.Channels = channelList;
+    % end
     obj.PreviewChannels = logical(obj.PreviewChannels);
 end
 

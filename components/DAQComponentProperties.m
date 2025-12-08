@@ -29,11 +29,14 @@ end
 methods (Static, Access=private)
     function out = GetDefaultChannelConfig()
         % nb returns BASE DIRECTORY ONLY
-        if contains(pwd, 'StimControl')
-            out = [pwd filesep 'config' filesep 'component_params' filesep];
-        else
-            out = [pwd filesep 'StimControl' filesep 'config' filesep 'component_params'];
-        end
+        base = mfilename('fullpath');
+        out = replace(base, ['components' filesep 'DAQComponentProperties'], ['config' filesep 'component_params']);
+        
+        % if contains(pwd, 'StimControl')
+        %     out = [pwd filesep 'config' filesep 'component_params'];
+        % else
+        %     out = [pwd filesep 'StimControl' filesep 'config' filesep 'component_params'];
+        % end
     end
 end
 end

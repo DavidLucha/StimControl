@@ -73,7 +73,7 @@ end
 for fi = 1:length(allTargets)
     targetName = allTargets{fi};
     if ~isfield(obj.pids, targetName)
-        obj.WarnMsg(sprintf("No connected device found for stimulus target %s. Passive mode enabled.", targetName));
+        obj.warnMsg(sprintf("No connected device found for stimulus target %s. It should either be a ProtocolID for a connected device, or defined as a DAQ channel. Passive mode enabled.", targetName));
         obj.status = 'no protocol loaded';
         return
     end
