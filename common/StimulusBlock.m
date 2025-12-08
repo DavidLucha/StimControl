@@ -160,7 +160,7 @@ methods
                 for fi = 1:length(fds)
                     fieldName = fds{fi};
                     singleStimParams.(fieldName) = traversedParam.(fieldName);
-                    singleStimParams.(fieldName).delay = singleStimParams.(fieldName).delay + obj.startDelay;
+                    singleStimParams.(fieldName).delay(1) = singleStimParams.(fieldName).delay(1) + obj.startDelay;
                 end
             end
         else
@@ -199,12 +199,22 @@ methods
                     if iscell(f)
                         f = f{:};
                     end
+                    % set sequence
                     singleStimParams.(f).sequence = ...
                         [singleStimParams.(f).sequence traversedParam.(f).sequence+helperStruct.(f).idxOffset(sequence(si))]; 
+
+                    % set delay
+                    if strcmpi(obj.childRel, 'odd') && ~isempty(singleStimParams.(f).delay) % oddball, add repeat delay if not first runthrough.
+                        traversedParam.(f).delay(1) = traversedParam.(f).delay(1) + obj.repeatDelay;
+                    end
                     singleStimParams.(f).delay = ...
                         [singleStimParams.(f).delay traversedParam.(f).delay+(totalDelay-helperStruct.(f).totalDelay)];
+
                     % update helperstruct
                     helperStruct.(f).totalDelay = helperStruct.(f).totalDelay + child.durationMs;
+                    if strcmpi(obj.childRel, 'odd') 
+                        helperStruct.(f).totalDelay = helperStruct.(f).totalDelay + obj.repeatDelay;
+                    end
                 end
                 totalDelay = totalDelay + child.durationMs;
                 if strcmpi(obj.childRel, 'odd') % oddball, include repeat delay
@@ -216,9 +226,11 @@ methods
         % build trial params out of single stim params
         trialParams = singleStimParams;
         if obj.nStimRuns > 1 && (strcmpi(obj.childRel, 'sim') || strcmpi(obj.childRel, 'seq')) 
-            for f = targets
+            for f = unique(targets)
                 for nRep = 2:obj.nStimRuns
-                    trialParams.(f).delay = [trialParams.(f).delay singleStimParams.(f).delay+obj.singleStimMs];
+                    repeatDelays = singleStimParams.(f).delay;
+                    repeatDelays(1) = repeatDelays(1) + obj.repeatDelay;
+                    trialParams.(f).delay = [trialParams.(f).delay repeatDelays];
                     trialParams.(f).sequence = [trialParams.(f).sequence singleStimParams.(f).sequence];
                 end
             end

@@ -88,10 +88,7 @@ function trialParams = generateParamsSequence(obj)
     rootNode = obj.RootNode;
     obj.params = rootNode.buildParams;
     trialParams = obj.params;
-    % DEBUG: TODO REMOVE
-    % obj.PlotTree;
-    % END DEBUG
-    obj.data = {};
+    % obj.data = {};
 end
 
 function set.data(obj, val)
@@ -293,6 +290,37 @@ end
 function ValidateTree(obj)
     % Check the tree is valid. 
     leafIdxes = obj.leafIdxes;
+
+    % check all stimuli fit within tPre + tPost
+    fs = fields(obj.params);
+    for i = 1:length(fs)
+        fieldName = fs{i};
+        % get stimulus duration
+        paramDur = [];
+        for j = 1:length(obj.params.(fieldName).params)
+            singleStimParams = obj.params.(fieldName).params(j);
+            if singleStimParams.duration == -1
+                paramDur(end+1) = 0;                
+            else
+                if singleStimParams.duration == 0 ...
+                        && isfield(singleStimParams, 'commands') ...
+                        && isfield(singleStimParams.commands, 'dStimulus')
+                    singleStimParams.duration = singleStimParams.commands.dStimulus;
+                end
+                paramDur(end+1) = singleStimParams.duration;
+            end
+        end
+        totalDeviceDur = sum(paramDur(obj.params.(fieldName).sequence)) + ...
+            sum(obj.params.(fieldName).delay);
+        if totalDeviceDur > obj.tPre + obj.tPost
+            error("Stimulus error on trial definition line %d (%s). " + ...
+                        "Stimulus for %s has a total duration of %d, which does not fit within " + ...
+                        "tPre + tPost = %d", ...
+                        obj.trialIdx, obj.comment, fieldName, totalDeviceDur, obj.tPre+obj.tPost);
+        end
+    end
+
+
     %TODO THROWING AN ERROR ON 286
     % validate leaf relationships
     % for i = 1:length(leafIdxes)

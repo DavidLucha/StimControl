@@ -53,6 +53,8 @@ function stim = GenerateStim(params, rate, maxDur)
             generatorHandle = @StimGenerator.pwm;
         case 'digitalpulse'
             generatorHandle = @StimGenerator.digitalPulse;
+        case 'omission'
+            generatorHandle = @StimGenerator.omission;
         case 'analogpulse'
             generatorHandle = @StimGenerator.analogPulse;
         case 'sinewave'
@@ -187,6 +189,39 @@ function stim = digitalPulse(varargin)
         stim = StimGenerator.GetBase(params.totalTicks, params.duration, params.sampleRate);
         stim = ones(length(stim), 1);
     end
+
+    if params.display
+        StimGenerator.show(stim);
+    end
+end
+
+function stim = omission(varargin)
+    % Generates a digital pulse stim of given length
+    % PARAMS:
+    %     sampleRate (double=1000): sample rate of output array (Hz)
+    %     duration   (double=1000): duration of output (ms)
+    %     totalTicks (double=1000): duration of output in total ticks. Alternative to duration. 
+    %         When both are defined, duration will be limited to within totalTicks. 
+    p = inputParser();
+    addParameter(p, 'display', false, @(x) islogical(x));
+    addParameter(p, 'sampleRate', 1000, @(x) isnumeric(x));
+    addParameter(p, 'totalTicks', 1000, @(x) isnumeric(x));
+    addParameter(p, 'duration', -1, @(x) isnumeric(x));
+    addParameter(p, 'paramsStruct', [], @(x) isstruct(x));
+    parse(p, varargin{:});
+    params = p.Results;
+
+    if ~isempty(params.paramsStruct)
+        sampleRate = params.sampleRate;
+        totalTicks = params.totalTicks;
+        display = params.display;
+        params = params.paramsStruct;
+        params.sampleRate = sampleRate;
+        params.totalTicks = totalTicks;
+        params.display = display;
+    end
+
+    stim = StimGenerator.GetBase(params.totalTicks, params.duration, params.sampleRate);
 
     if params.display
         StimGenerator.show(stim);
