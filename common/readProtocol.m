@@ -28,7 +28,8 @@ lines(cellfun(@(x) strcmp(x(1),'%'),lines)) = [];
 g = struct(...              % general parameters
     'dPause',               5,...
     'nProtRuns',            1,...
-    'rand',                 0);
+    'rand',                 0, ...
+    'prePause',             0);
 defaultTrial = struct( ...
     'nRuns',                1, ...
     'tPre',                 1000, ...
@@ -220,12 +221,12 @@ if splitIdxes(1) > 1
                 case 'rand'
                     validateattributes(val,{'numeric'},{'nonnegative',...
                         '<=',2},mfilename,token)
-                    g.rand = val;
+                    g.rand = val;   
                     continue
                 case 'dpause'
                     validateattributes(val,{'numeric'},{'nonnegative'},...
                         mfilename,token)
-                    g.dPause = val;
+                    g.dPause = val/1000; % ms to s
                     continue
                 case 'ntrialruns'
                     validateattributes(val,{'numeric'},{'nonnegative'},...
@@ -241,7 +242,12 @@ if splitIdxes(1) > 1
                     validateattributes(val,{'numeric'},{'nonnegative'},...
                         mfilename,token)
                     defaultTrial.tPost = val;
-                continue
+                    continue
+                case 'prepause'
+                    validateattributes(val,{'numeric'},{'nonnegative'},...
+                        mfilename,token)
+                    g.prePause = logical(val);
+                    continue
             end
         end
         error('Unknown parameter "%s"',token)
@@ -275,6 +281,10 @@ for idxStim = 1:length(stimDefinitions)
         case 'serial'
             stimStruct = ParseSerial(params, BaseStimStructs.(stimType), stimID);
         case 'stimulusgroup'
+            %TODO: 
+            % check that all params within the stimulus group are defined.
+            % replace all tokens that map to another stimulus group with the text of that stimulus group
+            % check the stimulus group name doesn't cause logic problems (no other stimulusgroup contains this one's name in its entirety and vice versa)
             stimulusGroups.(stimID) = params;
         otherwise
             % standard cases
@@ -352,10 +362,9 @@ for idxTrial = 1:length(trialParams)
     % Sanitise line (add spaces around everything)
     sepQuery = '&|>|(\|>)|(\^\.\d?)';
     [startIdxes, endIdxes] = regexpi(params, [sepQuery '|\)|\(']);
-    for i = 0:length(startIdxes)-1
-        l = length(startIdxes);
-        startIdx = startIdxes(l-i);
-        endIdx = endIdxes(l-i);
+    for i = length(startIdxes):-1:1
+        startIdx = startIdxes(i);
+        endIdx = endIdxes(i);
         if endIdx ~= length(params) && ~strcmpi(params(endIdx + 1), ' ')
             params = insertAfter(params, endIdx, ' ');
         end
@@ -437,7 +446,7 @@ for idxTrial = 1:length(trialParams)
             end
             % update parent in tree
             tree{currentParentIdx} = currentParent;
-        elseif isfield(stimuli, token)
+        elseif isfield(stimuli, token) || (~isempty(name) && isfield(stimuli, name))
             % leaf (stimulus) node. Create child node and push, add index to current parent
             % Unless acquisition trigger, in which case add to acquisitiontrigger node 
             if stimuli.(token).isAcquisitionTrigger

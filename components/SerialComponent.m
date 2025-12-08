@@ -42,7 +42,6 @@ function obj = SerialComponent(varargin)
     end
 end
 
-% TODO REMOVE
 function Debug(obj)
     keyboard
 end
@@ -701,8 +700,8 @@ methods(Static, Access=public)
         else
             tmp = serialportfind(Port=port);
             if ~isempty(tmp)
-            delete(tmp);
-            clear tmp;
+                delete(tmp);
+                clear tmp;
             end
         end
     end

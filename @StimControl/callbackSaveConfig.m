@@ -6,6 +6,9 @@ function callbackSaveConfig(obj, src, event)
     dlgtitle = 'Save config';
     definput = {[pcID 'default']};
     filename = inputdlg('Enter filename:','Save config',[1 45],{[pcID '_default']});
+    if isempty(filename)
+        return
+    end
     filename = [filename{:} '.json'];
     if src == obj.h.saveSessionBtn
         %% Save session

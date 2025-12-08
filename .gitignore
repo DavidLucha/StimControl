@@ -1,8 +1,8 @@
 
 WidefieldImager/WidefieldImager.asv
 *.asv
-.wiki/
 *.csv
 *.json
-*.qst
 *.stim
+*.qst
+!*/Example*

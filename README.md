@@ -13,17 +13,3 @@ Check out [the wiki](github.com/WhitmireLab/StimControl/wiki) for in-depth expla
 * Open StimControl
 * configure device parameters in the setup tab if desired, press save if desired
 * In the session tab, choose an animal and experiment. Press 'start' to start a full session, or 'start passive' to start a session with all selected devices awaiting triggers.
-
-# NOTES FOR USERS
-## PROTOCOL FILES
-Types of Stimulus:
-Camera
-    hardware: repeat trigger
-    software: software trigger
-    rolling acquisition: frame captured record & start/stop trigger
-Light
-    Excitation (exclusive on right before imaging)
-    Illumination (solid on/off in trials or flash)
-
-## PARAMETER FILES 
-Parameters are read from .json files. See ComponentProperties for a full list of the properties currently supported.

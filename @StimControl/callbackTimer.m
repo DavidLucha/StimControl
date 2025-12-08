@@ -63,6 +63,11 @@ else
                         nTrials = 1;
                     end
                     obj.trialIdx = 1;
+                    if isfield(obj.g, 'prePause') && obj.g.prePause
+                        obj.f.startTrial = false;
+                        obj.status = 'inter-trial';
+                        return
+                    end
                     updateGUITimers(obj, startTic, true);
                     startTrial(obj);
                     obj.f.startTrial = false;
@@ -163,10 +168,8 @@ else
                 else
                     % update GUI
                     updateGUITimers(obj, startTic, false);
-
-                    % if < 10sec left in inter-trial interval and no trial is loaded, load new trial
-                    if toc(startTic) >= obj.g.dPause - (pauseOffset+10) ...
-                        && ~obj.f.trialLoaded 
+                    % additional logic for loading in with 10 sec left: toc(startTic) >= obj.g.dPause - (pauseOffset+10) ...
+                    if ~obj.f.trialLoaded 
                         obj.callbackLoadTrial([]); % load next trial to memory
                         for i = 1:obj.d.nActive
                             component = obj.d.activeComponents{i};
