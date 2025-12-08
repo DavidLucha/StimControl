@@ -360,7 +360,7 @@ for idxTrial = 1:length(trialParams)
     end
 
     % Sanitise line (add spaces around everything)
-    sepQuery = '&|>|(\|>)|(\^\.\d?)';
+    sepQuery = '&|>|(\|>)|(\|)|(\^\.\d?)';
     [startIdxes, endIdxes] = regexpi(params, [sepQuery '|\)|\(']);
     for i = length(startIdxes):-1:1
         startIdx = startIdxes(i);
