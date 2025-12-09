@@ -7,16 +7,20 @@ obj.indicateLoading('Loading protocol');
 
 if src == obj.h.SessionSelectDropDown
     %TODO TEST
-    obj.path.SessionProtocolFile = event;
-    experimentID = strsplit(event, filesep);
-    experimentID = experimentID{end};
-    experimentID = strsplit(experimentID, '.');
-    obj.experimentID = experimentID{1}; %todo as below this may cause issues later
-
+    % obj.path.SessionProtocolFile = event;
+    % experimentID = strsplit(event, filesep);
+    % experimentID = experimentID{end};
+    % experimentID = strsplit(experimentID, '.');
+    % obj.experimentID = experimentID{1}; %todo as below this may cause issues later
+    return
+elseif src == obj.h.menuCheckStimulus
+    checkStimulus(obj);
+    return
 elseif src ~= obj.h.protocolSelectDropDown
     % not implemented.
     return
-elseif strcmpi(src.Value, 'Browse...')
+end
+if strcmpi(src.Value, 'Browse...')
     obj.warnMsg("Browsing will cause problems if you choose something outside the default protocol base path " + ...
         " and then choose another protocol from the dropdown. Please be aware.");
     [filename, dir] = uigetfile([obj.path.protocolBase filesep '*.*'], 'Select protocol');
@@ -185,5 +189,18 @@ function targets = getAllTargets(p)
                 targets{end+1} = fds{j};
             end
         end
+    end
+end
+
+function checkStimulus(obj)
+    [filename, dir] = uigetfile([obj.path.protocolBase filesep '*.*'], 'Select protocol');
+    if filename == 0
+        return
+    end
+    fpath = [dir filesep filename];
+    if contains(fpath, '.stim')
+        [p, g] = readProtocol(fpath, true);
+    else
+        error("Unsupported file format. Supported formats: .qst, .stim");
     end
 end

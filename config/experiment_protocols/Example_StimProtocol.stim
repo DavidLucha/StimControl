@@ -161,6 +161,11 @@ nProtRuns2 rand1 dPause30 tPre2000 tPost5000
 
 Triggers & TwoSecCool                                                           % 2 second cool
 Triggers & TwoSecWarm                                                           % 2 second warm
+OneSecondSquareWave nStims3 RepDel10
+OneSecondSineWave nStims4
+RampingDigitalPWM
+TwoSecondNoise
+RampingAnalogPulse
 Triggers & (TwoSecWarm > (TwoSecCool StartDel10) nStims3 RepDel10) tPost13000   % sequential warm cool with 10ms delay x3
 Triggers & (TwoSecWarm ^.2 TwoSecCool OddDistr2 OddMinDist1 nStims10 RepDel10) tPost20090 % oddball swap 20% of warm stims for cool stims
 Triggers & (TwoSecWarm ^.5 (TwoSecCool |> TwoSecWarm) OddDistr2 OddMinDist1 nStims10 RepDel10) tPost20090 % oddball swap 50% of warm stims for either warm or cool, alternating 
@@ -172,9 +177,9 @@ Triggers & (TwoSecWarm ^.5 (TwoSecCool | TwoSecWarm) OddDistr1 nStims10 RepDel10
 TwoSecWarm(QST)[QST]: N320 S11000 C0420 V03000 R03000 D002000 T001 I1
 TwoSecCool(QST)[QST]: N320 S11000 C0220 V03000 R03000 D002000 T001 I1
 OneSecondSquareWave(SquareWave)[ao0]: Dur1000 Freq5 MaxAmp5 MinAmp-5 PW3
-OneSecondSineWave(SineWave)[ao0]: Dur1000 Freq1 Amp5
-RampingDigitalPWM(PWM)[GPIO7]: DC50 Freq20 Dur2000
-TwoSecondNoise(AnalogNoise)[ao1]: Dur2000 Distr1 MinAmp5 MaxAmp5
+OneSecondSineWave(SineWave)[ao0]: Dur1000 Freq1 Amp5 Phase90 VerticalShift0.5
+RampingDigitalPWM(PWM)[GPIO7]: DC90 Freq20 Dur2000 RampOnDur700 RampOffDur700
+TwoSecondNoise(AnalogNoise)[ao1]: Dur2000 Distr1 MinAmp-5 MaxAmp5
 RampingAnalogPulse(AnalogPulse)[ao1]: Dur1000 RampOnDur100 RampOffDur500 PulseAmp5
 % ArbitraryAnalog(Arbitrary)[ao0]: File:ArbitraryExample_20Hz_200ms.csv Interp1 Dur200
 

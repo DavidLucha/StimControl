@@ -128,7 +128,7 @@ methods
             % initalise helperstruct
             helperStruct.(targetName) = [];
             helperStruct.(targetName).idxOffset = 0;
-            helperStruct.(targetName).totalDelay = obj.startDelay;
+            helperStruct.(targetName).totalDelay = 0;
         end
         trialParams = singleStimParams; % will be built out later.
 
@@ -160,7 +160,6 @@ methods
                 for fi = 1:length(fds)
                     fieldName = fds{fi};
                     singleStimParams.(fieldName) = traversedParam.(fieldName);
-                    singleStimParams.(fieldName).delay(1) = singleStimParams.(fieldName).delay(1) + obj.startDelay;
                 end
             end
         else
@@ -235,6 +234,12 @@ methods
                 end
             end
         end
+
+        % add start delay
+        for f = unique(targets)
+            trialParams.(f).delay(1) = trialParams.(f).delay(1) + obj.startDelay;
+        end
+
     end
 
     %% Attribute-like functions

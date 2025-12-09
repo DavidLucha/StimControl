@@ -9,6 +9,7 @@ end
 
 properties(Access=private)
     treeTargets = []; % to be cached on first call of obj.targets
+    displayFig = [];
 end
 
 properties (Dependent)
@@ -106,9 +107,24 @@ function out = get.data(obj)
     out = obj.StimulusBlocks;
 end
 
-function PlotTree(obj)
-    % plot the stim tree. For debugging purposes. TODO ported from
-    % readProtocol. Untested in current context.
+function Plot(obj)
+    % if ~isempty(obj.displayFig)
+    %     clf(obj.displayFig);
+    %     grid = uigridlayout(obj.displayFig, "ColumnWidth",{"1x, 1x"}, 'RowHeight', {"1x"});
+    % else
+    %     obj.displayFig = figure();
+    %     grid = uigridlayout(obj.displayFig, "ColumnWidth",{"1x, 1x"}, 'RowHeight', {"1x"});
+    % end
+
+    % tiledlayout(1, 2);
+    if ~isempty(obj.displayFig)
+        delete(obj.displayFig);
+        clear(obj.displayFig);
+    end
+    obj.displayFig = figure;
+    subplot (2,1,1)
+
+    % plot the stim tree
     tree = obj.data;
     dat = zeros([1 length(tree)]);
     labels = repmat({}, [1 length(tree)]);
@@ -130,41 +146,29 @@ function PlotTree(obj)
     treeplot(dat);
     [x,y] = treelayout(dat);
     text(x + 0.02,y,labels);
-    % title(sprintf("%s: %d", obj.comment, obj.trialIdx));
-    title(obj.line);
+    title(sprintf("Trial %d: %s", obj.trialIdx, obj.line));
+
+    % nexttile
+    subplot(2,1,2)
+    
     if ~isempty(obj.params)
-        hFigs = findall(0,'type','figure');
-        if ~isempty(hFigs(strcmpi([hFigs.Name], 'treegrid')))
-            f = hFigs(strcmpi([hFigs.Name], 'treegrid'));
-            if ~matlab.ui.internal.isUIFigure(f)
-                f = uifigure('Name', 'treegrid', 'Position', f.Position);
-            end
-        else
-            f = uifigure('Name', 'treegrid');
+        fds = fields(obj.params);
+        l = length(fields(obj.params));
+        tax = linspace(-obj.tPre/1000, obj.tPost/1000, obj.tPre+obj.tPost);
+        stimOutputs = zeros(l, length(tax));
+        for i = 1:l
+            fName = fds{i};
+            stim = StimGenerator.GenerateStimTrain(obj.params.(fName), obj, 1000);
+            stimOutputs(i,:) = stim;
         end
-        [baseTable, paramsTables] = obj.PrintParams;
-        colWidths = {'1x'};
-        rowHeights = repmat({'1x'}, [length(paramsTables) 1]);
-        baseGrid = uigridlayout(f, 'ColumnWidth', {'1x'}, 'RowHeight', {'1x', '1x'});
-        tinyGrid = uigridlayout(baseGrid, 'Layout', ...
-            matlab.ui.layout.GridLayoutOptions( ...
-                'Row', 2, ...
-                'Column', 1), ...
-            'ColumnWidth', colWidths, ...
-            'RowHeight', rowHeights);
-        tb = uitable(baseGrid, 'Layout', ...
-            matlab.ui.layout.GridLayoutOptions( ...
-                'Row', 1, ...
-                'Column', 1), ...
-            'Data', baseTable);
-        for i = 1:length(paramsTables)
-            tb = uitable(tinyGrid, 'Layout', ...
-            matlab.ui.layout.GridLayoutOptions( ...
-                'Row', i, ...
-                'Column', 1), ...
-            'Data', paramsTables{i});
-        end
+        sp = stackedplot(tax, stimOutputs', 'DisplayLabels', fds);
+        title(sprintf("Trial %d: %s", obj.trialIdx, obj.line));
     end
+    uiwait(obj.displayFig);
+end
+
+function PlotChannelOutputs(obj)
+    
 end
 
 function leafIdxes = leafIdxes(obj)
@@ -313,6 +317,11 @@ function ValidateTree(obj)
         totalDeviceDur = sum(paramDur(obj.params.(fieldName).sequence)) + ...
             sum(obj.params.(fieldName).delay);
         if totalDeviceDur > obj.tPre + obj.tPost
+            % display precise data
+            fieldName
+            paramDur(obj.params.(fieldName).sequence)
+            obj.params.(fieldName).delay
+            % throw error
             error("Stimulus error on trial definition line %d (%s). " + ...
                         "Stimulus for %s has a total duration of %d, which does not fit within " + ...
                         "tPre + tPost = %d", ...

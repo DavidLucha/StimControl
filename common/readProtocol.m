@@ -9,6 +9,7 @@ function [p,g] = readProtocol(filename,varargin)
 ip = inputParser;
 addRequired(ip,'filename',...
     @(x)validateattributes(x,{'char'},{'nonempty'}));
+addOptional(ip, 'verbose',  @(x)validateattributes(x,{'boolean'}))
 parse(ip,filename,varargin{:});
 
 %% read file
@@ -175,7 +176,7 @@ validProtocolParams = struct(... %fields: valid params in protocol file. values:
         'Amp', 'amplitude', ...
         'Freq', 'frequency', ...
         'Phase', 'phase', ...
-        'VShift', 'verticalShift', ...
+        'VerticalShift', 'verticalShift', ...
         'AmpMod', 'amplitudeMod'), ... %nb special case? todo, low prio, just don't implement for now
     'analognoise', struct( ...
         'Dur', 'duration', ...
@@ -564,8 +565,10 @@ for idxTrial = 1:length(trialParams)
     trial.RootNodeIdx = 1;
     % trial.PlotTree;
     trial = trial.Clean;
-    trial.generateParamsSequence;
-    trial.ValidateTree;
+    trial.generateParamsSequence;trial.ValidateTree;
+    if isfield(ip.Results, 'verbose') && ip.Results.verbose
+        trial.Plot();
+    end
     trial.data = {};
     trials{end+1} = trial;
 end

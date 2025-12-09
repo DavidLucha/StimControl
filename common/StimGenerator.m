@@ -71,6 +71,8 @@ function stim = GenerateStim(params, rate, maxDur)
             generatorHandle = @StimGenerator.piezoStim;
         case 'thermalpreview'
             generatorHandle = @StimGenerator.thermalPreview;
+        case 'qst'
+            generatorHandle = @StimGenerator.thermalPreview;
         case 'serial'
             % trigger - special case. Hardcoded for now TODO
             stim = StimGenerator.serialTrigger( ...
@@ -270,11 +272,11 @@ function stim = analogPulse(varargin)
     end
     
     stim(:) = params.pulseAmp;
-    % rampUpTicks = StimGenerator.MsToTicks(params.rampOn, params.sampleRate);
-    % rampDownTicks = StimGenerator.MsToTicks(params.rampOff, params.sampleRate);
-    % stim(1:rampUpTicks+1) = linspace(params.baseAmp, params.pulseAmp, rampUpTicks);
+    rampUpTicks = StimGenerator.MsToTicks(params.rampOn, params.sampleRate);
+    rampDownTicks = StimGenerator.MsToTicks(params.rampOff, params.sampleRate);
+    stim(1:rampUpTicks) = linspace(params.baseAmp, params.pulseAmp, rampUpTicks);
     % stim(rampUpTicks+1:length(stim)-rampDownTicks) = params.pulseAmp;
-    % stim(end-rampDownTicks:end) = linspace(params.pulseAmp, params.minAmp, rampDownTicks);
+    stim(1+end-rampDownTicks:end) = linspace(params.pulseAmp, params.baseAmp, rampDownTicks);
 
     if params.display
         StimGenerator.show(stim);
@@ -321,8 +323,8 @@ function stim = sineWave(varargin)
     end
     
     if params.duration ~= -1
-        N = params.duration * params.sampleRate;
-        dur = params.duration;
+        N = params.duration/1000 * params.sampleRate;
+        dur = params.duration / 1000;
     else
         N = params.totalTicks;
         dur = StimGenerator.TicksToMs(params.totalTicks, params.sampleRate) / 1000;
