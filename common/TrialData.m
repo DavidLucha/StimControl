@@ -87,14 +87,12 @@ function trialParams = generateParamsSequence(obj)
     %       delay [double]: ms delay to wait between each parameter 
     %       params: [struct] array of params for each struct. Order maps to sequence
     rootNode = obj.RootNode;
-    %TODO uncomment below when you're done breaking things
-    % try
-        obj.Plot;
+    try
         obj.params = rootNode.buildParams;
-    % catch exception
-    %     dbstack
-    %     error("Error in trial %d (%s): %s", obj.trialIdx, obj.comment, exception.message)
-    % end
+    catch exception
+        dbstack
+        error("Error in trial %d (%s): %s", obj.trialIdx, obj.comment, exception.message)
+    end
     trialParams = obj.params;
     % obj.data = {};
 end
@@ -117,11 +115,11 @@ end
 function fig = Plot(obj)
     % tiledlayout(1, 2);
     if ~isempty(obj.displayFig)
-        delete(obj.displayFig);
         try
+            delete(obj.displayFig);
             clear(obj.displayFig);
         catch exc
-            % do nothing, I don't care.
+            % do nothing, we don't care if this fails.
         end
     end
     obj.displayFig = figure;
@@ -161,7 +159,18 @@ function fig = Plot(obj)
         stimOutputs = zeros(l, length(tax));
         for i = 1:l
             fName = fds{i};
-            stim = StimGenerator.GenerateStimTrain(obj.params.(fName), obj, 1000);
+            if strcmpi(fName, 'qst')
+                passParams = obj.params.(fName);
+                for jj = 1:length(passParams.params)
+                    passParams.params{jj}.type = 'thermalPulse';
+                end
+            else
+                passParams = obj.params.(fName);
+            end
+            stim = StimGenerator.GenerateStimTrain(passParams, obj, 1000);
+            if strcmpi(fName, 'qst') && length(stim) > length(stimOutputs)
+                stim = stim(1:length(stimOutputs)); %not worth putting more effort into than this I think.
+            end
             stimOutputs(i,:) = stim;
         end
         sp = stackedplot(tax, stimOutputs', 'DisplayLabels', fds);

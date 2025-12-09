@@ -27,6 +27,10 @@ function stimTrain = GenerateStimTrain(componentTrialData, genericTrialData, sam
 
     % Preallocate all zeros
     stimTrain = zeros(numel(timeAxis), 1);
+    if strcmpi(componentTrialData.params{1}.type, 'thermalpulse')
+        stimTrain = ones(numel(timeAxis), 1);
+        stimTrain = stimTrain * componentTrialData.params{1}.commands.NeutralTemp;
+    end
     
     stimTicks = numel(timeAxis);
     startIdx = 0;
@@ -74,6 +78,8 @@ function stim = GenerateStim(params, rate, maxDur)
             generatorHandle = @StimGenerator.piezoStim;
         case 'thermalpreview'
             generatorHandle = @StimGenerator.thermalPreview;
+        case 'thermalpulse'
+            generatorHandle = @StimGenerator.thermalPulsePreview;
         case 'qst'
             generatorHandle = @StimGenerator.thermalPreview;
         case 'serial'
@@ -655,11 +661,11 @@ function stim = thermalPreview(varargin)
     %     params.totalTicks = totalTicks;
     %     params.display = display;
     % end
-
+    
     if ~contains(p.UsingDefaults, 'totalTicks')
         stim = StimGenerator.GetBaseFromTicks(params.totalTicks);
     elseif params.duration ~= -1 
-        stim = StimGenerator.GetBase(params.totalTicks, params.duration, params.sampleRate);
+    stim = StimGenerator.GetBase(params.totalTicks, params.duration, params.sampleRate);
     elseif ~contains(p.UsingDefaults, 'paramsStruct')
         stim = StimGenerator.GetBase(params.totalTicks, max(params.paramsStruct.dStimulus), params.sampleRate);
     elseif ~contains(p.UsingDefaults, 'dStimulus')
@@ -669,7 +675,7 @@ function stim = thermalPreview(varargin)
     end
 
     fs = params.sampleRate;
-    if ~isempty(params.paramsStruct)
+        if ~isempty(params.paramsStruct)
         N = params.paramsStruct.NeutralTemp;
         C = params.paramsStruct.SetpointTemp;
         D = params.paramsStruct.dStimulus;
@@ -702,6 +708,95 @@ function stim = thermalPreview(varargin)
         tmp   = min([round(tPost*fs)+1 length(pulse)]);
         stim(t0+(1:tmp)-1,ii) = pulse(1:tmp);
     end
+
+    %% TODO
+    if params.display
+        StimGenerator.show(stim);
+    end
+end
+
+function stim = thermalPulsePreview(varargin)
+    % Generates a thermal preview stim of given length
+    % PARAMS:
+    %     sampleRate (double=1000): sample rate of output array (Hz)
+    %     duration   (double=1000): duration of output (ms)
+    %     totalTicks (double=1000): duration of output in total ticks. Alternative to duration. 
+    %         When both are defined, duration will be limited to within totalTicks. 
+    %     display     (logical=false): whether to display the generated stimulus
+    % PARAMS (THERMAL):
+    %     paramsStruct   (struct): structure of parameters for thermal stimulus
+    %        If provided, will override individual parameters (below)
+    %     NeutralTemp (double=32): neutral temperature (°C)
+    %     PacingRate  (double=300): pacing rate (ms)
+    %     ReturnSpeed (double=300): return speed (ms)
+    %     SetpointTemp (double=32): setpoint temperature (°C)
+    %     SurfaceSelect (vector[1x5]=[1 1 0 0 0]): surface select (1=on, 0=off)
+    %     dStimulus   (double=2000): stimulus duration (ms)
+    %     integralTerm (double=1): integral term
+    %     nTrigger    (double=1): number of triggers
+    %     VibrationDuration (double=0): vibration duration (ms)
+
+    p = inputParser();
+    addParameter(p, 'sampleRate', 1000, @(x) isnumeric(x));
+    addParameter(p, 'totalTicks', 1000, @(x) isnumeric(x));
+    addParameter(p, 'duration', -1, @(x) isnumeric(x)); 
+    addParameter(p, 'display', false, @(x) islogical(x));
+
+    addParameter(p, 'NeutralTemp', 32, @(x) isnumeric(x));
+    addParameter(p, 'PacingRate', 300, @(x) isnumeric(x));
+    addParameter(p, 'ReturnSpeed', 300, @(x) isnumeric(x));
+    addParameter(p, 'SetpointTemp', 32, @(x) isnumeric(x));
+    addParameter(p, 'SurfaceSelect', [1 1 0 0 0], @(x) isnumeric(x) && isvector(x) && length(x) == 5);
+    addParameter(p, 'dStimulus', 2000, @(x) isnumeric(x));
+    addParameter(p, 'VibrationDuration', 0, @(x) isnumeric(x));
+    addParameter(p, 'paramsStruct', [], @(x) isstruct(x));
+    parse(p, varargin{:});
+    params = p.Results;
+    
+    fs = params.sampleRate;
+    outs = [];
+    S = [];
+    % legacy consideration nonsense
+    for f = {"NeutralTemp", "SetpointTemp", "dStimulus", "PacingRate", "ReturnSpeed", "SurfaceSelect"}
+        fname = f{:};
+        if ~isempty(params.paramsStruct)
+            if isfield(params.paramsStruct, 'commands')
+                sln = params.paramsStruct.commands.(fname);
+            else
+                sln = params.paramsStruct.(fname);
+            end
+        else
+            sln = params.(fname);
+        end
+        if strcmpi(fname, 'surfaceselect')
+            S = sln;
+        else
+            outs(end+1) = sln;
+        end
+    end
+    N = outs(1);
+    C = outs(2);
+    D = outs(3);
+    V = outs(4);
+    R = outs(5);
+    stim = StimGenerator.GetBase(params.totalTicks, D, params.sampleRate);
+
+
+    stim = ones(length(stim),1) * N;
+
+    dP    = (D*fs/1000)-1;
+    pulse = ones(dP,1);
+    dV    = round(abs(C-N)/V*fs);
+    dR    = round(abs(C-N)/R*fs);
+    tmp   = linspace(0,1,dV)';
+    pulse(1:min([dV dP])) = tmp((1:min([dV dP])));
+    pulse = [pulse; linspace(pulse(end),0,dR)'] * (C-N) + N;
+    
+    % tmp   = min([round((params.totalTicks/params.sampleRate)*fs)+1 length(pulse)]);
+    % stim = pulse(1:tmp);
+
+    stim = pulse';
+    % stim = stim';
 
     %% TODO
     if params.display

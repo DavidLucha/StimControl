@@ -158,12 +158,12 @@
 nProtRuns2 rand1 dPause30 tPre2000 tPost5000
 
 ~ % Start Trial Definitions 
-% Triggers & TwoSecCool % 2 second cool
-% Triggers & TwoSecWarm % 2 second warm
-% OneSecondSquareWave nStims3 RepDel10
-% OneSecondSineWave nStims4
-% RampingDigitalPWM > ArbitraryAnalog > TwoSecondNoise > RampingAnalogPulse tPost7000
-% Triggers & (TwoSecWarm > (TwoSecCool StartDel10) nStims3 RepDel10) tPost13000   % sequential warm cool with 10ms delay x3
+Triggers & TwoSecCool % 2 second cool
+Triggers & TwoSecWarm % 2 second warm
+OneSecondSquareWave nStims3 RepDel10
+OneSecondSineWave nStims4
+RampingDigitalPWM > ArbitraryAnalog > TwoSecondNoise > RampingAnalogPulse tPost7000
+Triggers & (TwoSecWarm > (TwoSecCool StartDel10) nStims3 RepDel10) tPost13000   % sequential warm cool with 10ms delay x3
 Triggers & (TwoSecWarm ^.2 TwoSecCool OddDistr2 OddMinDist1 nStims10 RepDel10) tPost20090 % oddball swap 20% of warm stims for cool stims
 Triggers & (TwoSecWarm ^.5 (TwoSecondNoise |> OneSecondSquareWave) OddDistr2 OddMinDist1 nStims10 RepDel10) tPost20090 % oddball swap 50% of warm stims for either warm or cool, alternating 
 Triggers & (TwoSecWarm ^.5 (TwoSecondNoise | OneSecondSquareWave) OddDistr1 nStims10 RepDel10) tPost20090 % oddball swap 50% of warm stims for either warm or cool, randomly chosen where 20% of total oddballs will be cool and 80% will be warm.

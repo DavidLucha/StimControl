@@ -193,7 +193,7 @@ function targets = getAllTargets(p)
 end
 
 function checkStimulus(obj)
-    [filename, dir] = uigetfile([obj.path.protocolBase filesep '*.*'], 'Select protocol');
+    [filename, dir] = uigetfile([obj.path.protocolBase filesep '*.*'], 'Select protocol. WARNING: This will plot all trials at once. Isolate the trial you want to check within the file itself.');
     if filename == 0
         return
     end
