@@ -35,6 +35,9 @@ function stimTrain = GenerateStimTrain(componentTrialData, genericTrialData, sam
         stimIdx = componentTrialData.sequence(i);
         preStimTicks = StimGenerator.MsToTicks(componentTrialData.delay(i), sampleRate);
         stimParams = componentTrialData.params(stimIdx);
+        if iscell(stimParams)
+            stimParams = stimParams{:};
+        end
         startIdx = startIdx + preStimTicks;
 
         interimStim = StimGenerator.GenerateStim(stimParams, sampleRate, stimTicks-startIdx);
@@ -65,7 +68,7 @@ function stim = GenerateStim(params, rate, maxDur)
             generatorHandle = @StimGenerator.squareWave;
         case 'digitaltrigger'
             generatorHandle = @StimGenerator.digitalTrigger;
-        case 'arbitraryStim'
+        case 'arbitrary'
             generatorHandle = @StimGenerator.arbitraryStim;
         case 'piezo'
             generatorHandle = @StimGenerator.piezoStim;
@@ -80,6 +83,8 @@ function stim = GenerateStim(params, rate, maxDur)
                 'totalTicks', maxDur, ...
                 'duration', params.commands.dStimulus);
             return
+        otherwise
+            error("Unknown stimulus type: %s", params.type);
     end
     stim = generatorFcn(generatorHandle);
 end
@@ -522,15 +527,20 @@ function stim = arbitraryStim(varargin)
         else
             expectedTicks = params.totalTicks;
         end
-        if length(mat) ~= expectedTicks
+        if length(stim) ~= expectedTicks
             if params.interpolate
-                warning("Given stimulus %s does not have an appropriate number of samples for %s ticks at %s rate. Interpolating...", params.filename, expectedTicks, params.sampleRate);
+                % warning("Given stimulus %s does not have an appropriate number of samples for %s ticks at %s rate. Interpolating...", params.filename, expectedTicks, params.sampleRate);
                 % TODO INTERP1 https://au.mathworks.com/help/matlab/ref/double.interp1.html
-                samplePoints = linspace(1, length(mat), length(mat));
-                queryPoints = linspace(1, length(mat), expectedTicks);
-                stim = interp1(samplePoints, mat, queryPoints);
+                samplePoints = linspace(1, length(stim), length(stim));
+                queryPoints = linspace(1, length(stim), expectedTicks);
+                stim = interp1(samplePoints, stim, queryPoints);
             else
-                error("Given stimulus %s does not have an appropriate number of samples for %s ticks at %s rate, and interpolation was set to false.", params.filename, expectedTicks, params.sampleRate);
+                durMs = expectedTicks * 1000 / params.sampleRate;
+
+                error("Given stimulus %s does not have an appropriate number of samples for %d ms duration at %d rate, and interpolation was set to false. " + ...
+                    "Allow interpolation using the Interp1 argument, or change the duration, rate, or stimulus. " + ...
+                    "Appropriate number of ticks was %d but %d ticks were defined in the file..", ...
+                    params.filename, durMs, params.sampleRate, expectedTicks, length(stim));
             end
         end
     end

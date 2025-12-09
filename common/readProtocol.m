@@ -550,7 +550,7 @@ for idxTrial = 1:length(trialParams)
             end
              error("Invalid parameter on trial definition line %d (%s): %s. " + ...
                 "Parameters must be a stimulis defined in the stimulus section " + ...
-                "or one of the following: %s", idxTrial, comment, name, ...
+                "or one of the following: %s, StartDel, RepDel, nStims, OddDistr, OddMinDist", idxTrial, comment, name, ...
                 GetListFromArray(fields(validTrialParams)));
         end
         % put parent back on the stack
@@ -565,9 +565,12 @@ for idxTrial = 1:length(trialParams)
     trial.RootNodeIdx = 1;
     % trial.PlotTree;
     trial = trial.Clean;
-    trial.generateParamsSequence;trial.ValidateTree;
+    trial.generateParamsSequence;
+    trial.ValidateTree;
     if isfield(ip.Results, 'verbose') && ip.Results.verbose
-        trial.Plot();
+        f = trial.Plot();
+        f.Position = [450 150 850 800];
+        % uiwait(f);
     end
     trial.data = {};
     trials{end+1} = trial;

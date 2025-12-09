@@ -87,7 +87,14 @@ function trialParams = generateParamsSequence(obj)
     %       delay [double]: ms delay to wait between each parameter 
     %       params: [struct] array of params for each struct. Order maps to sequence
     rootNode = obj.RootNode;
-    obj.params = rootNode.buildParams;
+    %TODO uncomment below when you're done breaking things
+    % try
+        obj.Plot;
+        obj.params = rootNode.buildParams;
+    % catch exception
+    %     dbstack
+    %     error("Error in trial %d (%s): %s", obj.trialIdx, obj.comment, exception.message)
+    % end
     trialParams = obj.params;
     % obj.data = {};
 end
@@ -107,19 +114,15 @@ function out = get.data(obj)
     out = obj.StimulusBlocks;
 end
 
-function Plot(obj)
-    % if ~isempty(obj.displayFig)
-    %     clf(obj.displayFig);
-    %     grid = uigridlayout(obj.displayFig, "ColumnWidth",{"1x, 1x"}, 'RowHeight', {"1x"});
-    % else
-    %     obj.displayFig = figure();
-    %     grid = uigridlayout(obj.displayFig, "ColumnWidth",{"1x, 1x"}, 'RowHeight', {"1x"});
-    % end
-
+function fig = Plot(obj)
     % tiledlayout(1, 2);
     if ~isempty(obj.displayFig)
         delete(obj.displayFig);
-        clear(obj.displayFig);
+        try
+            clear(obj.displayFig);
+        catch exc
+            % do nothing, I don't care.
+        end
     end
     obj.displayFig = figure;
     subplot (2,1,1)
@@ -164,11 +167,8 @@ function Plot(obj)
         sp = stackedplot(tax, stimOutputs', 'DisplayLabels', fds);
         title(sprintf("Trial %d: %s", obj.trialIdx, obj.line));
     end
-    uiwait(obj.displayFig);
-end
-
-function PlotChannelOutputs(obj)
     
+    fig = obj.displayFig;
 end
 
 function leafIdxes = leafIdxes(obj)
@@ -303,6 +303,9 @@ function ValidateTree(obj)
         paramDur = [];
         for j = 1:length(obj.params.(fieldName).params)
             singleStimParams = obj.params.(fieldName).params(j);
+            if iscell(singleStimParams)
+                singleStimParams = singleStimParams{:};
+            end
             if singleStimParams.duration == -1
                 paramDur(end+1) = 0;                
             else
@@ -317,15 +320,22 @@ function ValidateTree(obj)
         totalDeviceDur = sum(paramDur(obj.params.(fieldName).sequence)) + ...
             sum(obj.params.(fieldName).delay);
         if totalDeviceDur > obj.tPre + obj.tPost
-            % display precise data
-            fieldName
-            paramDur(obj.params.(fieldName).sequence)
-            obj.params.(fieldName).delay
+            % % display precise data
+            % sprintf("%s: \n dur: %s \n delay: %s", ...
+            %     fieldName, ...
+            %     strjoin(string(paramDur(obj.params.(fieldName).sequence)), ','), ...
+            %     strjoin(string(obj.params.(fieldName).delay), ','))
             % throw error
-            error("Stimulus error on trial definition line %d (%s). " + ...
-                        "Stimulus for %s has a total duration of %d, which does not fit within " + ...
-                        "tPre + tPost = %d", ...
-                        obj.trialIdx, obj.comment, fieldName, totalDeviceDur, obj.tPre+obj.tPost);
+            error("Stimulus error on trial definition line %d (%s). \n" + ...
+                        "Stimulus for %s has a total duration of %d ms, which does not fit within " + ...
+                        "tPre + tPost = %d ms. \ntPost should be set to at least %d to fit the stimulus as written. \n" + ...
+                        "   sequence: %s\n" + ...
+                        "   duration: %s\n" + ...
+                        "      delay: %s\n", ...
+                        obj.trialIdx, obj.comment, fieldName, totalDeviceDur, obj.tPre+obj.tPost, totalDeviceDur-obj.tPre, ...
+                        strjoin(string(obj.params.(fieldName).sequence), ','), ...
+                        strjoin(string(paramDur(obj.params.(fieldName).sequence)), ','), ...
+                        strjoin(string(obj.params.(fieldName).delay), ','));
         end
     end
 

@@ -89,7 +89,7 @@
 %     * BaseAmpX      - Amplitude to pulse from (V). Default 0
 % 
 % ---Arbitrary---
-%     * File:FileName - name of the file to refer to 
+%     * FileName      - name of the file to refer to 
 %     * InterpX       - whether to interpolate values (1=true 0=false). Default 0
 %     * DurX          - duration (ms) -1=until end of stim
 % 
@@ -158,18 +158,15 @@
 nProtRuns2 rand1 dPause30 tPre2000 tPost5000
 
 ~ % Start Trial Definitions 
-
-Triggers & TwoSecCool                                                           % 2 second cool
-Triggers & TwoSecWarm                                                           % 2 second warm
-OneSecondSquareWave nStims3 RepDel10
-OneSecondSineWave nStims4
-RampingDigitalPWM
-TwoSecondNoise
-RampingAnalogPulse
-Triggers & (TwoSecWarm > (TwoSecCool StartDel10) nStims3 RepDel10) tPost13000   % sequential warm cool with 10ms delay x3
+% Triggers & TwoSecCool % 2 second cool
+% Triggers & TwoSecWarm % 2 second warm
+% OneSecondSquareWave nStims3 RepDel10
+% OneSecondSineWave nStims4
+% RampingDigitalPWM > ArbitraryAnalog > TwoSecondNoise > RampingAnalogPulse tPost7000
+% Triggers & (TwoSecWarm > (TwoSecCool StartDel10) nStims3 RepDel10) tPost13000   % sequential warm cool with 10ms delay x3
 Triggers & (TwoSecWarm ^.2 TwoSecCool OddDistr2 OddMinDist1 nStims10 RepDel10) tPost20090 % oddball swap 20% of warm stims for cool stims
-Triggers & (TwoSecWarm ^.5 (TwoSecCool |> TwoSecWarm) OddDistr2 OddMinDist1 nStims10 RepDel10) tPost20090 % oddball swap 50% of warm stims for either warm or cool, alternating 
-Triggers & (TwoSecWarm ^.5 (TwoSecCool | TwoSecWarm) OddDistr1 nStims10 RepDel10) tPost20090 % oddball swap 50% of warm stims for either warm or cool, randomly chosen where 20% of total oddballs will be cool and 80% will be warm.
+Triggers & (TwoSecWarm ^.5 (TwoSecondNoise |> OneSecondSquareWave) OddDistr2 OddMinDist1 nStims10 RepDel10) tPost20090 % oddball swap 50% of warm stims for either warm or cool, alternating 
+Triggers & (TwoSecWarm ^.5 (TwoSecondNoise | OneSecondSquareWave) OddDistr1 nStims10 RepDel10) tPost20090 % oddball swap 50% of warm stims for either warm or cool, randomly chosen where 20% of total oddballs will be cool and 80% will be warm.
 
 ~ % Start Stimulus Definitions
 
@@ -181,7 +178,8 @@ OneSecondSineWave(SineWave)[ao0]: Dur1000 Freq1 Amp5 Phase90 VerticalShift0.5
 RampingDigitalPWM(PWM)[GPIO7]: DC90 Freq20 Dur2000 RampOnDur700 RampOffDur700
 TwoSecondNoise(AnalogNoise)[ao1]: Dur2000 Distr1 MinAmp-5 MaxAmp5
 RampingAnalogPulse(AnalogPulse)[ao1]: Dur1000 RampOnDur100 RampOffDur500 PulseAmp5
-% ArbitraryAnalog(Arbitrary)[ao0]: File:ArbitraryExample_20Hz_200ms.csv Interp1 Dur200
+ArbitraryAnalog(Arbitrary)[ao0]: ArbitraryExample_20Hz_200ms.csv Interp1 Dur2000
+OneSecondOmission(Omission)[GPIO7]: Dur1000
 
 % acquisition triggers
 CameraTrigger(DigitalTrigger)[Widefield1, Widefield2]: AcquisitionTrigger Freq20 Dur-1
