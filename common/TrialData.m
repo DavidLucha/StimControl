@@ -347,26 +347,6 @@ function ValidateTree(obj)
                         strjoin(string(obj.params.(fieldName).delay), ','));
         end
     end
-
-
-    %TODO THROWING AN ERROR ON 286
-    % validate leaf relationships
-    % for i = 1:length(leafIdxes)
-    %     firstLeaf = obj.StimulusBlocks{leafIdxes(i)};
-    %     for j = i+1:length(leafIdxes)
-    %         secondLeaf = obj.StimulusBlocks{leafIdxes(j)};
-    %         commonParent = firstLeaf.FirstCommonParentIdx(leafIdxes(j));
-    %         par = obj.StimulusBlocks{commonParent};
-    %         % check no device / channel is targeted simultaneously by two commands.
-    %         similarityMatrix = secondLeaf.stimParams.targetDevices == firstLeaf.stimParams.targetDevices';
-    %         if any(similarityMatrix) && strcmpi(par.childRel, 'sim')
-    % 
-    %             error("Device targeted twice simultaneously in trial definition %d (%s): %s. ", ...
-    %                 obj.trialIdx, obj.comment, strjoin(secondLeaf.stimParams.targetDevices(logical(sum(similarityMatrix)))));
-    %         end
-    % 
-    %     end
-    % end
 end
 end
 
