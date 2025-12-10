@@ -241,11 +241,11 @@ function startTrial(obj)
     if ~obj.f.trialLoaded
         obj.callbackLoadTrial([]);
         for i = 1:obj.d.nActive
+            component = obj.d.activeComponents{i};
             if isempty(obj.p(obj.trialNum).params.(component.ConfigStruct.ProtocolID))
                 % component not targeted
                 continue
             end
-            component = obj.d.activeComponents{i};
             component.LoadTrial([]);
         end
     end
