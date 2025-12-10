@@ -109,6 +109,9 @@ for i = 1:length(p)
                 componentData.(targets{f}) = trialData.params.(targets{f});
             end
         end
+        if isempty(componentData)
+            continue
+        end
         if length(fields(componentData)) == 1 && any(strcmpi(fields(componentData),compID))
             componentData = componentData.(compID);
         end

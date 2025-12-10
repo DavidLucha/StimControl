@@ -22,6 +22,10 @@ elseif src == obj.h.StartStopBtn || src == obj.h.StartSingleTrialBtn
     end
     for i = 1:obj.d.nActive
         component = obj.d.activeComponents{i};
+        if isempty(obj.p(obj.trialNum).params.(component.ConfigStruct.ProtocolID))
+            % component not targeted
+            continue
+        end
         component.SavePath = obj.dirExperiment;
         component.LoadTrial([]);
     end
