@@ -101,7 +101,7 @@ function obj = InitialiseSession(obj, varargin)
     addParameter(p, 'ChannelConfig', '', @(x) ischar(x) || isstring(x) || islogical(x));
     addParameter(p, 'ConfigStruct', []);
     addParameter(p, 'KeepHardwareSettings', []);
-    addParameter(p, 'ActiveDeviceIDs', {}, @iscellstr);
+    addParameter(p, 'ActiveDeviceIDs', {}, @(x) iscellstr(x) || (ischar(x) && strcmpi(x, 'all')));
     parse(p, varargin{:});
     params = p.Results;
 
@@ -222,44 +222,6 @@ function SetParams(obj, paramsStruct)
         end
     end
 end
-
-% function SaveAuxiliaryConfig(obj, filepath)
-    % Get channel parameters for saving. DAQ-specific.
-    % TODO (possible): re-implement this but only if oyu've also
-    % implemented a graphical way to change these parameters. Otherwise why bother
-
-    % [s, out] = system('vol');
-    %     out = strsplit(out, '\n');
-    %     out = out{2}(end-8:end);
-    %     if strcmpi(out, '48AC-D74C')
-    %         filename = [out, '_', obj.ComponentID];
-    % channels = obj.SessionHandle.Channels;
-    % channelData = {'portNum', 'channelName', 'ioType', 'signalType', 'TerminalConfig', 'Range', 'ProtType',  'ProtFunc', 'ProtID'};
-    % 
-    % channelData = {'deviceID' 'portNum' 'channelName' 'ioType' ...
-    %     'signalType' 'TerminalConfig' 'Range'};
-    % nChans = size(channels);
-    % nChans = nChans(2);
-    % for i = 1:nChans
-    %     chan = channels(i);
-    %     deviceID = chan.Device.ID;
-    %     portNum = chan.ID;
-    %     name = chan.Name;
-    %     if contains(ch.Type, 'Output')
-    %         ioType = 'output';
-    %     elseif contains(ch.Type, 'Input')
-    %         ioType = 'input';
-    %     else
-    %         ioType = 'bidirectional';
-    %     end
-    %     signalType = chan.MeasurementType;
-    %     terminalConfig = chan.TerminalConfig;
-    %     range = ['[' char(string(chan.Range.Min)) ' ' char(string(ch.Range.Max)) ']'];
-    %     chanCell = {deviceID portNum name ioType signalType terminalConfig range};
-    %     channelData(i+1,:) = chanCell;
-    % end
-    % writetable(channelData, filepath);
-% end
 
 function PrintInfo(obj)
     % Print device information.
@@ -389,7 +351,9 @@ function LoadTrialFromParams(obj, componentTrialData, genericTrialData, preloadD
     % Preallocate all zeros
     previewOut = zeros(numel(timeAxis), length(obj.SessionHandle.Channels));
     out = zeros(numel(timeAxis), sum(contains({obj.SessionHandle.Channels.Type}, 'Output')));
-    
+    % if isempty(obj.ChannelMap)
+    %     obj = obj.CreateChannels(obj.ConfigStruct.ChannelConfig, 'all');
+    % end
     for i = 1:length(fds)
         fieldName = fds{i};
         % targetNames = fields(obj.ChannelMap);
@@ -415,29 +379,21 @@ function LoadTrialFromParams(obj, componentTrialData, genericTrialData, preloadD
         params = componentTrialData.(fieldName);
         %todo preloading PWM as special case
         % if strcmpi(lower(params.params.Type), 'pwm') && obj.ChannelMap
-        stim = StimGenerator.GenerateStimTrain(componentTrialData.(fieldName), genericTrialData, obj.SessionHandle.Rate);
+        if obj.SessionHandle.Rate == 0
+            rate = obj.ConfigStruct.Rate;
+        else
+            rate = obj.SessionHandle.Rate;
+        end
+        stim = StimGenerator.GenerateStimTrain(componentTrialData.(fieldName), genericTrialData, rate);
         for idx = outIdxes
-            if strcmpi(fieldName, 'TwoPhotonStop') %todo INCREDIBLY cursed. fix.
-                out(end-5:end-4, idx) = 1 ;
-            elseif strcmpi(fieldName, 'TwoPhotonStart')
-                out(1, idx) = 1;
-            elseif strcmpi(fieldName, 'TwoPhotonNext')
-                out(3, idx) = 1;
-            else
-                stim = stim(1:length(out)); %todo this is cheating.
-                out(:,idx) = stim;
+            if length(out) ~= length(stim)
+                keyboard
+                stim = stim(1:length(out)); 
             end
+            out(:,idx) = stim;
         end
         for idx = chIdxes
-            if strcmpi(fieldName, 'TwoPhotonStop') %todo INCREDIBLY cursed. fix.
-                previewOut(end-5:end-4, idx) = 1;
-            elseif strcmpi(fieldName, 'TwoPhotonStart')
-                previewOut(1, idx) = 1;
-            elseif strcmpi(fieldName, 'TwoPhotonNext')
-                previewOut(1, idx) = 1;
-            else
-                previewOut(:, idx) = stim;
-            end
+            previewOut(:, idx) = stim;
         end
     end
     obj.PreviewData = previewOut;
@@ -498,7 +454,7 @@ function obj = CreateChannels(obj, filename, protocolIDs)
             warning('');
             line = tab(ii, :); %TODO CHECK FOR BLANKS
             % line.('deviceID') or line.(1);
-            if ~isempty(protocolIDs) ...
+            if ~isempty(protocolIDs) && (~ischar(protocolIDs) || ~strcmpi(protocolIDs, 'all'))...
                 && ~any(contains(protocolIDs, line.('Device'){:}))
                 % skip channels that aren't required for this protocol.
                 continue
@@ -614,13 +570,10 @@ function status = GetSessionStatus(obj)
     
     % persistent lastScanAcquired;
     status = '';
-    if obj.SessionHandle.Running
+    if isempty(obj.SessionHandle.Channels)
+        status = 'uninitialised'; %no channels loaded
+    elseif obj.SessionHandle.Running
         status = 'running'; % DAQ running
-        % if obj.SessionHandle.NumScansAvailable == 0
-        % 
-        % else
-        %     lastScanAcquired = tic;
-        % end
     elseif ~isempty(obj.TriggerTimer) && isvalid(obj.TriggerTimer) && obj.TriggerTimer.Running
         status = 'running'; % Software triggered timer running
     elseif obj.SessionHandle.NumScansQueued ~= 0

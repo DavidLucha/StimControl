@@ -2,5 +2,4 @@ filename = 'C:\Users\labadmin\Documents\MATLAB\StimControl\config\experiment_pro
 if ~isfile(filename)
     filename = 'C:\Users\labadmin\OneDrive - The University of Queensland\Documents\MATLAB\StimControl\config\experiment_protocols\Example_StimProtocol.stim';
 end
-[p, g] = readProtocol(filename);
-trial = p(1);
+[p, g] = readProtocol(filename, true);

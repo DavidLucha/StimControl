@@ -30,6 +30,7 @@ end
 properties (Access=private)
     allTargetsCached = [];
     oddballSequence = [];
+    durCached = [];
 end
 
 methods
@@ -128,7 +129,8 @@ methods
             % initalise helperstruct
             helperStruct.(targetName) = [];
             helperStruct.(targetName).idxOffset = 0;
-            helperStruct.(targetName).totalDelay = obj.startDelay;
+            helperStruct.(targetName).totalDelay = 0;
+            % helperStruct.(targetName).totalStimuliInSequence = 0; %used for additional index offsets. Sorry about how unreadable this is.
         end
         trialParams = singleStimParams; % will be built out later.
 
@@ -138,7 +140,7 @@ methods
             for ti = 1:length(tds)
                 % TODO-OPTIMISATION: POSSIBILITY FOR A FAIR BIT OF REPLICATION HERE
                 targetName = tds(ti);
-                singleStimParams.(targetName).params = obj.stimParams;
+                singleStimParams.(targetName).params = {obj.stimParams};
                 singleStimParams.(targetName).delay = [obj.startDelay repmat(obj.repeatDelay, [1 obj.nStimRuns-1])];
                 singleStimParams.(targetName).sequence = ones([1, obj.nStimRuns]);
                 trialParams = singleStimParams;
@@ -156,11 +158,10 @@ methods
             % children occur simultaneously (the easiest case)
             for ti = 1:length(traversedParams)
                 traversedParam = traversedParams{ti};
-                fds = fields(traversedParam);
+                fds = fields(traversedParam); %todo check simultaneous execution on same line
                 for fi = 1:length(fds)
                     fieldName = fds{fi};
                     singleStimParams.(fieldName) = traversedParam.(fieldName);
-                    singleStimParams.(fieldName).delay = singleStimParams.(fieldName).delay + obj.startDelay;
                 end
             end
         else
@@ -171,19 +172,33 @@ methods
                 sequence = obj.generateOddballOrder;
                 obj.oddballSequence = sequence;
             end
-            totalDelay = obj.startDelay;
+            totalDelay = 0;
             
-            % construct from traversed params (set params from traversal
-            % and offset indices)
+            % First pass. Fill in helper struct and generate:
+            %   index offsets for sub-stimuli per param target (i.e. 1 from
+            %       sub-stim that is second in a sequence for a target becomes
+            %       2, etc.)
+            %   parameter list - concatenated from sub-params
+            %   relativeSequence: the index of the sequence for the
+            %   specific parameter (e.g. if sequence has targets A B A C
+            %   then relativeSequence will be [1 1 2 1])
+            relativeSequence = ones(length(traversedParams), 1);
             for ti = 1:length(traversedParams)
                 traversedParam = traversedParams{ti};
                 for f = fields(traversedParam)'
                     if iscell(f)
                         f = f{:};
                     end
+                    relativeSequence(ti) = length(helperStruct.(f).idxOffset);
+                    % helperStruct.(f).idxOffset(end) = helperStruct.(f).idxOffset(end) - (sequence(ti) - length(helperStruct.(f).idxOffset)); % account for sequence with multiple targets
                     helperStruct.(f).idxOffset = [helperStruct.(f).idxOffset, helperStruct.(f).idxOffset+max(traversedParam.(f).sequence)];
-                    singleStimParams.(f).params = ...
-                        [singleStimParams.(f).params traversedParam.(f).params];
+                    try
+                        singleStimParams.(f).params = ...
+                            [singleStimParams.(f).params traversedParam.(f).params];
+                    catch exception
+                        keyboard
+                        error(exception)
+                    end
                 end
             end
             
@@ -199,12 +214,22 @@ methods
                     if iscell(f)
                         f = f{:};
                     end
+                    % set sequence
                     singleStimParams.(f).sequence = ...
-                        [singleStimParams.(f).sequence traversedParam.(f).sequence+helperStruct.(f).idxOffset(sequence(si))]; 
+                        [singleStimParams.(f).sequence traversedParam.(f).sequence+helperStruct.(f).idxOffset(relativeSequence(sequence(si)))]; 
+
+                    % set delay
+                    if strcmpi(obj.childRel, 'odd') && ~isempty(singleStimParams.(f).delay) % oddball, add repeat delay if not first runthrough.
+                        traversedParam.(f).delay(1) = traversedParam.(f).delay(1) + obj.repeatDelay;
+                    end
                     singleStimParams.(f).delay = ...
                         [singleStimParams.(f).delay traversedParam.(f).delay+(totalDelay-helperStruct.(f).totalDelay)];
+
                     % update helperstruct
-                    helperStruct.(f).totalDelay = helperStruct.(f).totalDelay + child.durationMs;
+                    helperStruct.(f).totalDelay = totalDelay + child.durationMs;
+                    if strcmpi(obj.childRel, 'odd') 
+                        helperStruct.(f).totalDelay = helperStruct.(f).totalDelay + obj.repeatDelay;
+                    end
                 end
                 totalDelay = totalDelay + child.durationMs;
                 if strcmpi(obj.childRel, 'odd') % oddball, include repeat delay
@@ -216,13 +241,21 @@ methods
         % build trial params out of single stim params
         trialParams = singleStimParams;
         if obj.nStimRuns > 1 && (strcmpi(obj.childRel, 'sim') || strcmpi(obj.childRel, 'seq')) 
-            for f = targets
+            for f = unique(targets)
                 for nRep = 2:obj.nStimRuns
-                    trialParams.(f).delay = [trialParams.(f).delay singleStimParams.(f).delay+obj.singleStimMs];
+                    repeatDelays = singleStimParams.(f).delay;
+                    repeatDelays(1) = repeatDelays(1) + obj.repeatDelay;
+                    trialParams.(f).delay = [trialParams.(f).delay repeatDelays];
                     trialParams.(f).sequence = [trialParams.(f).sequence singleStimParams.(f).sequence];
                 end
             end
         end
+
+        % add start delay
+        for f = unique(targets)
+            trialParams.(f).delay(1) = trialParams.(f).delay(1) + obj.startDelay;
+        end
+
     end
 
     %% Attribute-like functions
@@ -274,12 +307,12 @@ methods
             targets = obj.stimParams.targetDevices;
         end
     end
-    
-    function duration = durationMs(obj)
-        duration = obj.startDelay + obj.nStimRuns*(obj.singleStimMs + obj.repeatDelay);
-    end
 
-    function stimDur = singleStimMs(obj)
+    function duration = durationMs(obj)
+        if ~isempty(obj.durCached)
+            duration = obj.durCached;
+            return
+        end
         if ~obj.isLeafNode
             children = obj.children;
             if strcmpi(obj.childRel, 'sim') 
@@ -288,14 +321,19 @@ methods
                 for i = 1:length(children)
                     stimDur = max(stimDur, children(i).durationMs);
                 end
+                duration = obj.startDelay + obj.nStimRuns*(stimDur + obj.repeatDelay) - obj.repeatDelay;
             elseif strcmpi(obj.childRel, 'seq')
                 % children occur sequentially. consider a single stim
                 stimDur = 0;
                 for i = 1:length(children)
                     stimDur = stimDur + children(i).durationMs;
                 end
+                duration = obj.startDelay + obj.nStimRuns*(stimDur + obj.repeatDelay) - obj.repeatDelay;
             elseif strcmpi(obj.childRel, 'odd')
+                duration = obj.startDelay;
                 %TODO
+                dbstack
+                keyboard
                 error("not implemented.");
             end
         else
@@ -306,12 +344,10 @@ methods
                 else
                     stimDur = max([obj.stimParams.commands.dStimulus]);
                 end
-            elseif strcmpi(obj.stimParams.type, 'arbitrary')
-                %TODO
-                error("not implemented.")
             else
                 stimDur = obj.stimParams.duration;
             end
+            duration = stimDur;
         end
     end
 end
