@@ -6,7 +6,7 @@ function [p,g] = readProtocol(filename,varargin)
 ip = inputParser;
 addRequired(ip,'filename',...
     @(x)validateattributes(x,{'char'},{'nonempty'}));
-addOptional(ip, 'verbose',  false, @(x)validateattributes(x,{'boolean'}))
+addOptional(ip, 'verbose',  false, @islogical)
 parse(ip,filename,varargin{:});
 verboseMode = (isfield(ip.Results, 'verbose') && ip.Results.verbose);
 
@@ -29,7 +29,6 @@ lines(cellfun(@(x) strcmp(x(1),'%'),lines)) = [];
 % establish constants
 sepQuery = '&|>|(\|>)|(\|)|(\^\.\d?)';
 sepPlusQ = ['(' sepQuery '|\s|\(|\)|^|$' ')'];
-    
 
 % if verboseMode, try/catch. Else error
 try

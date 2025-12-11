@@ -164,7 +164,6 @@ Triggers & (TwoSecWarm > (TwoSecCool StartDel10) nStims3 RepDel10) tPost13000   
 Triggers & (TwoSecWarm ^.2 TwoSecCool OddDistr2 OddMinDist1 nStims10 RepDel10) tPost20090 % oddball swap 20% of warm stims for cool stims
 Triggers & (TwoSecWarm ^.5 (TwoSecondNoise |> OneSecondSquareWave) OddDistr2 OddMinDist1 nStims10 RepDel10) tPost20090 % oddball swap 50% of warm stims for either warm or cool, alternating 
 % Triggers & (TwoSecWarm ^.5 (TwoSecondNoise | OneSecondSquareWave) OddDistr1 nStims10 RepDel10) tPost20090 % oddball swap 50% of warm stims for either warm or cool, randomly chosen
-Triggers & TwoSecCool tPost1000 % 2 second cool with insuficient tPost
 
 ~ % Start Stimulus Definitions
 
