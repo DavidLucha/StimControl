@@ -236,6 +236,12 @@ end
 
 % Preload a single trial
 function LoadTrialFromParams(obj, componentTrialData, genericTrialData, preloadDevice)
+    if iscell(componentTrialData.params) 
+        % todo what if you have two different commands??
+        % should be a non-issue for QST because they only receive one kind
+        % of structure for commands. Hm.
+        componentTrialData.params = [componentTrialData.params{:}];
+    end
     componentTrialData.params = componentTrialData.params.commands;
     obj.TrialData = componentTrialData;
     obj.TrialData.tPre = genericTrialData.tPre;
