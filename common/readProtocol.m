@@ -26,24 +26,39 @@ lines(cellfun(@(x) strcmp(x(1),'%'),lines)) = [];
 [g, defaultTrial, validTrialParams, validStimBlockParams, ...
     BaseStimStructs, validProtocolParams] = generateDefaults();
 [splitIdxes, trialParams, stimDefinitions] = SplitFile(lines);
+% establish constants
+sepQuery = '&|>|(\|>)|(\|)|(\^\.\d?)';
+sepPlusQ = ['(' sepQuery '|\s|\(|\)|^|$' ')'];
+    
 
 % if verboseMode, try/catch. Else error
-[g, defaultTrial] = ParseGeneral(splitIdxes, lines, g, defaultTrial);
-
-% if verboseMode, try/catch. Else error
-[stimuli, acquisitionTriggers, stimulusGroups] = ParseStimuli(stimDefinitions);
+try
+    [g, defaultTrial] = ParseGeneral(splitIdxes, lines, g, defaultTrial);
+    [stimuli, acquisitionTriggers, stimulusGroups] = ParseStimuli(stimDefinitions);
+catch exception
+    if verboseMode
+        err = exception.message;
+        return
+    else
+        rethrow(exception);
+    end
+end
 
 trials = {};
 for idxTrial = 1:length(trialParams)
     trialLine = trialParams{idxTrial};
     try
-        trial = ParseTrial(trialLine, stimuli, ...
-                stimulusGroups, defaultTrial, validTrialParams, ...
-                idxTrial, validStimBlockParams);
+        [trial, parameters] = InitialiseTrial(trialLine, stimulusGroups, defaultTrial, idxTrial);
+        trial = ParseTrial(trial, parameters, stimuli, validTrialParams, ...
+            validStimBlockParams);
         trial.valid = true;
     catch exception
-        trial.valid = false;
-        trial.errorMsg = exception.message;
+        if verboseMode
+            trial.valid = false;
+            trial.errorMsg = exception.message;
+        else
+            rethrow(exception)
+        end
     end
     trials{end+1} = trial;
 end
@@ -374,20 +389,12 @@ p = [trials{:}];
         end
     end
 
-    function trial = ParseTrial(trialLine, stimuli, ...
-            stimulusGroups, defaultTrial, validTrialParams, ...
-            idxTrial, validStimBlockParams)
-        % Parse a single line of a trial.
-        % clean line.
+    function [trial, params] = InitialiseTrial(trialLine, stimulusGroups, defaultTrial, ...
+            idxTrial)
         [params, comment] = strtok(trialLine, '%');
         params = strtrim(params);
         comment = strtrim(comment(2:end));
-        trialParamsTracker = validTrialParams;
         
-        % establish constants
-        sepQuery = '&|>|(\|>)|(\|)|(\^\.\d?)';
-        sepPlusQ = ['(' sepQuery '|\s|\(|\)|^|$' ')'];
-    
         % replace stimulus groups with definitions
         % todo optimise this is worst case O(n^2) at LEAST
         if ~isempty(stimulusGroups)
@@ -428,6 +435,12 @@ p = [trials{:}];
             'comment', comment, ...
             'line', trialLine);
         trial.trialIdx = idxTrial;
+    end
+
+    function trial = ParseTrial(trial, params, stimuli, validTrialParams, ...
+            validStimBlockParams)
+        % Parse a single line of a trial.
+        trialParamsTracker = validTrialParams;
         stack = java.util.Stack;
         tree = {StimulusBlock('childRel', 'sim', 'childIdxes', [2 3]), ...  % root node
             StimulusBlock('childRel', 'sim', 'parentIdx', 1), ...           % acquisition trigger node
@@ -492,7 +505,7 @@ p = [trials{:}];
                         "In oddball paradigms with multiple oddballs, put all oddball " + ...
                         "stimuli into their own bracket block within the oddball block."+ ...
                         "(relationships defined: %s, %s)", ...
-                        idxTrial, comment, currentParent.childRel, childRel); 
+                        trial.trialIdx, comment, currentParent.childRel, childRel); 
                 else
                     currentParent.childRel = childRel;
                 end
@@ -505,7 +518,7 @@ p = [trials{:}];
                     if ~strcmpi(currentParent.childRel, 'sim') && ~isempty(currentParent.childRel) % todo this doesn't check the whole way up. Document that isAcquisitionTrigger is separate
                         error("Syntax error in trial line %d (%s): " + ...
                             "Stimuli marked as AcquisitionTrigger cannot occur within sequential or oddball relationships",  ...
-                            idxTrial, comment);
+                            trial.trialIdx, comment);
                     end
                     newNode = StimulusBlock('stimParams', stimuli.(token), ...
                         'parentIdx', acquisitionIdx);
@@ -527,7 +540,7 @@ p = [trials{:}];
                 end
                 if trialParamsTracker.(name)
                     error("Invalid syntax on trial line %d (%s): %s can only be defined once per trial.", ...
-                        idxTrial, comment, name);
+                        trial.trialIdx, comment, name);
                 end
                 trialParamsTracker.(name) = true;
                 trial.(name) = value; % todo check this works all the time, I think it does
@@ -539,7 +552,7 @@ p = [trials{:}];
                         if ~strcmpi(currentParent.childRel, 'odd')
                             % gotta be an oddball to use this
                             error("Invalid syntax on trial definition line %d (%s): " + ...
-                                "OddDistrX is set, but the relationship for its stimulus block is not oddball (^.X)", idxTrial, comment);
+                                "OddDistrX is set, but the relationship for its stimulus block is not oddball (^.X)", trial.trialIdx, comment);
                         end
                         if value == 0
                             currentParent.oddParams.distributionMethod = 'even';
@@ -552,22 +565,22 @@ p = [trials{:}];
                                     % can't set semirandom without also setting a minimum distance
                                     error("Invalid syntax on trial definition line %d (%s): " + ...
                                         "to make oddball distribution semirandom, you must also define the minimum distance between oddballs using OddMinDistX. " + ...
-                                        "Add this parameter or change to another OddDistr (0=even, 1=random, 2=semirandom)", idxTrial, comment);
+                                        "Add this parameter or change to another OddDistr (0=even, 1=random, 2=semirandom)", trial.trialIdx, comment);
                             end
                         else
                             error("Invalid syntax on trial definition line %d (%s): " + ...
-                                "OddDistrX accepts X values 0=even, 1=random, 2=semirandom", idxTrial, comment);
+                                "OddDistrX accepts X values 0=even, 1=random, 2=semirandom", trial.trialIdx, comment);
                         end
                     case 'oddmindist'
                         % some syntax checking.
                         if ~strcmpi(currentParent.childRel, 'odd')
                             % gotta be an oddball to use this
                             error("Invalid syntax on trial definition line %d (%s): " + ...
-                                "OddMinDistX is set, but the relationship for its stimulus block is not oddball (^.X).", idxTrial, comment);
+                                "OddMinDistX is set, but the relationship for its stimulus block is not oddball (^.X).", trial.trialIdx, comment);
                         elseif isfield(currentParent.oddParams, 'distributionMethod')
                             % shouldn't be set! likely the wrong kind of oddball distribution method.
                             error("Invalid syntax on trial definition line %d (%s): " + ...
-                                "OddMinDistX is set, but the OddDistr value for its stimulus block is not semirandom (OddDistr2).", idxTrial, comment);
+                                "OddMinDistX is set, but the OddDistr value for its stimulus block is not semirandom (OddDistr2).", trial.trialIdx, comment);
                         end
                         currentParent.oddParams.distributionMethod = ['semirandom' char(string(value))];
                     case 'repdel'
@@ -585,7 +598,7 @@ p = [trials{:}];
                 end
                  error("Invalid parameter on trial definition line %d (%s): %s. " + ...
                     "Parameters must be a stimulis defined in the stimulus section " + ...
-                    "or one of the following: %s, StartDel, RepDel, nStims, OddDistr, OddMinDist", idxTrial, comment, name, ...
+                    "or one of the following: %s, StartDel, RepDel, nStims, OddDistr, OddMinDist", trial.trialIdx, comment, name, ...
                     GetListFromArray(fields(validTrialParams)));
             end
             % put parent back on the stack
