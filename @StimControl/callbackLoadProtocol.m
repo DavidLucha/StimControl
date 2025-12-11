@@ -14,7 +14,8 @@ if src == obj.h.SessionSelectDropDown
     % obj.experimentID = experimentID{1}; %todo as below this may cause issues later
     return
 elseif src == obj.h.menuCheckStimulus
-    checkStimulus(obj);
+    % start protocolchecker app
+    protocolchecker;
     return
 elseif src ~= obj.h.protocolSelectDropDown
     % not implemented.
