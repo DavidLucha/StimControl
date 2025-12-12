@@ -160,12 +160,12 @@ function StartTrial(obj)
     if ~isempty(obj.TriggerTimer) && isvalid(obj.TriggerTimer)
         % run stimulation on matlab timer
         start(obj.TriggerTimer);
-        try
-            wait(obj.TriggerTimer,obj.timeoutWait)% wait for data acquisition
-        catch me
-            warning(me.identifier,'%s',...      % rethrow timeout error as warning
-                me.message); 
-        end
+        % try
+        %     wait(obj.TriggerTimer)% wait for data acquisition
+        % catch me
+        %     warning(me.identifier,'%s',...      % rethrow timeout error as warning
+        %         me.message);
+        % end
     else
         % run stimulation on DAQ clock
         start(obj.SessionHandle);               % start data acquisition
@@ -177,7 +177,7 @@ function Stop(obj)
     if obj.SessionHandle.Running
         stop(obj.SessionHandle);
     end
-    if ~isempty(obj.TriggerTimer) && isvalid(obj.TriggerTimer) && obj.TriggerTimer.Running
+    if ~isempty(obj.TriggerTimer) && isvalid(obj.TriggerTimer) && strcmpi(obj.TriggerTimer.Running, 'on')
         stop(obj.TriggerTimer);
         delete(obj.TriggerTimer);
     end
@@ -528,18 +528,18 @@ function obj = CreateChannels(obj, filename, protocolIDs)
 end
 
 function obj = ClearChannels(obj)
-            disp(message);
-            % disp(exception.message)
-            dbstack
-            keyboard
-            % if length(obj.SessionHandle.Channels) ~= 0
-            %     removechannel(obj.SessionHandle, 1:length(obj.SessionHandle.Channels));
-            % end
-            % obj.ChannelMap = [];
-            % obj.PreviewChannels = [];
-            % obj.OutChanIdxes = [];
-            % obj.InChanIdxes = [];
-        end
+        disp(message);
+        % disp(exception.message)
+        dbstack
+        keyboard
+        % if length(obj.SessionHandle.Channels) ~= 0
+        %     removechannel(obj.SessionHandle, 1:length(obj.SessionHandle.Channels));
+        % end
+        % obj.ChannelMap = [];
+        % obj.PreviewChannels = [];
+        % obj.OutChanIdxes = [];
+        % obj.InChanIdxes = [];
+    end
 end
 
 
@@ -553,9 +553,16 @@ function componentID = GetComponentID(obj)
 end
 
 function SoftwareTrigger(obj, ~, ~)
-    %TDO REWRITE NOW THAT 
-    if obj.triggerIdx >= length(obj.PreviewData)
-        write(obj.SessionHandle, obj.PreviewData(obj.triggerIdx,:))
+    persistent triggerIdx;
+    if isempty(triggerIdx)
+        triggerIdx = 1; 
+    end
+    % nb using an incrementing IDX may lead to longer execution times.
+    % could estimate the appropriate index based off execution time, but
+    % that feels like overengineering.
+    if triggerIdx <= length(obj.PreviewData)
+        write(obj.SessionHandle, obj.PreviewData(triggerIdx,obj.OutChanIdxes));
+        triggerIdx = triggerIdx + 1;
     else
         obj.Stop();
     end
@@ -574,11 +581,11 @@ function status = GetSessionStatus(obj)
         status = 'uninitialised'; %no channels loaded
     elseif obj.SessionHandle.Running
         status = 'running'; % DAQ running
-    elseif ~isempty(obj.TriggerTimer) && isvalid(obj.TriggerTimer) && obj.TriggerTimer.Running
+    elseif ~isempty(obj.TriggerTimer) && isvalid(obj.TriggerTimer) && strcmpi(obj.TriggerTimer.Running, 'on')
         status = 'running'; % Software triggered timer running
     elseif obj.SessionHandle.NumScansQueued ~= 0
         status = 'ready'; % ready for DAQ triggered run
-    elseif ~isempty(obj.PreviewData)
+    elseif ~isempty(obj.PreviewData) && ~isempty(obj.TriggerTimer) && isvalid(obj.TriggerTimer)
         status = 'ready'; % ready for software triggered run
     elseif ~isempty(obj.SessionHandle) && isvalid(obj.SessionHandle)
         status = 'connected';
