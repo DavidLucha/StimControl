@@ -5,6 +5,12 @@ persistent nTrials;
 persistent startTic;
 persistent previousStatus; %todo this may cause issues with multiple sessions of different status? edge case
 persistent pauseOffset;
+persistent debugtic
+% if isempty(debugtic)
+%     debugtic = tic;
+% end
+% toc(debugtic);
+% debugtic = tic;
 if isempty(startTic)
     startTic = tic;
 end
@@ -173,6 +179,10 @@ else
                         obj.callbackLoadTrial([]); % load next trial to memory
                         for i = 1:obj.d.nActive
                             component = obj.d.activeComponents{i};
+                            if isempty(obj.p(obj.trialNum).params.(component.ConfigStruct.ProtocolID))
+                                % not targeted by this trial
+                                continue
+                            end
                             component.LoadTrial([]);
                         end
                         obj.status = 'inter-trial'; %clear loading symbol
@@ -232,6 +242,10 @@ function startTrial(obj)
         obj.callbackLoadTrial([]);
         for i = 1:obj.d.nActive
             component = obj.d.activeComponents{i};
+            if isempty(obj.p(obj.trialNum).params.(component.ConfigStruct.ProtocolID))
+                % component not targeted
+                continue
+            end
             component.LoadTrial([]);
         end
     end

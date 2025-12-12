@@ -9,7 +9,7 @@ function [p,g] = readProtocol(filename,varargin)
 ip = inputParser;
 addRequired(ip,'filename',...
     @(x)validateattributes(x,{'char'},{'nonempty'}));
-addOptional(ip, 'verbose',  @(x)validateattributes(x,{'boolean'}))
+addOptional(ip, 'verbose',  false, @(x)validateattributes(x,{'boolean'}))
 parse(ip,filename,varargin{:});
 
 %% read file
