@@ -5,6 +5,12 @@ persistent nTrials;
 persistent startTic;
 persistent previousStatus; %todo this may cause issues with multiple sessions of different status? edge case
 persistent pauseOffset;
+persistent debugtic
+% if isempty(debugtic)
+%     debugtic = tic;
+% end
+% toc(debugtic);
+% debugtic = tic;
 if isempty(startTic)
     startTic = tic;
 end
@@ -173,6 +179,10 @@ else
                         obj.callbackLoadTrial([]); % load next trial to memory
                         for i = 1:obj.d.nActive
                             component = obj.d.activeComponents{i};
+                            if isempty(obj.p(obj.trialNum).params.(component.ConfigStruct.ProtocolID))
+                                % not targeted by this trial
+                                continue
+                            end
                             component.LoadTrial([]);
                         end
                         obj.status = 'inter-trial'; %clear loading symbol
@@ -232,6 +242,10 @@ function startTrial(obj)
         obj.callbackLoadTrial([]);
         for i = 1:obj.d.nActive
             component = obj.d.activeComponents{i};
+            if isempty(obj.p(obj.trialNum).params.(component.ConfigStruct.ProtocolID))
+                % component not targeted
+                continue
+            end
             component.LoadTrial([]);
         end
     end
@@ -317,8 +331,13 @@ function timeoutReached = updateGUITimers(obj, startTic, reset)
         totalTimeLabel = strip(split(obj.h.trialTimeEstimate.Text, '/'));
         trialSecs = seconds(duration(totalTimeLabel{2}, 'InputFormat', 'mm:ss'));
         experimentTimeLabel = strip(split(obj.h.protocolTimeEstimate.Text, '/'));
-        experimentSecs = seconds(duration(experimentTimeLabel{2}, 'InputFormat', 'mm:ss'));
-        experimentStartSecs = seconds(duration(experimentTimeLabel{1}, 'InputFormat', 'mm:ss'));
+        if length(sscanf(experimentTimeLabel{1}, "%d:%d:%d")) == 3
+            inputFormat = 'hh:mm:ss';
+        else
+           inputFormat = 'mm:ss';
+        end
+        experimentSecs = seconds(duration(experimentTimeLabel{2}, 'InputFormat', inputFormat));
+        experimentStartSecs = seconds(duration(experimentTimeLabel{1}, 'InputFormat', inputFormat));
         intervalSecs = seconds(duration(obj.h.StatusCountdownLabel.Text(2:end), ...
                 'InputFormat', 'mm:ss'));
     end

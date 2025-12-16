@@ -7,34 +7,38 @@ obj.indicateLoading('Loading protocol');
 
 if src == obj.h.SessionSelectDropDown
     %TODO TEST
-    obj.path.SessionProtocolFile = event;
-    experimentID = strsplit(event, filesep);
-    experimentID = experimentID{end};
-    experimentID = strsplit(experimentID, '.');
-    obj.experimentID = experimentID{1}; %todo as below this may cause issues later
-
+    % obj.path.SessionProtocolFile = event;
+    % experimentID = strsplit(event, filesep);
+    % experimentID = experimentID{end};
+    % experimentID = strsplit(experimentID, '.');
+    % obj.experimentID = experimentID{1}; %todo as below this may cause issues later
+    return
+elseif src == obj.h.menuCheckStimulus
+    % start protocolchecker app
+    protocolchecker;
+    return
 elseif src ~= obj.h.protocolSelectDropDown
     % not implemented.
     return
-elseif strcmpi(src.Value, 'Browse...')
-    obj.warnMsg("Browsing will cause problems if you choose something outside the default protocol base path " + ...
-        " and then choose another protocol from the dropdown. Please be aware.");
+end
+if strcmpi(src.Value, 'Browse...')
     [filename, dir] = uigetfile([obj.path.protocolBase filesep '*.*'], 'Select protocol');
     if filename == 0
         src.Value = '';
         return
     end
     obj.path.SessionProtocolFile = [dir filename];
-    experimentID = strsplit(filename, '.');
-    obj.experimentID = experimentID{1};     % todo this will cause problems later on 
-                                            % because the base protocol path isn't being updated 
-                                            % (this is on purpose so the path 
-                                            % to all the other protocol files
-                                            % doesn't get screwy but it's
-                                            % on the list to fix)
+    experimentID = filename;
+    obj.experimentID = experimentID;
+    obj.path.protocolDirectories.(obj.experimentID) = dir;
 elseif ~strcmpi(src.Value, '')
     obj.experimentID = src.Value;
-    obj.path.SessionProtocolFile = [obj.path.protocolBase filesep src.Value];
+    if ~isempty(obj.path.protocolDirectories) && isfield(obj.path.protocolDirectories, src.Value)
+        pathBase = obj.path.SessionProtocolFile.(obj.experimentID);
+    else
+        pathBase = obj.path.protocolBase;
+    end
+        obj.path.SessionProtocolFile = [pathBase filesep src.Value];
 
 elseif strcmpi(src.Value, '')
     obj.h.trialInformationScroller.Value = '';
@@ -51,25 +55,24 @@ if ~isfile(obj.path.SessionProtocolFile)
     obj.status = 'no protocol loaded';
     return
 end
-
-if contains(obj.path.SessionProtocolFile, '.qst')
-    % legacy considerations
-    [p, g] = readQSTParameters(obj.path.SessionProtocolFile);
-elseif contains(obj.path.SessionProtocolFile, '.stim')
-    % current format
-    [p, g] = readProtocol(obj.path.SessionProtocolFile);
-else
-    error("Unsupported file format. Supported formats: .qst, .stim");
+try
+    if contains(obj.path.SessionProtocolFile, '.qst')
+        % legacy considerations
+        [p, g] = readQSTParameters(obj.path.SessionProtocolFile);
+    elseif contains(obj.path.SessionProtocolFile, '.stim')
+        % current format
+        [p, g] = readProtocol(obj.path.SessionProtocolFile);
+    else
+        error("Unsupported file format. Supported formats: .qst, .stim");
+    end
+catch exception
+    obj.errorMsg(exception.message);
+    return;
 end
 
 createChans = isempty(obj.p);
 
-obj.p = p;
-obj.g = g;
-obj.trialIdx = 1;
-obj.trialNum = 1;
-
-allTargets = getAllTargets(obj.p);
+allTargets = getAllTargets(p);
 % Construct appropriate trial for each device
 deviceTargets = [];
 for di = 1:sum(obj.d.Active)
@@ -98,9 +101,9 @@ end
 % fullComponentData = repmat(componentData, [1 length(obj.p)]);
 
 % reorganise params to be per device.
-for i = 1:length(obj.p)
+for i = 1:length(p)
     trialComponentData = componentData;
-    trialData = obj.p(i);
+    trialData = p(i);
     for cIdx = 1:length(ct)
         compID = ct{cIdx};
         targets = obj.d.componentTargets.(compID);
@@ -110,12 +113,15 @@ for i = 1:length(obj.p)
                 componentData.(targets{f}) = trialData.params.(targets{f});
             end
         end
+        if isempty(componentData)
+            continue
+        end
         if length(fields(componentData)) == 1 && any(strcmpi(fields(componentData),compID))
             componentData = componentData.(compID);
         end
         trialComponentData.(compID) = componentData;
     end
-    obj.p(i).params = trialComponentData;
+    p(i).params = trialComponentData;
 end
 
 if createChans
@@ -126,9 +132,20 @@ if createChans
         end
         comp = obj.d.Available{i};
         obj.indicateLoading("Creating channels...");
-        obj.d.Available{i} = comp.InitialiseSession('ActiveDeviceIDs', obj.d.ActiveIDs);
+        if ~isempty(obj.d.ActiveIDs)
+            obj.d.Available{i} = comp.InitialiseSession('ActiveDeviceIDs', obj.d.ActiveIDs);
+        else
+            obj.d.Available{i} = comp.InitialiseSession('ActiveDeviceIDs', 'all');
+        end
     end
 end
+
+% load to device
+obj.p = p;
+obj.g = g;
+obj.trialIdx = 1;
+obj.trialNum = 1;
+
 obj.indicateLoading("Protocol load completed. Loading trial.");
 
 % refresh information scroller
@@ -179,5 +196,18 @@ function targets = getAllTargets(p)
                 targets{end+1} = fds{j};
             end
         end
+    end
+end
+
+function checkStimulus(obj)
+    [filename, dir] = uigetfile([obj.path.protocolBase filesep '*.*'], 'Select protocol. WARNING: This will plot all trials at once. Isolate the trial you want to check within the file itself.');
+    if filename == 0
+        return
+    end
+    fpath = [dir filesep filename];
+    if contains(fpath, '.stim')
+        [p, g] = readProtocol(fpath, true);
+    else
+        error("Unsupported file format. Supported formats: .qst, .stim");
     end
 end

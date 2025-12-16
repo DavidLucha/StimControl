@@ -9,6 +9,7 @@ end
 
 properties(Access=private)
     treeTargets = []; % to be cached on first call of obj.targets
+    displayFig = [];
 end
 
 properties (Dependent)
@@ -25,6 +26,9 @@ properties
     trialIdx
     RootNodeIdx
     stimuli
+
+    valid
+    errorMsg
 end
 
 methods
@@ -86,12 +90,14 @@ function trialParams = generateParamsSequence(obj)
     %       delay [double]: ms delay to wait between each parameter 
     %       params: [struct] array of params for each struct. Order maps to sequence
     rootNode = obj.RootNode;
-    obj.params = rootNode.buildParams;
+    try
+        obj.params = rootNode.buildParams;
+    catch exception
+        dbstack
+        error("Error in trial %d (%s): %s", obj.trialIdx, obj.comment, exception.message)
+    end
     trialParams = obj.params;
-    % DEBUG: TODO REMOVE
-    % obj.PlotTree;
-    % END DEBUG
-    obj.data = {};
+    % obj.data = {};
 end
 
 function set.data(obj, val)
@@ -109,9 +115,20 @@ function out = get.data(obj)
     out = obj.StimulusBlocks;
 end
 
-function PlotTree(obj)
-    % plot the stim tree. For debugging purposes. TODO ported from
-    % readProtocol. Untested in current context.
+function fig = Plot(obj)
+    % tiledlayout(1, 2);
+    if ~isempty(obj.displayFig)
+        try
+            delete(obj.displayFig);
+            clear(obj.displayFig);
+        catch exc
+            % do nothing, we don't care if this fails.
+        end
+    end
+    obj.displayFig = figure;
+    subplot (2,1,1)
+
+    % plot the stim tree
     tree = obj.data;
     dat = zeros([1 length(tree)]);
     labels = repmat({}, [1 length(tree)]);
@@ -133,41 +150,37 @@ function PlotTree(obj)
     treeplot(dat);
     [x,y] = treelayout(dat);
     text(x + 0.02,y,labels);
-    % title(sprintf("%s: %d", obj.comment, obj.trialIdx));
-    title(obj.line);
+    title(sprintf("Trial %d: %s", obj.trialIdx, obj.line));
+
+    % nexttile
+    subplot(2,1,2)
+    
     if ~isempty(obj.params)
-        hFigs = findall(0,'type','figure');
-        if ~isempty(hFigs(strcmpi([hFigs.Name], 'treegrid')))
-            f = hFigs(strcmpi([hFigs.Name], 'treegrid'));
-            if ~matlab.ui.internal.isUIFigure(f)
-                f = uifigure('Name', 'treegrid', 'Position', f.Position);
+        fds = fields(obj.params);
+        l = length(fields(obj.params));
+        tax = linspace(-obj.tPre/1000, obj.tPost/1000, obj.tPre+obj.tPost);
+        stimOutputs = zeros(l, length(tax));
+        for i = 1:l
+            fName = fds{i};
+            if strcmpi(fName, 'qst')
+                passParams = obj.params.(fName);
+                for jj = 1:length(passParams.params)
+                    passParams.params{jj}.type = 'thermalPulse';
+                end
+            else
+                passParams = obj.params.(fName);
             end
-        else
-            f = uifigure('Name', 'treegrid');
+            stim = StimGenerator.GenerateStimTrain(passParams, obj, 1000);
+            if strcmpi(fName, 'qst') && length(stim) > length(stimOutputs)
+                stim = stim(1:length(stimOutputs)); %not worth putting more effort into than this I think.
+            end
+            stimOutputs(i,:) = stim;
         end
-        [baseTable, paramsTables] = obj.PrintParams;
-        colWidths = {'1x'};
-        rowHeights = repmat({'1x'}, [length(paramsTables) 1]);
-        baseGrid = uigridlayout(f, 'ColumnWidth', {'1x'}, 'RowHeight', {'1x', '1x'});
-        tinyGrid = uigridlayout(baseGrid, 'Layout', ...
-            matlab.ui.layout.GridLayoutOptions( ...
-                'Row', 2, ...
-                'Column', 1), ...
-            'ColumnWidth', colWidths, ...
-            'RowHeight', rowHeights);
-        tb = uitable(baseGrid, 'Layout', ...
-            matlab.ui.layout.GridLayoutOptions( ...
-                'Row', 1, ...
-                'Column', 1), ...
-            'Data', baseTable);
-        for i = 1:length(paramsTables)
-            tb = uitable(tinyGrid, 'Layout', ...
-            matlab.ui.layout.GridLayoutOptions( ...
-                'Row', i, ...
-                'Column', 1), ...
-            'Data', paramsTables{i});
-        end
+        sp = stackedplot(tax, stimOutputs', 'DisplayLabels', fds);
+        title(sprintf("Trial %d: %s", obj.trialIdx, obj.line));
     end
+    
+    fig = obj.displayFig;
 end
 
 function leafIdxes = leafIdxes(obj)
@@ -293,24 +306,50 @@ end
 function ValidateTree(obj)
     % Check the tree is valid. 
     leafIdxes = obj.leafIdxes;
-    %TODO THROWING AN ERROR ON 286
-    % validate leaf relationships
-    % for i = 1:length(leafIdxes)
-    %     firstLeaf = obj.StimulusBlocks{leafIdxes(i)};
-    %     for j = i+1:length(leafIdxes)
-    %         secondLeaf = obj.StimulusBlocks{leafIdxes(j)};
-    %         commonParent = firstLeaf.FirstCommonParentIdx(leafIdxes(j));
-    %         par = obj.StimulusBlocks{commonParent};
-    %         % check no device / channel is targeted simultaneously by two commands.
-    %         similarityMatrix = secondLeaf.stimParams.targetDevices == firstLeaf.stimParams.targetDevices';
-    %         if any(similarityMatrix) && strcmpi(par.childRel, 'sim')
-    % 
-    %             error("Device targeted twice simultaneously in trial definition %d (%s): %s. ", ...
-    %                 obj.trialIdx, obj.comment, strjoin(secondLeaf.stimParams.targetDevices(logical(sum(similarityMatrix)))));
-    %         end
-    % 
-    %     end
-    % end
+
+    % check all stimuli fit within tPre + tPost
+    fs = fields(obj.params);
+    for i = 1:length(fs)
+        fieldName = fs{i};
+        % get stimulus duration
+        paramDur = [];
+        for j = 1:length(obj.params.(fieldName).params)
+            singleStimParams = obj.params.(fieldName).params(j);
+            if iscell(singleStimParams)
+                singleStimParams = singleStimParams{:};
+            end
+            if singleStimParams.duration == -1
+                paramDur(end+1) = 0;                
+            else
+                if singleStimParams.duration == 0 ...
+                        && isfield(singleStimParams, 'commands') ...
+                        && isfield(singleStimParams.commands, 'dStimulus')
+                    singleStimParams.duration = singleStimParams.commands.dStimulus;
+                end
+                paramDur(end+1) = singleStimParams.duration;
+            end
+        end
+        totalDeviceDur = sum(paramDur(obj.params.(fieldName).sequence)) + ...
+            sum(obj.params.(fieldName).delay);
+        if totalDeviceDur > obj.tPre + obj.tPost
+            % % display precise data
+            % sprintf("%s: \n dur: %s \n delay: %s", ...
+            %     fieldName, ...
+            %     strjoin(string(paramDur(obj.params.(fieldName).sequence)), ','), ...
+            %     strjoin(string(obj.params.(fieldName).delay), ','))
+            % throw error
+            error("Stimulus error on trial definition line %d (%s). \n" + ...
+                        "Stimulus for %s has a total duration of %d ms, which does not fit within " + ...
+                        "tPre + tPost = %d ms. \ntPost should be set to at least %d to fit the stimulus as written. \n" + ...
+                        "   sequence: %s\n" + ...
+                        "   duration: %s\n" + ...
+                        "      delay: %s\n", ...
+                        obj.trialIdx, obj.comment, fieldName, totalDeviceDur, obj.tPre+obj.tPost, totalDeviceDur-obj.tPre, ...
+                        strjoin(string(obj.params.(fieldName).sequence), ','), ...
+                        strjoin(string(paramDur(obj.params.(fieldName).sequence)), ','), ...
+                        strjoin(string(obj.params.(fieldName).delay), ','));
+        end
+    end
 end
 end
 
