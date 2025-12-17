@@ -14,31 +14,31 @@ if src == obj.h.SessionSelectDropDown
     % obj.experimentID = experimentID{1}; %todo as below this may cause issues later
     return
 elseif src == obj.h.menuCheckStimulus
-    checkStimulus(obj);
+    % start protocolchecker app
+    protocolchecker;
     return
 elseif src ~= obj.h.protocolSelectDropDown
     % not implemented.
     return
 end
 if strcmpi(src.Value, 'Browse...')
-    obj.warnMsg("Browsing will cause problems if you choose something outside the default protocol base path " + ...
-        " and then choose another protocol from the dropdown. Please be aware.");
     [filename, dir] = uigetfile([obj.path.protocolBase filesep '*.*'], 'Select protocol');
     if filename == 0
         src.Value = '';
         return
     end
     obj.path.SessionProtocolFile = [dir filename];
-    experimentID = strsplit(filename, '.');
-    obj.experimentID = experimentID{1};     % todo this will cause problems later on 
-                                            % because the base protocol path isn't being updated 
-                                            % (this is on purpose so the path 
-                                            % to all the other protocol files
-                                            % doesn't get screwy but it's
-                                            % on the list to fix)
+    experimentID = filename;
+    obj.experimentID = experimentID;
+    obj.path.protocolDirectories.(obj.experimentID) = dir;
 elseif ~strcmpi(src.Value, '')
     obj.experimentID = src.Value;
-    obj.path.SessionProtocolFile = [obj.path.protocolBase filesep src.Value];
+    if ~isempty(obj.path.protocolDirectories) && isfield(obj.path.protocolDirectories, src.Value)
+        pathBase = obj.path.SessionProtocolFile.(obj.experimentID);
+    else
+        pathBase = obj.path.protocolBase;
+    end
+        obj.path.SessionProtocolFile = [pathBase filesep src.Value];
 
 elseif strcmpi(src.Value, '')
     obj.h.trialInformationScroller.Value = '';
@@ -55,25 +55,19 @@ if ~isfile(obj.path.SessionProtocolFile)
     obj.status = 'no protocol loaded';
     return
 end
-
-if contains(obj.path.SessionProtocolFile, '.qst')
-    % legacy considerations
-    try
+try
+    if contains(obj.path.SessionProtocolFile, '.qst')
+        % legacy considerations
         [p, g] = readQSTParameters(obj.path.SessionProtocolFile);
-    catch err
-        obj.errorMsg(err.message);
-        return;
-    end
-elseif contains(obj.path.SessionProtocolFile, '.stim')
-    % current format
-    try
+    elseif contains(obj.path.SessionProtocolFile, '.stim')
+        % current format
         [p, g] = readProtocol(obj.path.SessionProtocolFile);
-    catch err
-        obj.errorMsg(err.message);
-        return;
+    else
+        error("Unsupported file format. Supported formats: .qst, .stim");
     end
-else
-    error("Unsupported file format. Supported formats: .qst, .stim");
+catch exception
+    obj.errorMsg(exception.message);
+    return;
 end
 
 createChans = isempty(obj.p);

@@ -331,8 +331,13 @@ function timeoutReached = updateGUITimers(obj, startTic, reset)
         totalTimeLabel = strip(split(obj.h.trialTimeEstimate.Text, '/'));
         trialSecs = seconds(duration(totalTimeLabel{2}, 'InputFormat', 'mm:ss'));
         experimentTimeLabel = strip(split(obj.h.protocolTimeEstimate.Text, '/'));
-        experimentSecs = seconds(duration(experimentTimeLabel{2}, 'InputFormat', 'mm:ss'));
-        experimentStartSecs = seconds(duration(experimentTimeLabel{1}, 'InputFormat', 'mm:ss'));
+        if length(sscanf(experimentTimeLabel{1}, "%d:%d:%d")) == 3
+            inputFormat = 'hh:mm:ss';
+        else
+           inputFormat = 'mm:ss';
+        end
+        experimentSecs = seconds(duration(experimentTimeLabel{2}, 'InputFormat', inputFormat));
+        experimentStartSecs = seconds(duration(experimentTimeLabel{1}, 'InputFormat', inputFormat));
         intervalSecs = seconds(duration(obj.h.StatusCountdownLabel.Text(2:end), ...
                 'InputFormat', 'mm:ss'));
     end

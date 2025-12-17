@@ -26,6 +26,9 @@ properties
     trialIdx
     RootNodeIdx
     stimuli
+
+    valid
+    errorMsg
 end
 
 methods
